@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Live Silver Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-dark: #020617;
+      --text-main: #f9fafb;
+      --accent-gold: #facc15;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text-main);
+      background: radial-gradient(circle at top, #111827 0%, #020617 50%, #000 100%);
+      transition: background 0.6s ease;
+    }
+
+    /* UP (to the moon): dark space + subtle stars */
+    body.trend-up {
+      background:
+        radial-gradient(circle at top, #1f2937 0%, #020617 45%, #000 100%),
+        radial-gradient(circle at 10% 20%, rgba(248, 250, 252, 0.2) 0, transparent 50%),
+        radial-gradient(circle at 80% 10%, rgba(248, 250, 252, 0.18) 0, transparent 55%);
+      background-blend-mode: lighten, normal;
+    }
+
+    /* DOWN (burning down): fiery gradient */
+    body.trend-down {
+      background:
+        radial-gradient(circle at bottom, rgba(248, 113, 113, 0.6) 0, transparent 45%),
+        radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+    }
+
+    body.trend-neutral {
+      background: radial-gradient(circle at top, #111827 0%, #020617 50%, #000 100%);
+    }
+
+    .app {
+      width: 100%;
+      max-width: 720px;
+      background: rgba(15, 23, 42, 0.88);
+      border-radius: 28px;
+      padding: 20px 20px 22px;
+      box-shadow: 0 26px 70px rgba(0, 0, 0, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      backdrop-filter: blur(14px);
+    }
+
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .titles {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .app-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .app-subtitle {
+      font-size: 0.8rem;
+      color: #9ca3af;
+    }
+
+    .pill {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: #cbd5f5;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    .main-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
+      gap: 16px;
+      align-items: center;
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 14px 14px 18px;
+      }
+      .main-row {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* LEFT PANE: price and status */
+    .left-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .headline-price {
+      font-size: 2.1rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+    }
+
+    .headline-price span {
+      background: radial-gradient(circle, #ffffff 0%, #fef9c3 40%, var(--accent-gold) 80%);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .trend-pill {
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .trend-pill.up {
+      background: rgba(22, 163, 74, 0.12);
+      border: 1px solid rgba(22, 163, 74, 0.7);
+      color: #bbf7d0;
+    }
+
+    .trend-pill.down {
+      background: rgba(220, 38, 38, 0.12);
+      border: 1px solid rgba(220, 38, 38, 0.8);
+      color: #fecaca;
+    }
+
+    .trend-pill.neutral {
+      background: rgba(148, 163, 184, 0.12);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: #e5e7eb;
+    }
+
+    .trend-arrow {
+      font-size: 1rem;
+    }
+
+    .meta-text {
+      font-size: 0.78rem;
+      color: #9ca3af;
+      line-height: 1.4;
+    }
+
+    .meta-text strong {
+      color: #e5e7eb;
+      font-weight: 600;
+    }
+
+    button.refresh-btn {
+      margin-top: 4px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 999px;
+      color: #e5e7eb;
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    button.refresh-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* RIGHT PANE: guy wearing shirt */
+    .right-pane {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .character-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .character-img {
+      width: 100%;
+      display: block;
+      object-fit: contain;
+      filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.85));
+      transition: opacity 0.35s ease;
+    }
+
+    .character-img.hidden {
+      opacity: 0;
+    }
+
+    /* Price overlay on his shirt */
+    .shirt-price-overlay {
+      position: absolute;
+      /* tweak these percentages once you see where his chest is in the PNG */
+      top: 54%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-shadow: 0 0 8px rgba(0, 0, 0, 0.85),
+                   0 0 18px rgba(0, 0, 0, 0.95);
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .shirt-price-overlay span {
+      background: radial-gradient(circle, #ffffff 0%, #fef9c3 45%, var(--accent-gold) 80%);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    @media (max-width: 640px) {
+      .shirt-price-overlay {
+        font-size: 1.4rem;
+      }
+    }
+  </style>
+</head>
+<body class="trend-neutral">
+  <div class="app">
+    <header class="app-header">
+      <div class="titles">
+        <div class="app-title">Long John Silver's Silver Tracker</div>
+        <div class="app-subtitle">Live spot price, pirate edition.</div>
+      </div>
+      <div class="pill">Live • XAG / USD</div>
+    </header>
+
+    <div class="main-row">
+      <!-- LEFT: Text and controls -->
+      <div class="left-pane">
+        <div class="headline-price">
+          <span id="headline-price">$79.68</span>
+        </div>
+
+        <div class="status-row">
+          <div id="trend-pill" class="trend-pill neutral">
+            <span class="trend-arrow">↔</span>
+            <span id="trend-text">Loading…</span>
+          </div>
+        </div>
+
+        <div class="meta-text">
+          Last update: <strong id="last-updated">–</strong><br />
+          Source: <span id="source-label">Your API</span><br />
+          Auto-refreshes every 5 minutes.
+        </div>
+
+        <button id="refresh-btn" class="refresh-btn" type="button">
+          ⟳ Refresh now
+        </button>
+      </div>
+
+      <!-- RIGHT: Character image + shirt price overlay -->
+      <div class="right-pane">
+        <div class="character-wrapper">
+          <!-- Default image will be the "up" guy once you add it -->
+          <img
+            id="character-img"
+            class="character-img"
+            src="img/guy-up.png"
+            alt="Guy wearing Long John Silver's silver tracker shirt"
+          />
+
+          <div class="shirt-price-overlay">
+            <span id="shirt-price">$79.68</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Paths to your transparent PNGs (to be added later)
+    const IMAGE_UP = "img/guy-up.png";     // thumbs up, moon background shirt
+    const IMAGE_DOWN = "img/guy-down.png"; // thumbs down, burning down shirt
+
+    const bodyEl = document.body;
+    const characterImgEl = document.getElementById("character-img");
+    const shirtPriceEl = document.getElementById("shirt-price");
+    const headlinePriceEl = document.getElementById("headline-price");
+    const trendPillEl = document.getElementById("trend-pill");
+    const trendTextEl = document.getElementById("trend-text");
+    const lastUpdatedEl = document.getElementById("last-updated");
+    const refreshBtn = document.getElementById("refresh-btn");
+
+    let lastPrice = null;
+
+    function setTrendMode(mode) {
+      bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
+      if (mode === "up") {
+        bodyEl.classList.add("trend-up");
+      } else if (mode === "down") {
+        bodyEl.classList.add("trend-down");
+      } else {
+        bodyEl.classList.add("trend-neutral");
+      }
+    }
+
+    // TODO: Replace this with your real silver price API.
+    async function fetchSilverPriceFromApi() {
+      await new Promise((r) => setTimeout(r, 500));
+      if (lastPrice === null) {
+        lastPrice = 79.68;
+      }
+      const change = (Math.random() - 0.5) * 0.4; // +/- ~0.20
+      const next = Math.max(5, lastPrice + change);
+      return Number(next.toFixed(2));
+    }
+
+    function updateUiWithPrice(newPrice) {
+      const formatted = `$${newPrice.toFixed(2)}`;
+
+      // Text
+      shirtPriceEl.textContent = formatted;
+      headlinePriceEl.textContent = formatted;
+
+      const now = new Date();
+      lastUpdatedEl.textContent = now.toLocaleTimeString();
+
+      // Trend logic
+      let mode = "neutral";
+      if (lastPrice === null || newPrice === lastPrice) {
+        mode = "neutral";
+        trendPillEl.className = "trend-pill neutral";
+        trendTextEl.textContent = "No change";
+        trendPillEl.querySelector(".trend-arrow").textContent = "↔";
+      } else if (newPrice > lastPrice) {
+        mode = "up";
+        trendPillEl.className = "trend-pill up";
+        trendTextEl.textContent = "Silver up";
+        trendPillEl.querySelector(".trend-arrow").textContent = "↑";
+        characterImgEl.src = IMAGE_UP;
+      } else {
+        mode = "down";
+        trendPillEl.className = "trend-pill down";
+        trendTextEl.textContent = "Silver down";
+        trendPillEl.querySelector(".trend-arrow").textContent = "↓";
+        characterImgEl.src = IMAGE_DOWN;
+      }
+
+      setTrendMode(mode);
+      lastPrice = newPrice;
+    }
+
+    async function refreshPrice() {
+      try {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = "…";
+        const price = await fetchSilverPriceFromApi();
+        updateUiWithPrice(price);
+      } catch (err) {
+        console.error(err);
+        trendPillEl.className = "trend-pill neutral";
+        trendTextEl.textContent = "Error fetching price";
+        setTrendMode("neutral");
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = "⟳ Refresh now";
+      }
+    }
+
+    refreshBtn.addEventListener("click", refreshPrice);
+
+    // Initial load
+    refreshPrice();
+    // Auto-refresh every 5 minutes
+    setInterval(refreshPrice, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
