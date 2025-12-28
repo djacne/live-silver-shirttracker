@@ -75,9 +75,34 @@
       animation: twinkle 5s linear infinite alternate;
     }
 
+    /* NEW: extra stars layer (more stars, not overkill) */
+    .bg-stars::after{
+      content:"";
+      position:absolute;
+      inset:-220px;
+      background-image:
+        radial-gradient(1px 1px at 8% 12%, rgba(226,232,240,0.9) 70%, transparent 71%),
+        radial-gradient(1px 1px at 18% 72%, rgba(199,210,254,0.75) 70%, transparent 71%),
+        radial-gradient(1px 1px at 26% 35%, rgba(226,232,240,0.8) 70%, transparent 71%),
+        radial-gradient(1px 1px at 34% 90%, rgba(191,219,254,0.65) 70%, transparent 71%),
+        radial-gradient(1px 1px at 44% 22%, rgba(226,232,240,0.85) 70%, transparent 71%),
+        radial-gradient(1px 1px at 52% 60%, rgba(199,210,254,0.7) 70%, transparent 71%),
+        radial-gradient(1px 1px at 63% 14%, rgba(226,232,240,0.8) 70%, transparent 71%),
+        radial-gradient(1px 1px at 70% 78%, rgba(191,219,254,0.6) 70%, transparent 71%),
+        radial-gradient(1px 1px at 82% 42%, rgba(226,232,240,0.85) 70%, transparent 71%),
+        radial-gradient(1px 1px at 92% 86%, rgba(199,210,254,0.7) 70%, transparent 71%);
+      opacity:0.45;
+      animation: twinkle2 6.5s linear infinite alternate;
+    }
+
     @keyframes twinkle {
       0% { opacity: 0.4; transform: translateY(0); }
       100% { opacity: 1; transform: translateY(12px); }
+    }
+
+    @keyframes twinkle2{
+      0% { opacity:0.25; transform: translateY(0); }
+      100% { opacity:0.55; transform: translateY(10px); }
     }
 
     .bg-fire {
@@ -146,8 +171,7 @@
     body.trend-down .bills-rain { opacity: 0.9; }
 
     /* -----------------------------
-       NEW: Up-mode rockets (diagonal from bottom)
-       + subtle moons + cents sprinkled
+       Up-mode rockets (diagonal from bottom)
        (Does NOT affect down/neutral)
     ------------------------------ */
     .rockets-layer {
@@ -165,20 +189,41 @@
     .rocket {
       position: absolute;
       bottom: -14vh;
-      left: var(--x);
       font-size: 1.6rem;
       filter: drop-shadow(0 0 8px rgba(248,250,252,0.22));
       opacity: 0;
-      animation: rocketFly var(--dur) linear infinite;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
       animation-delay: var(--delay);
+      animation-duration: var(--dur);
       transform-origin: center;
+      will-change: transform, opacity;
     }
 
-    @keyframes rocketFly {
+    /* bottom-left → up-right */
+    .rocket-l {
+      left: var(--x);
+      animation-name: rocketFlyL;
+    }
+
+    /* bottom-right → up-left */
+    .rocket-r {
+      left: var(--x);
+      animation-name: rocketFlyR;
+    }
+
+    @keyframes rocketFlyL {
       0%   { transform: translate3d(0, 0, 0) rotate(-35deg) scale(0.95); opacity: 0; }
       10%  { opacity: 0.55; }
       60%  { opacity: 0.55; }
-      100% { transform: translate3d(40vw, -140vh, 0) rotate(-35deg) scale(1.05); opacity: 0; }
+      100% { transform: translate3d(120vw, -140vh, 0) rotate(-35deg) scale(1.05); opacity: 0; }
+    }
+
+    @keyframes rocketFlyR {
+      0%   { transform: translate3d(0, 0, 0) rotate(35deg) scale(0.95); opacity: 0; }
+      10%  { opacity: 0.55; }
+      60%  { opacity: 0.55; }
+      100% { transform: translate3d(-120vw, -140vh, 0) rotate(35deg) scale(1.05); opacity: 0; }
     }
 
     /* small floating "moons + cents" (subtle, occasional) */
@@ -202,6 +247,7 @@
       animation: sprinkleFall var(--dur) linear infinite;
       animation-delay: var(--delay);
       filter: drop-shadow(0 0 6px rgba(148,163,184,0.25));
+      will-change: transform, opacity;
     }
 
     @keyframes sprinkleFall {
@@ -398,18 +444,20 @@
   <div class="bg-layer bg-fire"></div>
 
   <div class="bg-layer">
-    <!-- NEW: rockets for UP mode -->
+    <!-- Rockets for UP mode (NOW from bottom-left AND bottom-right) -->
     <div class="rockets-layer" aria-hidden="true">
-      <div class="rocket" style="--x:6vw;  --dur:7.8s; --delay:0.2s;">🚀</div>
-      <div class="rocket" style="--x:14vw; --dur:9.6s; --delay:1.1s;">🚀</div>
-      <div class="rocket" style="--x:26vw; --dur:8.7s; --delay:2.0s;">🚀</div>
-      <div class="rocket" style="--x:40vw; --dur:10.2s; --delay:0.6s;">🚀</div>
-      <div class="rocket" style="--x:58vw; --dur:9.2s; --delay:1.8s;">🚀</div>
-      <div class="rocket" style="--x:72vw; --dur:10.8s; --delay:2.7s;">🚀</div>
-      <div class="rocket" style="--x:84vw; --dur:8.9s; --delay:1.5s;">🚀</div>
+      <!-- Left → Right -->
+      <div class="rocket rocket-l" style="--x:-8vw; --dur:7.5s; --delay:0.0s;">🚀</div>
+      <div class="rocket rocket-l" style="--x:10vw; --dur:8.2s; --delay:1.2s;">🚀</div>
+      <div class="rocket rocket-l" style="--x:28vw; --dur:7.8s; --delay:2.4s;">🚀</div>
+
+      <!-- Right → Left -->
+      <div class="rocket rocket-r" style="--x:108vw; --dur:7.9s; --delay:0.6s;">🚀</div>
+      <div class="rocket rocket-r" style="--x:92vw;  --dur:8.5s; --delay:1.8s;">🚀</div>
+      <div class="rocket rocket-r" style="--x:74vw;  --dur:7.6s; --delay:3.0s;">🚀</div>
     </div>
 
-    <!-- NEW: subtle moons + cents sprinkled for UP mode -->
+    <!-- Subtle moons + cents sprinkled for UP mode -->
     <div class="sprinkles-layer" aria-hidden="true">
       <div class="sprinkle" style="--x:10vw; --dur:12s; --delay:0.2s;">🌙</div>
       <div class="sprinkle" style="--x:22vw; --dur:14s; --delay:1.6s;">¢</div>
