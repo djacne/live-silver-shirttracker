@@ -434,8 +434,8 @@
           <div class="last-updated">
             Last updated: <span id="last-updated">—</span>
           </div>
-          <div class="hero-frequency">
-            Updates automatically every 8 hours.
+          <div class="hero-frequency" id="hero-frequency">
+            Updates hourly during market hours.
           </div>
         </div>
       </section>
@@ -448,7 +448,7 @@
           <tr>
             <th>Metal</th>
             <th style="text-align:right;">Price (USD/toz)</th>
-            <th style="text-align:right;">Change (24h)</th>
+            <th style="text-align:right;">Trend</th>
           </tr>
         </thead>
         <tbody id="metals-tbody">
@@ -463,7 +463,8 @@
   </div>
 
   <script>
-    const BACKEND_URL = "https://metal-prices.djacne.workers.dev";
+    // Use your custom API domain (KV-backed; safe to poll)
+    const BACKEND_URL = "https://api.dansretirement.com/";
 
     const bodyEl = document.body;
     const characterImgEl = document.getElementById("character-img");
@@ -477,6 +478,14 @@
     const IMAGE_UP = "img/guy-up.png";
     const IMAGE_DOWN = "img/guy-down.png";
 
+    // Inject a small market badge under the trend pill (no HTML changes needed)
+    const marketBadge = document.createElement("div");
+    marketBadge.style.marginTop = "6px";
+    marketBadge.style.fontSize = "0.8rem";
+    marketBadge.style.color = "var(--text-muted)";
+    marketBadge.style.textAlign = "center";
+    trendPillEl.parentElement.appendChild(marketBadge);
+
     function setTrendMode(mode) {
       bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
       if (mode === "up") bodyEl.classList.add("trend-up");
@@ -484,62 +493,104 @@
       else bodyEl.classList.add("trend-neutral");
     }
 
-    function updateHeroWithSilver(silver, updatedAt) {
-      if (!silver || silver.price == null) return;
-      const price = Number(silver.price);
-      if (Number.isNaN(price)) return;
+    function fmtMoney(v) {
+      if (v == null) return "—";
+      const n = Number(v);
+      if (!Number.isFinite(n)) return "—";
+      return `$${n.toFixed(2)}`;
+    }
 
-      const formatted = `$${price.toFixed(2)}`;
-      headlinePriceEl.textContent = formatted;
-      shirtPriceEl.textContent = formatted;
+    function fmtUpdatedAt(updatedAt) {
+      if (!updatedAt) return "—";
+      const dt = new Date(updatedAt);
+      if (Number.isNaN(dt.getTime())) return "—";
+      return dt.toLocaleString();
+    }
 
-      if (updatedAt) {
-        const dt = new Date(updatedAt);
-        if (!isNaN(dt.getTime())) {
-          lastUpdatedEl.textContent = dt.toLocaleString();
+    function setTrendPill(direction) {
+      if (direction === "up") {
+        trendPillEl.className = "trend-pill up";
+        trendPillEl.querySelector(".trend-arrow").textContent = "↑";
+        trendTextEl.textContent = "Silver is mooning";
+        setTrendMode("up");
+        characterImgEl.src = IMAGE_UP;
+        return;
+      }
+      if (direction === "down") {
+        trendPillEl.className = "trend-pill down";
+        trendPillEl.querySelector(".trend-arrow").textContent = "↓";
+        trendTextEl.textContent = "Silver is tanking";
+        setTrendMode("down");
+        characterImgEl.src = IMAGE_DOWN;
+        return;
+      }
+      trendPillEl.className = "trend-pill neutral";
+      trendPillEl.querySelector(".trend-arrow").textContent = "↔";
+      trendTextEl.textContent = "Silver is flat";
+      setTrendMode("neutral");
+      // keep last image
+    }
+
+    function updateUI(data) {
+      const metals = data?.metals || {};
+      const silver = metals.silver || {};
+      const updatedAt = data?.updatedAt || null;
+      const market = data?.market || null;
+      const skipped = Boolean(data?.skipped);
+
+      // Updated time
+      lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
+
+      // Market badge
+      if (market && typeof market.isOpen === "boolean") {
+        if (market.isOpen) {
+          marketBadge.textContent = "Market open";
         } else {
-          lastUpdatedEl.textContent = "Unknown";
+          marketBadge.textContent = `Market closed: ${market.reason || "Closed"}`;
         }
       } else {
-        lastUpdatedEl.textContent = new Date().toLocaleString();
+        marketBadge.textContent = "";
       }
 
+      // Price display
+      const priceText = fmtMoney(silver.price);
+      headlinePriceEl.textContent = priceText;
+      shirtPriceEl.textContent = priceText;
+
+      // Trend / theme
       const direction = silver.direction || "same";
-      let mode = "neutral";
 
-      if (direction === "up") {
-        mode = "up";
-        trendPillEl.className = "trend-pill up";
-        trendTextEl.textContent = "Silver up";
-        trendPillEl.querySelector(".trend-arrow").textContent = "↑";
-        characterImgEl.src = IMAGE_UP;
-      } else if (direction === "down") {
-        mode = "down";
-        trendPillEl.className = "trend-pill down";
-        trendTextEl.textContent = "Silver down";
-        trendPillEl.querySelector(".trend-arrow").textContent = "↓";
-        characterImgEl.src = IMAGE_DOWN;
-      } else {
-        mode = "neutral";
+      // If market is closed AND we have no price yet, be honest and avoid “mooning/tanking”
+      if (skipped && (silver.price == null)) {
         trendPillEl.className = "trend-pill neutral";
-        trendTextEl.textContent = "No change";
-        trendPillEl.querySelector(".trend-arrow").textContent = "↔";
-        // keep last image
+        trendPillEl.querySelector(".trend-arrow").textContent = "⏸";
+        trendTextEl.textContent = "Waiting for market open";
+        setTrendMode("neutral");
+      } else {
+        setTrendPill(direction);
       }
 
-      setTrendMode(mode);
+      // Table
+      renderMetalsTable(metals);
     }
 
     function renderMetalsTable(metals) {
       metalsTbodyEl.innerHTML = "";
 
+      function dirSymbol(d) {
+        if (d === "up") return "▲";
+        if (d === "down") return "▼";
+        return "↔";
+      }
+
+      function dirClass(d) {
+        if (d === "up") return "up";
+        if (d === "down") return "down";
+        return "neutral";
+      }
+
       function addRow(key, label) {
         const m = metals[key];
-        if (!m || m.price == null) return;
-
-        const price = Number(m.price);
-        if (Number.isNaN(price)) return;
-
         const tr = document.createElement("tr");
 
         const tdName = document.createElement("td");
@@ -548,14 +599,16 @@
 
         const tdPrice = document.createElement("td");
         tdPrice.className = "price-cell";
-        tdPrice.textContent = `$${price.toFixed(2)}`;
+        tdPrice.textContent = fmtMoney(m?.price);
 
         const tdChange = document.createElement("td");
         tdChange.className = "change-cell";
 
         const spanChange = document.createElement("span");
-        spanChange.className = "change neutral";
-        spanChange.textContent = "—";
+        const d = m?.direction || "same";
+        spanChange.className = "change " + dirClass(d);
+        // Not true “24h change”, so show direction instead
+        spanChange.textContent = dirSymbol(d);
 
         tdChange.appendChild(spanChange);
 
@@ -575,29 +628,31 @@
     async function refreshAllOnce() {
       try {
         trendTextEl.textContent = "Loading…";
+        marketBadge.textContent = "";
 
-        const res = await fetch(BACKEND_URL);
-        if (!res.ok) {
-          throw new Error("Backend HTTP error " + res.status);
-        }
+        // Bust any intermediate caches (your worker sends no-store, but this avoids weirdness)
+        const url = BACKEND_URL + "?t=" + Date.now();
+
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error("Backend HTTP error " + res.status);
+
         const data = await res.json();
-
-        const metals = data.metals || {};
-        const updatedAt = data.updatedAt || null;
-        const silver = metals.silver;
-
-        updateHeroWithSilver(silver, updatedAt);
-        renderMetalsTable(metals);
+        updateUI(data);
       } catch (err) {
         console.error(err);
         trendPillEl.className = "trend-pill neutral";
+        trendPillEl.querySelector(".trend-arrow").textContent = "!";
         trendTextEl.textContent = "Error fetching prices";
+        marketBadge.textContent = "";
         setTrendMode("neutral");
       }
     }
 
-    // Load once; Worker + cron keep data fresh
+    // Load once; cron keeps KV updated
     refreshAllOnce();
+
+    // Optional: refresh periodically (safe; hits KV only)
+    // setInterval(refreshAllOnce, 5 * 60 * 1000);
   </script>
 </body>
 </html>
