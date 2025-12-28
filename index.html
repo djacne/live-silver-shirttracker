@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root {
       --bg-up: radial-gradient(circle at top, #4f46e5 0%, #020617 55%, #02010a 100%);
@@ -16,7 +17,6 @@
       --card-border: rgba(148, 163, 184, 0.3);
       --accent-up: #22c55e;
       --accent-down: #ef4444;
-      --accent-neutral: #e5e7eb;
       --text-main: #f9fafb;
       --text-muted: #9ca3af;
     }
@@ -25,129 +25,21 @@
 
     body {
       margin: 0;
-      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: "Inter", system-ui, sans-serif;
       color: var(--text-main);
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
       padding: 16px;
       background: var(--bg-neutral);
       transition: background 0.6s ease;
-      overflow-x: hidden;
     }
 
     body.trend-up { background: var(--bg-up); }
     body.trend-down { background: var(--bg-down); }
     body.trend-neutral { background: var(--bg-neutral); }
 
-    /* Animated background layers */
-    .bg-layer {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 0;
-    }
-
-    .bg-stars {
-      opacity: 0;
-      transition: opacity 0.6s ease;
-      background-image:
-        radial-gradient(circle at 20% 20%, rgba(248,250,252,0.7) 0, transparent 55%),
-        radial-gradient(circle at 80% 10%, rgba(191,219,254,0.5) 0, transparent 55%),
-        radial-gradient(circle at 50% 85%, rgba(129,140,248,0.5) 0, transparent 55%);
-    }
-
-    .bg-stars::before {
-      content: "";
-      position: absolute;
-      inset: -200px;
-      background-image:
-        radial-gradient(2px 2px at 10% 20%, #e5e7eb 70%, transparent 71%),
-        radial-gradient(2px 2px at 30% 80%, #c4b5fd 70%, transparent 71%),
-        radial-gradient(2px 2px at 60% 40%, #bfdbfe 70%, transparent 71%),
-        radial-gradient(2px 2px at 90% 70%, #e5e7eb 70%, transparent 71%);
-      opacity: 0.7;
-      animation: twinkle 5s linear infinite alternate;
-    }
-
-    @keyframes twinkle {
-      0% { opacity: 0.4; transform: translateY(0); }
-      100% { opacity: 1; transform: translateY(12px); }
-    }
-
-    .bg-fire {
-      opacity: 0;
-      transition: opacity 0.6s ease;
-      background-image:
-        radial-gradient(circle at 50% 120%, rgba(239,68,68,0.8) 0, transparent 60%),
-        radial-gradient(circle at 0% 120%, rgba(249,115,22,0.75) 0, transparent 60%),
-        radial-gradient(circle at 100% 120%, rgba(251,146,60,0.7) 0, transparent 60%);
-      mix-blend-mode: screen;
-    }
-
-    .bg-fire::before {
-      content: "";
-      position: absolute;
-      inset: 30% 0 -40%;
-      background: radial-gradient(circle, rgba(248,250,252,0.08) 0, transparent 55%);
-      opacity: 0.8;
-      animation: heatWave 4s ease-in-out infinite alternate;
-    }
-
-    @keyframes heatWave {
-      0% { transform: translateY(0) scaleY(1); opacity: 0.4; }
-      100% { transform: translateY(-18px) scaleY(1.1); opacity: 0.9; }
-    }
-
-    /* Falling coins / bills */
-    .coins-rain,
-    .bills-rain {
-      position: absolute;
-      inset: -20vh 0;
-      overflow: visible;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.6s ease;
-      font-size: 1.4rem;
-    }
-
-    .coin,
-    .bill {
-      position: absolute;
-      top: -10vh;
-      animation-name: fall;
-      animation-timing-function: linear;
-      animation-iteration-count: infinite;
-    }
-
-    .coin { filter: drop-shadow(0 0 6px rgba(250, 250, 210, 0.8)); }
-    .bill { filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.9)); }
-
-    @keyframes fall {
-      0% {
-        transform: translate3d(var(--x), -120vh, 0) rotate(0deg);
-        opacity: 0;
-      }
-      10% { opacity: 1; }
-      100% {
-        transform: translate3d(calc(var(--x) + 20px), 120vh, 0) rotate(360deg);
-        opacity: 0;
-      }
-    }
-
-    body.trend-up .bg-stars { opacity: 1; }
-    body.trend-up .coins-rain { opacity: 0.9; }
-    body.trend-down .bg-fire { opacity: 1; }
-    body.trend-down .bills-rain { opacity: 0.9; }
-
     .page {
-      width: 100%;
       max-width: 1024px;
       margin: 0 auto;
-      position: relative;
-      z-index: 1;
     }
 
     header {
@@ -156,27 +48,18 @@
     }
 
     header h1 {
-      font-size: clamp(1.6rem, 2.6vw, 2.2rem);
       margin: 0;
-      letter-spacing: 0.03em;
-    }
-
-    header p {
-      margin: 6px 0 0;
-      color: var(--text-muted);
-      font-size: 0.9rem;
+      font-size: 2rem;
     }
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      grid-template-columns: 1.1fr 0.9fr;
       gap: 18px;
     }
 
     @media (max-width: 800px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
+      .layout { grid-template-columns: 1fr; }
     }
 
     .card {
@@ -184,28 +67,16 @@
       border: 1px solid var(--card-border);
       border-radius: 18px;
       padding: 16px;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
-      backdrop-filter: blur(10px);
-    }
-
-    .shirt-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
     }
 
     .shirt-wrapper {
       position: relative;
-      width: 100%;
       max-width: 420px;
       margin: 0 auto;
     }
 
     .shirt-wrapper img {
-      display: block;
       width: 100%;
-      height: auto;
       border-radius: 16px;
     }
 
@@ -213,427 +84,189 @@
       position: absolute;
       right: 8%;
       top: 9%;
-      font-size: clamp(1.4rem, 3.2vw, 1.9rem);
+      font-size: 1.8rem;
       font-weight: 700;
-      color: #fefce8;
-      text-shadow: 0 0 6px rgba(0,0,0,0.85), 0 0 14px rgba(37, 99, 235, 0.75);
-      letter-spacing: 0.06em;
-      pointer-events: none;
     }
 
-    /* Hero / right card */
     .hero-info {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      justify-content: space-between;
-      align-items: stretch;
       text-align: center;
     }
 
-    .hero-topline {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--text-muted);
-    }
-
-    .hero-main {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: center;
-    }
-
     .headline-price {
-      font-size: clamp(2.2rem, 3.8vw, 2.8rem);
+      font-size: 2.6rem;
       font-weight: 700;
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      justify-content: center;
-    }
-
-    .headline-price span.small {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .trend-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      justify-content: center;
     }
 
     .trend-pill {
+      margin-top: 10px;
       display: inline-flex;
-      align-items: center;
       gap: 6px;
-      padding: 6px 11px;
+      padding: 6px 12px;
       border-radius: 999px;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: 600;
       border: 1px solid transparent;
     }
 
-    .trend-pill .trend-arrow {
-      font-size: 0.9rem;
-    }
-
     .trend-pill.up {
-      background: rgba(22,163,74,0.15);
-      border-color: rgba(34,197,94,0.7);
+      background: rgba(34,197,94,0.15);
+      border-color: rgba(34,197,94,0.6);
       color: #bbf7d0;
     }
+
     .trend-pill.down {
-      background: rgba(220,38,38,0.18);
-      border-color: rgba(248,113,113,0.8);
+      background: rgba(239,68,68,0.18);
+      border-color: rgba(239,68,68,0.6);
       color: #fecaca;
     }
+
     .trend-pill.neutral {
       background: rgba(148,163,184,0.15);
-      border-color: rgba(148,163,184,0.6);
+      border-color: rgba(148,163,184,0.5);
       color: #e5e7eb;
     }
 
-    .hero-divider {
-      height: 1px;
-      width: 100%;
-      background: linear-gradient(
-        to right,
-        transparent,
-        rgba(148,163,184,0.6),
-        transparent
-      );
-      opacity: 0.7;
-    }
-
     .hero-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      align-items: center;
+      margin-top: 12px;
       font-size: 0.8rem;
       color: var(--text-muted);
     }
 
-    .last-updated {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      text-align: center;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
     }
-
-    .hero-frequency {
-      opacity: 0.9;
-      text-align: center;
-    }
-
-    .table-card {
-      margin-top: 18px;
-    }
-
-    table { width: 100%; border-collapse: collapse; }
-    thead { border-bottom: 1px solid rgba(148, 163, 184, 0.4); }
 
     th, td {
-      padding: 8px 2px;
-      text-align: left;
+      padding: 8px;
       font-size: 0.85rem;
     }
 
-    th {
-      color: var(--text-muted);
-      font-weight: 600;
-      font-size: 0.8rem;
-    }
+    th { color: var(--text-muted); }
 
-    .metal-name { font-weight: 600; }
-    .price-cell {
-      text-align: right;
-      font-feature-settings: "tnum" 1, "lnum" 1;
-    }
-    .change-cell { text-align: right; }
+    td:last-child { text-align: right; }
 
-    .change {
-      font-feature-settings: "tnum" 1, "lnum" 1;
-      font-size: 0.8rem;
-    }
-    .change.up { color: var(--accent-up); }
-    .change.down { color: var(--accent-down); }
-    .change.neutral { color: var(--text-muted); }
-
-    footer {
-      margin-top: 18px;
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
   </style>
 </head>
+
 <body class="trend-neutral">
-  <!-- Animated background layers -->
-  <div class="bg-layer bg-stars"></div>
-  <div class="bg-layer bg-fire"></div>
-  <div class="bg-layer">
-    <div class="coins-rain" id="coins-rain">
-      <div class="coin" style="--x:5vw; animation-duration:9s;">🪙</div>
-      <div class="coin" style="--x:20vw; animation-duration:11s; animation-delay:1s;">🪙</div>
-      <div class="coin" style="--x:35vw; animation-duration:8s; animation-delay:2s;">🪙</div>
-      <div class="coin" style="--x:50vw; animation-duration:10s; animation-delay:0.5s;">🪙</div>
-      <div class="coin" style="--x:65vw; animation-duration:12s; animation-delay:1.7s;">🪙</div>
-      <div class="coin" style="--x:80vw; animation-duration:9.5s; animation-delay:2.8s;">🪙</div>
-    </div>
-    <div class="bills-rain" id="bills-rain">
-      <div class="bill" style="--x:10vw; animation-duration:9s;">💵</div>
-      <div class="bill" style="--x:28vw; animation-duration:11s; animation-delay:0.7s;">💵</div>
-      <div class="bill" style="--x:46vw; animation-duration:8.5s; animation-delay:1.8s;">💵</div>
-      <div class="bill" style="--x:62vw; animation-duration:10.5s; animation-delay:0.3s;">💵</div>
-      <div class="bill" style="--x:78vw; animation-duration:12.5s; animation-delay:2.2s;">💵</div>
-    </div>
-  </div>
+<div class="page">
+  <header>
+    <h1>Dan's Retirement Tracker</h1>
+  </header>
 
-  <div class="page">
-    <header>
-      <h1>Dan's Retirement Tracker</h1>
-    </header>
-
-    <div class="layout">
-      <!-- Shirt / hero image -->
-      <section class="card shirt-card">
-        <div class="shirt-wrapper">
-          <img id="character-img" src="img/guy-up.png" alt="Silver rocket T-shirt" />
-          <div class="shirt-price-overlay" id="shirt-price">$0.00</div>
-        </div>
-      </section>
-
-      <!-- Right side: numbers -->
-      <section class="card hero-info">
-        <div class="hero-topline">Silver spot price</div>
-
-        <div class="hero-main">
-          <div class="headline-price">
-            <span id="headline-price">$0.00</span>
-            <span class="small">/ troy ounce</span>
-          </div>
-
-          <div class="trend-row">
-            <div id="trend-pill" class="trend-pill neutral">
-              <span class="trend-arrow">↔</span>
-              <span id="trend-text">Loading…</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="hero-divider"></div>
-
-        <div class="hero-meta">
-          <div class="last-updated">
-            Last updated: <span id="last-updated">—</span>
-          </div>
-          <div class="hero-frequency" id="hero-frequency">
-            Updates hourly during market hours
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <section class="card table-card">
-      <h2 style="font-size: 1rem; margin: 0 0 8px;">Other metals</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Metal</th>
-            <th style="text-align:right;">Price (USD/toz)</th>
-            <th style="text-align:right;">Trend</th>
-          </tr>
-        </thead>
-        <tbody id="metals-tbody"></tbody>
-      </table>
+  <div class="layout">
+    <section class="card">
+      <div class="shirt-wrapper">
+        <img id="character-img" src="img/guy-up.png" alt="Silver shirt">
+        <div id="shirt-price" class="shirt-price-overlay">—</div>
+      </div>
     </section>
 
-    <footer></footer>
+    <section class="card hero-info">
+      <div>Silver spot price</div>
+      <div id="headline-price" class="headline-price">—</div>
+
+      <div id="trend-pill" class="trend-pill neutral">
+        <span id="trend-arrow">⏸</span>
+        <span id="trend-text">Market opens Sunday 5pm CT</span>
+      </div>
+
+      <div class="hero-meta">
+        Last updated: <span id="last-updated">—</span><br>
+        Updates hourly during market hours
+      </div>
+    </section>
   </div>
 
-  <script>
-    const BACKEND_URL = "https://api.dansretirement.com/";
+  <section class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Metal</th>
+          <th style="text-align:right;">Price (USD/toz)</th>
+          <th style="text-align:right;">Trend</th>
+        </tr>
+      </thead>
+      <tbody id="metals-tbody"></tbody>
+    </table>
+  </section>
+</div>
 
-    const bodyEl = document.body;
-    const characterImgEl = document.getElementById("character-img");
-    const shirtPriceEl = document.getElementById("shirt-price");
-    const headlinePriceEl = document.getElementById("headline-price");
-    const trendPillEl = document.getElementById("trend-pill");
-    const trendTextEl = document.getElementById("trend-text");
-    const lastUpdatedEl = document.getElementById("last-updated");
-    const metalsTbodyEl = document.getElementById("metals-tbody");
+<script>
+  const API = "https://api.dansretirement.com/";
+  const body = document.body;
 
-    const IMAGE_UP = "img/guy-up.png";
-    const IMAGE_DOWN = "img/guy-down.png";
+  const priceEls = {
+    headline: document.getElementById("headline-price"),
+    shirt: document.getElementById("shirt-price")
+  };
 
-    // Inject a small market badge under the trend pill (no HTML changes needed)
-    const marketBadge = document.createElement("div");
-    marketBadge.style.marginTop = "6px";
-    marketBadge.style.fontSize = "0.8rem";
-    marketBadge.style.color = "var(--text-muted)";
-    marketBadge.style.textAlign = "center";
-    trendPillEl.parentElement.appendChild(marketBadge);
+  const trendPill = document.getElementById("trend-pill");
+  const trendArrow = document.getElementById("trend-arrow");
+  const trendText = document.getElementById("trend-text");
+  const updatedEl = document.getElementById("last-updated");
+  const table = document.getElementById("metals-tbody");
 
-    function setTrendMode(mode) {
-      bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
-      if (mode === "up") bodyEl.classList.add("trend-up");
-      else if (mode === "down") bodyEl.classList.add("trend-down");
-      else bodyEl.classList.add("trend-neutral");
+  function money(v) {
+    if (v == null) return "—";
+    return `$${Number(v).toFixed(2)}`;
+  }
+
+  function setTrend(direction) {
+    trendPill.className = "trend-pill " + (direction || "neutral");
+
+    if (direction === "up") {
+      trendArrow.textContent = "↑";
+      trendText.textContent = "Silver is mooning";
+      body.className = "trend-up";
+    } else if (direction === "down") {
+      trendArrow.textContent = "↓";
+      trendText.textContent = "Silver is tanking";
+      body.className = "trend-down";
+    } else {
+      trendArrow.textContent = "⏸";
+      trendText.textContent = "Market opens Sunday 5pm CT";
+      body.className = "trend-neutral";
+    }
+  }
+
+  function renderTable(metals) {
+    table.innerHTML = "";
+    for (const k of ["gold","silver","platinum","palladium"]) {
+      const m = metals[k];
+      if (!m) continue;
+      table.innerHTML += `
+        <tr>
+          <td>${m.label}</td>
+          <td>${money(m.price)}</td>
+          <td>${m.direction === "up" ? "▲" : m.direction === "down" ? "▼" : "↔"}</td>
+        </tr>`;
+    }
+  }
+
+  async function load() {
+    const res = await fetch(API + "?t=" + Date.now());
+    const data = await res.json();
+
+    const silver = data.metals?.silver || {};
+    priceEls.headline.textContent = money(silver.price);
+    priceEls.shirt.textContent = money(silver.price);
+    updatedEl.textContent = data.updatedAt
+      ? new Date(data.updatedAt).toLocaleString()
+      : "—";
+
+    if (data.skipped && silver.price == null) {
+      setTrend("neutral");
+    } else {
+      setTrend(silver.direction);
     }
 
-    function fmtMoney(v) {
-      if (v == null) return "—";
-      const n = Number(v);
-      if (!Number.isFinite(n)) return "—";
-      return `$${n.toFixed(2)}`;
-    }
+    renderTable(data.metals || {});
+  }
 
-    function fmtUpdatedAt(updatedAt) {
-      if (!updatedAt) return "—";
-      const dt = new Date(updatedAt);
-      if (Number.isNaN(dt.getTime())) return "—";
-      return dt.toLocaleString();
-    }
-
-    function setTrendPill(direction) {
-      if (direction === "up") {
-        trendPillEl.className = "trend-pill up";
-        trendPillEl.querySelector(".trend-arrow").textContent = "↑";
-        trendTextEl.textContent = "Silver is mooning";
-        setTrendMode("up");
-        characterImgEl.src = IMAGE_UP;
-        return;
-      }
-      if (direction === "down") {
-        trendPillEl.className = "trend-pill down";
-        trendPillEl.querySelector(".trend-arrow").textContent = "↓";
-        trendTextEl.textContent = "Silver is tanking";
-        setTrendMode("down");
-        characterImgEl.src = IMAGE_DOWN;
-        return;
-      }
-      trendPillEl.className = "trend-pill neutral";
-      trendPillEl.querySelector(".trend-arrow").textContent = "↔";
-      trendTextEl.textContent = "Silver is flat";
-      setTrendMode("neutral");
-    }
-
-    function updateUI(data) {
-      const metals = data?.metals || {};
-      const silver = metals.silver || {};
-      const updatedAt = data?.updatedAt || null;
-      const market = data?.market || null;
-      const skipped = Boolean(data?.skipped);
-
-      lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
-
-      // Market badge: simplified
-      if (market && typeof market.isOpen === "boolean") {
-        marketBadge.textContent = market.isOpen ? "Market Open" : "Market Closed";
-      } else {
-        marketBadge.textContent = "";
-      }
-
-      const priceText = fmtMoney(silver.price);
-      headlinePriceEl.textContent = priceText;
-      shirtPriceEl.textContent = priceText;
-
-      const direction = silver.direction || "same";
-
-      // If market is closed AND we have no price yet, be honest and avoid “mooning/tanking”
-      if (skipped && (silver.price == null)) {
-        trendPillEl.className = "trend-pill neutral";
-        trendPillEl.querySelector(".trend-arrow").textContent = "⏸";
-        trendTextEl.textContent = "Waiting for market open";
-        setTrendMode("neutral");
-      } else {
-        setTrendPill(direction);
-      }
-
-      renderMetalsTable(metals);
-    }
-
-    function renderMetalsTable(metals) {
-      metalsTbodyEl.innerHTML = "";
-
-      function dirSymbol(d) {
-        if (d === "up") return "▲";
-        if (d === "down") return "▼";
-        return "↔";
-      }
-
-      function dirClass(d) {
-        if (d === "up") return "up";
-        if (d === "down") return "down";
-        return "neutral";
-      }
-
-      function addRow(key, label) {
-        const m = metals[key];
-        const tr = document.createElement("tr");
-
-        const tdName = document.createElement("td");
-        tdName.className = "metal-name";
-        tdName.textContent = label;
-
-        const tdPrice = document.createElement("td");
-        tdPrice.className = "price-cell";
-        tdPrice.textContent = fmtMoney(m?.price);
-
-        const tdTrend = document.createElement("td");
-        tdTrend.className = "change-cell";
-
-        const spanTrend = document.createElement("span");
-        const d = m?.direction || "same";
-        spanTrend.className = "change " + dirClass(d);
-        spanTrend.textContent = dirSymbol(d);
-
-        tdTrend.appendChild(spanTrend);
-
-        tr.appendChild(tdName);
-        tr.appendChild(tdPrice);
-        tr.appendChild(tdTrend);
-
-        metalsTbodyEl.appendChild(tr);
-      }
-
-      addRow("gold", "Gold");
-      addRow("silver", "Silver");
-      addRow("platinum", "Platinum");
-      addRow("palladium", "Palladium");
-    }
-
-    async function refreshAllOnce() {
-      try {
-        trendTextEl.textContent = "Loading…";
-        marketBadge.textContent = "";
-
-        const url = BACKEND_URL + "?t=" + Date.now();
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error("Backend HTTP error " + res.status);
-
-        const data = await res.json();
-        updateUI(data);
-      } catch (err) {
-        console.error(err);
-        trendPillEl.className = "trend-pill neutral";
-        trendPillEl.querySelector(".trend-arrow").textContent = "!";
-        trendTextEl.textContent = "Error fetching prices";
-        marketBadge.textContent = "";
-        setTrendMode("neutral");
-      }
-    }
-
-    refreshAllOnce();
-
-    // Optional: refresh periodically (safe; hits KV only)
-    // setInterval(refreshAllOnce, 5 * 60 * 1000);
-  </script>
+  load();
+</script>
 </body>
 </html>
