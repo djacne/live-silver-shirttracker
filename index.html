@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Silver Tracker</title>
+  <title>Dan's Retirement Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -161,12 +161,6 @@
       letter-spacing: 0.03em;
     }
 
-    header p {
-      margin: 6px 0 0;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-    }
-
     .layout {
       display: grid;
       grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
@@ -174,9 +168,7 @@
     }
 
     @media (max-width: 800px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
+      .layout { grid-template-columns: 1fr; }
     }
 
     .card {
@@ -194,15 +186,6 @@
       align-items: center;
       gap: 10px;
     }
-    .shirt-card {
-      background: transparent;
-      border: none;
-      box-shadow: none;
-    }
-
-    .shirt-wrapper img {
-     filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6));
-    }
 
     .shirt-wrapper {
       position: relative;
@@ -216,22 +199,8 @@
       width: 100%;
       height: auto;
       border-radius: 16px;
-      background: transparent;
     }
 
-    .shirt-price-overlay {
-      position: absolute;
-      right: 8%;
-      top: 9%;
-      font-size: clamp(1.4rem, 3.2vw, 1.9rem);
-      font-weight: 700;
-      color: #fefce8;
-      text-shadow: 0 0 6px rgba(0,0,0,0.85), 0 0 14px rgba(37, 99, 235, 0.75);
-      letter-spacing: 0.06em;
-      pointer-events: none;
-    }
-
-    /* Hero / right card */
     .hero-info {
       display: flex;
       flex-direction: column;
@@ -289,9 +258,7 @@
       border: 1px solid transparent;
     }
 
-    .trend-pill .trend-arrow {
-      font-size: 0.9rem;
-    }
+    .trend-pill .trend-arrow { font-size: 0.9rem; }
 
     .trend-pill.up {
       background: rgba(22,163,74,0.15);
@@ -312,12 +279,7 @@
     .hero-divider {
       height: 1px;
       width: 100%;
-      background: linear-gradient(
-        to right,
-        transparent,
-        rgba(148,163,184,0.6),
-        transparent
-      );
+      background: linear-gradient(to right, transparent, rgba(148,163,184,0.6), transparent);
       opacity: 0.7;
     }
 
@@ -330,20 +292,10 @@
       color: var(--text-muted);
     }
 
-    .last-updated {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      text-align: center;
-    }
+    .last-updated { font-size: 0.8rem; color: var(--text-muted); text-align: center; }
+    .hero-frequency { opacity: 0.9; text-align: center; }
 
-    .hero-frequency {
-      opacity: 0.9;
-      text-align: center;
-    }
-
-    .table-card {
-      margin-top: 18px;
-    }
+    .table-card { margin-top: 18px; }
 
     table { width: 100%; border-collapse: collapse; }
     thead { border-bottom: 1px solid rgba(148, 163, 184, 0.4); }
@@ -361,28 +313,16 @@
     }
 
     .metal-name { font-weight: 600; }
-    .price-cell {
-      text-align: right;
-      font-feature-settings: "tnum" 1, "lnum" 1;
-    }
+    .price-cell { text-align: right; font-feature-settings: "tnum" 1, "lnum" 1; }
     .change-cell { text-align: right; }
 
-    .change {
-      font-feature-settings: "tnum" 1, "lnum" 1;
-      font-size: 0.8rem;
-    }
+    .change { font-feature-settings: "tnum" 1, "lnum" 1; font-size: 0.8rem; }
     .change.up { color: var(--accent-up); }
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
-
-    footer {
-      margin-top: 18px;
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
   </style>
 </head>
+
 <body class="trend-neutral">
   <!-- Animated background layers -->
   <div class="bg-layer bg-stars"></div>
@@ -407,25 +347,23 @@
 
   <div class="page">
     <header>
-      <h1>Retirement Fund Tracker</h1>
+      <h1>Dan's Retirement Tracker</h1>
     </header>
 
     <div class="layout">
-      <!-- Shirt / hero image -->
       <section class="card shirt-card">
         <div class="shirt-wrapper">
-          <img id="character-img" src="img/silver-closed.png" alt="Market closed image" />
+          <img id="character-img" src="img/guy-up.png" alt="Silver rocket T-shirt" />
         </div>
       </section>
 
-      <!-- Right side: numbers -->
       <section class="card hero-info">
         <div class="hero-topline">Silver spot price</div>
 
         <div class="hero-main">
           <div class="headline-price">
-            <span id="headline-price">$0.00</span>
-            <span class="small">/ Troy Ounce</span>
+            <span id="headline-price">—</span>
+            <span class="small">/ troy ounce</span>
           </div>
 
           <div class="trend-row">
@@ -443,7 +381,7 @@
             Last updated: <span id="last-updated">—</span>
           </div>
           <div class="hero-frequency">
-            Updates automatically every 8 hours.
+            Updates hourly during market hours
           </div>
         </div>
       </section>
@@ -456,26 +394,19 @@
           <tr>
             <th>Metal</th>
             <th style="text-align:right;">Price (USD/toz)</th>
-            <th style="text-align:right;">Change (24h)</th>
+            <th style="text-align:right;">Trend</th>
           </tr>
         </thead>
-        <tbody id="metals-tbody">
-          <!-- filled by JS -->
-        </tbody>
+        <tbody id="metals-tbody"></tbody>
       </table>
     </section>
-
-    <footer>
-      <!-- intentionally minimal -->
-    </footer>
   </div>
 
   <script>
-    const BACKEND_URL = "https://metal-prices.djacne.workers.dev";
+    const BACKEND_URL = "https://api.dansretirement.com/";
 
     const bodyEl = document.body;
     const characterImgEl = document.getElementById("character-img");
-    const shirtPriceEl = document.getElementById("shirt-price");
     const headlinePriceEl = document.getElementById("headline-price");
     const trendPillEl = document.getElementById("trend-pill");
     const trendTextEl = document.getElementById("trend-text");
@@ -483,7 +414,7 @@
     const metalsTbodyEl = document.getElementById("metals-tbody");
 
     const IMAGE_UP = "img/silver-up.png";
-    const IMAGE_DOWN = "img/guy-down.png";
+    const IMAGE_DOWN = "img/guy-down.png"; 
     const IMAGE_CLOSED = "img/silver-closed.png";
 
     function setTrendMode(mode) {
@@ -493,61 +424,71 @@
       else bodyEl.classList.add("trend-neutral");
     }
 
-    function updateHeroWithSilver(silver, updatedAt) {
-      if (!silver || silver.price == null) return;
-      const price = Number(silver.price);
-      if (Number.isNaN(price)) return;
+    function fmtMoney(v) {
+      if (v == null) return "—";
+      const n = Number(v);
+      if (!Number.isFinite(n)) return "—";
+      return `$${n.toFixed(2)}`;
+    }
 
-      const formatted = `$${price.toFixed(2)}`;
-      headlinePriceEl.textContent = formatted;
-      shirtPriceEl.textContent = formatted;
+    function fmtUpdatedAt(updatedAt) {
+      if (!updatedAt) return "—";
+      const dt = new Date(updatedAt);
+      if (Number.isNaN(dt.getTime())) return "—";
+      return dt.toLocaleString();
+    }
 
-      if (updatedAt) {
-        const dt = new Date(updatedAt);
-        if (!isNaN(dt.getTime())) {
-          lastUpdatedEl.textContent = dt.toLocaleString();
-        } else {
-          lastUpdatedEl.textContent = "Unknown";
-        }
-      } else {
-        lastUpdatedEl.textContent = new Date().toLocaleString();
-      }
-
-      const direction = silver.direction || "same";
-      let mode = "neutral";
+    function setTrendPill(direction) {
+      const arrowEl = trendPillEl.querySelector(".trend-arrow");
 
       if (direction === "up") {
-        mode = "up";
         trendPillEl.className = "trend-pill up";
-        trendTextEl.textContent = "Silver up";
-        trendPillEl.querySelector(".trend-arrow").textContent = "↑";
+        arrowEl.textContent = "↑";
+        trendTextEl.textContent = "Silver is mooning";
+        setTrendMode("up");
         characterImgEl.src = IMAGE_UP;
-      } else if (direction === "down") {
-        mode = "down";
-        trendPillEl.className = "trend-pill down";
-        trendTextEl.textContent = "Silver down";
-        trendPillEl.querySelector(".trend-arrow").textContent = "↓";
-        characterImgEl.src = IMAGE_DOWN;
-      } else {
-        mode = "neutral";
-        trendPillEl.className = "trend-pill neutral";
-        trendTextEl.textContent = "No change";
-        trendPillEl.querySelector(".trend-arrow").textContent = "↔";
-        // keep last image
+        return;
       }
+      if (direction === "down") {
+        trendPillEl.className = "trend-pill down";
+        arrowEl.textContent = "↓";
+        trendTextEl.textContent = "Silver is tanking";
+        setTrendMode("down");
+        characterImgEl.src = IMAGE_DOWN;
+        return;
+      }
+      trendPillEl.className = "trend-pill neutral";
+      arrowEl.textContent = "↔";
+      trendTextEl.textContent = "Silver is flat";
+      setTrendMode("neutral");
+    }
 
-      setTrendMode(mode);
+    function setMarketClosedPill() {
+      const arrowEl = trendPillEl.querySelector(".trend-arrow");
+      trendPillEl.className = "trend-pill neutral";
+      arrowEl.textContent = "⏸";
+      trendTextEl.textContent = "Market opens Sunday 5pm CT";
+      setTrendMode("neutral");
+      // keep image as-is
     }
 
     function renderMetalsTable(metals) {
       metalsTbodyEl.innerHTML = "";
 
-      function addRow(key, label) {
-        const m = metals[key];
-        if (!m || m.price == null) return;
+      function dirSymbol(d) {
+        if (d === "up") return "▲";
+        if (d === "down") return "▼";
+        return "↔";
+      }
 
-        const price = Number(m.price);
-        if (Number.isNaN(price)) return;
+      function dirClass(d) {
+        if (d === "up") return "up";
+        if (d === "down") return "down";
+        return "neutral";
+      }
+
+      function addRow(key, label) {
+        const m = metals?.[key] || null;
 
         const tr = document.createElement("tr");
 
@@ -557,20 +498,21 @@
 
         const tdPrice = document.createElement("td");
         tdPrice.className = "price-cell";
-        tdPrice.textContent = `$${price.toFixed(2)}`;
+        tdPrice.textContent = fmtMoney(m?.price);
 
-        const tdChange = document.createElement("td");
-        tdChange.className = "change-cell";
+        const tdTrend = document.createElement("td");
+        tdTrend.className = "change-cell";
 
-        const spanChange = document.createElement("span");
-        spanChange.className = "change neutral";
-        spanChange.textContent = "—";
+        const spanTrend = document.createElement("span");
+        const d = m?.direction || "same";
+        spanTrend.className = "change " + dirClass(d);
+        spanTrend.textContent = dirSymbol(d);
 
-        tdChange.appendChild(spanChange);
+        tdTrend.appendChild(spanTrend);
 
         tr.appendChild(tdName);
         tr.appendChild(tdPrice);
-        tr.appendChild(tdChange);
+        tr.appendChild(tdTrend);
 
         metalsTbodyEl.appendChild(tr);
       }
@@ -581,55 +523,57 @@
       addRow("palladium", "Palladium");
     }
 
+    function updateUI(data) {
+      const metals = data?.metals || {};
+      const silver = metals.silver || {};
+      const updatedAt = data?.updatedAt || null;
+      const market = data?.market || null;
+
+      lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
+
+      // Price display (headline only)
+      const priceText = fmtMoney(silver.price);
+      headlinePriceEl.textContent = priceText;
+
+      // If market is closed, show closed image + paused pill (always)
+      if (market && market.isOpen === false) {
+        characterImgEl.src = IMAGE_CLOSED;
+        setMarketClosedPill();
+        renderMetalsTable(metals);
+        return;
+      }
+
+      // Market open / normal operation
+      const direction = silver.direction || "same";
+      setTrendPill(direction);
+      renderMetalsTable(metals);
+    }
+
     async function refreshAllOnce() {
       try {
         trendTextEl.textContent = "Loading…";
 
-        const res = await fetch(BACKEND_URL);
-        if (!res.ok) {
-          throw new Error("Backend HTTP error " + res.status);
-        }
+        const url = BACKEND_URL + "?t=" + Date.now();
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error("Backend HTTP error " + res.status);
+
         const data = await res.json();
-
-        const metals = data.metals || {};
-        const updatedAt = data.updatedAt || null;
-        const silver = metals.silver;
-        const market = data.market || { isOpen: true };
-
-        // MARKET CLOSED STATE
-        if (!market.isOpen) {
-          characterImgEl.src = IMAGE_CLOSED;
-
-          trendPillEl.className = "trend-pill neutral";
-          trendPillEl.querySelector(".trend-arrow").textContent = "⏸";
-          trendTextEl.textContent = "Market opens Sunday 5pm CT";
-
-          setTrendMode("neutral");
-
-          if (updatedAt) {
-            const dt = new Date(updatedAt);
-            if (!isNaN(dt.getTime())) {
-              lastUpdatedEl.textContent = dt.toLocaleString();
-            }
-          }
-
-          renderMetalsTable(metals);
-          return;
-        }
-
-        // MARKET OPEN — NORMAL FLOW
-        updateHeroWithSilver(silver, updatedAt);
-        renderMetalsTable(metals);
+        updateUI(data);
       } catch (err) {
         console.error(err);
+        const arrowEl = trendPillEl.querySelector(".trend-arrow");
         trendPillEl.className = "trend-pill neutral";
+        arrowEl.textContent = "!";
         trendTextEl.textContent = "Error fetching prices";
         setTrendMode("neutral");
       }
     }
 
-    // Load once; Worker + cron keep data fresh
+    // Load once; cron keeps KV updated
     refreshAllOnce();
+
+    // Optional: refresh periodically (safe; hits KV only)
+    // setInterval(refreshAllOnce, 5 * 60 * 1000);
   </script>
 </body>
 </html>
