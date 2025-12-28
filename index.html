@@ -101,7 +101,7 @@
       100% { transform: translateY(-18px) scaleY(1.1); opacity: 0.9; }
     }
 
-    /* Falling coins (up) */
+    /* Falling coins / bills */
     .coins-rain,
     .bills-rain {
       position: absolute;
@@ -221,12 +221,28 @@
       pointer-events: none;
     }
 
+    /* Hero / right card */
     .hero-info {
       display: flex;
       flex-direction: column;
       gap: 12px;
       justify-content: space-between;
-      height: 100%;
+      align-items: stretch;
+      text-align: center;
+    }
+
+    .hero-topline {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+
+    .hero-main {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
     }
 
     .headline-price {
@@ -235,6 +251,7 @@
       display: flex;
       align-items: baseline;
       gap: 8px;
+      justify-content: center;
     }
 
     .headline-price span.small {
@@ -248,6 +265,7 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 10px;
+      justify-content: center;
     }
 
     .trend-pill {
@@ -281,43 +299,36 @@
       color: #e5e7eb;
     }
 
+    .hero-divider {
+      height: 1px;
+      width: 100%;
+      background: linear-gradient(
+        to right,
+        transparent,
+        rgba(148,163,184,0.6),
+        transparent
+      );
+      opacity: 0.7;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
     .last-updated {
       font-size: 0.8rem;
       color: var(--text-muted);
+      text-align: center;
     }
 
-    #refresh-btn {
-      margin-left: auto;
-      padding: 7px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.6);
-      background: rgba(15,23,42,0.8);
-      color: #e5e7eb;
-      font-size: 0.8rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.15s ease, transform 0.05s ease, border-color 0.15s ease;
-    }
-
-    #refresh-btn:hover {
-      background: rgba(30,64,175,0.9);
-      border-color: rgba(129,140,248,0.9);
-    }
-
-    #refresh-btn:active {
-      transform: translateY(1px);
-    }
-
-    #refresh-btn:disabled {
-      opacity: 0.6;
-      cursor: default;
-    }
-
-    .mini-note {
-      font-size: 0.75rem;
-      color: var(--text-muted);
+    .hero-frequency {
+      opacity: 0.9;
+      text-align: center;
     }
 
     .table-card {
@@ -368,7 +379,6 @@
   <div class="bg-layer bg-fire"></div>
   <div class="bg-layer">
     <div class="coins-rain" id="coins-rain">
-      <!-- coins with different x positions / speeds -->
       <div class="coin" style="--x:5vw; animation-duration:9s;">🪙</div>
       <div class="coin" style="--x:20vw; animation-duration:11s; animation-delay:1s;">🪙</div>
       <div class="coin" style="--x:35vw; animation-duration:8s; animation-delay:2s;">🪙</div>
@@ -388,7 +398,6 @@
   <div class="page">
     <header>
       <h1>Retirement Fund Tracker</h1>
-      <!-- tagline intentionally removed -->
     </header>
 
     <div class="layout">
@@ -403,25 +412,31 @@
 
       <!-- Right side: numbers -->
       <section class="card hero-info">
-        <div>
+        <div class="hero-topline">Silver spot price</div>
+
+        <div class="hero-main">
           <div class="headline-price">
             <span id="headline-price">$0.00</span>
             <span class="small">/ troy ounce</span>
           </div>
 
-          <div class="trend-row" style="margin-top: 6px;">
+          <div class="trend-row">
             <div id="trend-pill" class="trend-pill neutral">
               <span class="trend-arrow">↔</span>
               <span id="trend-text">Loading…</span>
             </div>
-
-          <div class="last-updated" style="margin-top: 8px;">
-            Last updated: <span id="last-updated">—</span>
           </div>
         </div>
 
-        <div class="mini-note">
-          Updated automatically every 8 hours.
+        <div class="hero-divider"></div>
+
+        <div class="hero-meta">
+          <div class="last-updated">
+            Last updated: <span id="last-updated">—</span>
+          </div>
+          <div class="hero-frequency">
+            Updates automatically every 8 hours.
+          </div>
         </div>
       </section>
     </div>
@@ -440,13 +455,10 @@
           <!-- filled by JS -->
         </tbody>
       </table>
-      <div class="mini-note" style="margin-top: 6px;">
-        Change column is currently a placeholder (—) until we add historical data.
-      </div>
     </section>
 
     <footer>
-      <!-- footer intentionally left minimal -->
+      <!-- intentionally minimal -->
     </footer>
   </div>
 
@@ -512,7 +524,7 @@
         trendPillEl.className = "trend-pill neutral";
         trendTextEl.textContent = "No change";
         trendPillEl.querySelector(".trend-arrow").textContent = "↔";
-        // Keep whatever image was last set – up or down art still makes sense
+        // keep last image
       }
 
       setTrendMode(mode);
@@ -584,7 +596,7 @@
       }
     }
 
-    // Single load on page open – Worker + cron keep it fresh
+    // Load once; Worker + cron keep data fresh
     refreshAllOnce();
   </script>
 </body>
