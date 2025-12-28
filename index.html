@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Silver Tracker</title>
+  <title>Dan's Retirement Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -397,14 +397,13 @@
 
   <div class="page">
     <header>
-      <h1>Retirement Fund Tracker</h1>
+      <h1>Dan's Retirement Tracker</h1>
     </header>
 
     <div class="layout">
       <!-- Shirt / hero image -->
       <section class="card shirt-card">
         <div class="shirt-wrapper">
-          <!-- replace src with your actual “up” shirt mockup when ready -->
           <img id="character-img" src="img/guy-up.png" alt="Silver rocket T-shirt" />
           <div class="shirt-price-overlay" id="shirt-price">$0.00</div>
         </div>
@@ -435,7 +434,7 @@
             Last updated: <span id="last-updated">—</span>
           </div>
           <div class="hero-frequency" id="hero-frequency">
-            Updates hourly during market hours.
+            Updates hourly during market hours
           </div>
         </div>
       </section>
@@ -451,19 +450,14 @@
             <th style="text-align:right;">Trend</th>
           </tr>
         </thead>
-        <tbody id="metals-tbody">
-          <!-- filled by JS -->
-        </tbody>
+        <tbody id="metals-tbody"></tbody>
       </table>
     </section>
 
-    <footer>
-      <!-- intentionally minimal -->
-    </footer>
+    <footer></footer>
   </div>
 
   <script>
-    // Use your custom API domain (KV-backed; safe to poll)
     const BACKEND_URL = "https://api.dansretirement.com/";
 
     const bodyEl = document.body;
@@ -528,7 +522,6 @@
       trendPillEl.querySelector(".trend-arrow").textContent = "↔";
       trendTextEl.textContent = "Silver is flat";
       setTrendMode("neutral");
-      // keep last image
     }
 
     function updateUI(data) {
@@ -538,26 +531,19 @@
       const market = data?.market || null;
       const skipped = Boolean(data?.skipped);
 
-      // Updated time
       lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
 
-      // Market badge
+      // Market badge: simplified
       if (market && typeof market.isOpen === "boolean") {
-        if (market.isOpen) {
-          marketBadge.textContent = "Market open";
-        } else {
-          marketBadge.textContent = `Market closed: ${market.reason || "Closed"}`;
-        }
+        marketBadge.textContent = market.isOpen ? "Market Open" : "Market Closed";
       } else {
         marketBadge.textContent = "";
       }
 
-      // Price display
       const priceText = fmtMoney(silver.price);
       headlinePriceEl.textContent = priceText;
       shirtPriceEl.textContent = priceText;
 
-      // Trend / theme
       const direction = silver.direction || "same";
 
       // If market is closed AND we have no price yet, be honest and avoid “mooning/tanking”
@@ -570,7 +556,6 @@
         setTrendPill(direction);
       }
 
-      // Table
       renderMetalsTable(metals);
     }
 
@@ -601,20 +586,19 @@
         tdPrice.className = "price-cell";
         tdPrice.textContent = fmtMoney(m?.price);
 
-        const tdChange = document.createElement("td");
-        tdChange.className = "change-cell";
+        const tdTrend = document.createElement("td");
+        tdTrend.className = "change-cell";
 
-        const spanChange = document.createElement("span");
+        const spanTrend = document.createElement("span");
         const d = m?.direction || "same";
-        spanChange.className = "change " + dirClass(d);
-        // Not true “24h change”, so show direction instead
-        spanChange.textContent = dirSymbol(d);
+        spanTrend.className = "change " + dirClass(d);
+        spanTrend.textContent = dirSymbol(d);
 
-        tdChange.appendChild(spanChange);
+        tdTrend.appendChild(spanTrend);
 
         tr.appendChild(tdName);
         tr.appendChild(tdPrice);
-        tr.appendChild(tdChange);
+        tr.appendChild(tdTrend);
 
         metalsTbodyEl.appendChild(tr);
       }
@@ -630,9 +614,7 @@
         trendTextEl.textContent = "Loading…";
         marketBadge.textContent = "";
 
-        // Bust any intermediate caches (your worker sends no-store, but this avoids weirdness)
         const url = BACKEND_URL + "?t=" + Date.now();
-
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new Error("Backend HTTP error " + res.status);
 
@@ -648,7 +630,6 @@
       }
     }
 
-    // Load once; cron keeps KV updated
     refreshAllOnce();
 
     // Optional: refresh periodically (safe; hits KV only)
