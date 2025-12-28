@@ -416,8 +416,6 @@
   const lastUpdatedEl = document.getElementById("last-updated");
   const metalsTbodyEl = document.getElementById("metals-tbody");
 
-  const IMAGE_UP = "img/silver-up.png";
-  const IMAGE_DOWN = "img/guy-down.png";
   const IMAGE_CLOSED = "img/silver-closed.png";
 
   // ---- Random image lists (loaded from img/images.json) ----
@@ -436,7 +434,7 @@
       IMAGE_LISTS.up = Array.isArray(json.up) ? json.up : [];
       IMAGE_LISTS.down = Array.isArray(json.down) ? json.down : [];
     } catch (e) {
-      console.warn("Could not load img/images.json; falling back to defaults", e);
+      console.warn("Could not load img/images.json; falling back to empty lists", e);
       IMAGE_LISTS = { up: [], down: [] };
     }
   }
@@ -462,6 +460,15 @@
     return dt.toLocaleString();
   }
 
+  function setMarketClosedPill() {
+    const arrowEl = trendPillEl.querySelector(".trend-arrow");
+    trendPillEl.className = "trend-pill neutral";
+    arrowEl.textContent = "⏸";
+    trendTextEl.textContent = "Market opens Sunday 5pm CT";
+    setTrendMode("neutral");
+    characterImgEl.src = IMAGE_CLOSED;
+  }
+
   function setTrendPill(direction) {
     const arrowEl = trendPillEl.querySelector(".trend-arrow");
 
@@ -470,9 +477,7 @@
       arrowEl.textContent = "↑";
       trendTextEl.textContent = "Silver is mooning";
       setTrendMode("up");
-
-      // Random UP image each load
-      characterImgEl.src = pickRandom(IMAGE_LISTS.up) || IMAGE_UP;
+      characterImgEl.src = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
       return;
     }
 
@@ -481,23 +486,12 @@
       arrowEl.textContent = "↓";
       trendTextEl.textContent = "Silver is tanking";
       setTrendMode("down");
-
-      // Random DOWN image each load
-      characterImgEl.src = pickRandom(IMAGE_LISTS.down) || IMAGE_DOWN;
+      characterImgEl.src = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
       return;
     }
 
-    // FLAT = treat like closed
+    // FLAT = treat as closed
     setMarketClosedPill();
-    characterImgEl.src = IMAGE_CLOSED;
-  }
-
-  function setMarketClosedPill() {
-    const arrowEl = trendPillEl.querySelector(".trend-arrow");
-    trendPillEl.className = "trend-pill neutral";
-    arrowEl.textContent = "⏸";
-    trendTextEl.textContent = "Market opens Sunday 5pm CT";
-    setTrendMode("neutral");
   }
 
   function renderMetalsTable(metals) {
@@ -558,53 +552,65 @@
     const market = data?.market || null;
 
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
+    headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    // Price display (headline only)
-    const priceText = fmtMoney(silver.price);
-    headlinePriceEl.textContent = priceText;
-
-    // If market is closed, show closed image + paused pill (always)
     if (market && market.isOpen === false) {
-      characterImgEl.src = IMAGE_CLOSED;
       setMarketClosedPill();
       renderMetalsTable(metals);
       return;
     }
 
-    // Market open / normal operation
-    const direction = silver.direction || "same";
-    setTrendPill(direction);
+    setTrendPill(silver.direction || "same");
     renderMetalsTable(metals);
+  }
+
+  function applyForcedModeIfAny() {
+    const params = new URLSearchParams(window.location.search);
+    const mode = (params.get("mode") || "").toLowerCase();
+    if (!mode) return false;
+
+    const fake = {
+      updatedAt: new Date().toISOString(),
+      metals: {
+        silver: { price: 79.33, direction: "same" },
+        gold: { price: 4533.42, direction: "same" },
+        platinum: { price: 2446.5, direction: "same" },
+        palladium: { price: 1925, direction: "same" },
+      },
+      market: { isOpen: true },
+    };
+
+    if (mode === "up") fake.metals.silver.direction = "up";
+    if (mode === "down") fake.metals.silver.direction = "down";
+    if (mode === "flat" || mode === "closed") fake.market.isOpen = false;
+
+    updateUI(fake);
+    return true;
   }
 
   async function refreshAllOnce() {
     try {
       trendTextEl.textContent = "Loading…";
-
-      const url = BACKEND_URL + "?t=" + Date.now();
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetch(BACKEND_URL + "?t=" + Date.now(), { cache: "no-store" });
       if (!res.ok) throw new Error("Backend HTTP error " + res.status);
-
       const data = await res.json();
       updateUI(data);
     } catch (err) {
       console.error(err);
-      const arrowEl = trendPillEl.querySelector(".trend-arrow");
       trendPillEl.className = "trend-pill neutral";
-      arrowEl.textContent = "!";
+      trendPillEl.querySelector(".trend-arrow").textContent = "!";
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
     }
   }
 
-  // Load images.json once, then fetch prices
+  // ---- BOOTSTRAP ----
   (async () => {
     await loadImageLists();
-    refreshAllOnce();
+    if (!applyForcedModeIfAny()) {
+      refreshAllOnce();
+    }
   })();
-
-  // Optional: refresh periodically (safe; hits KV only)
-  // setInterval(refreshAllOnce, 5 * 60 * 1000);
 </script>
 </body>
 </html>
