@@ -312,11 +312,44 @@
     </div>
   </div>
 
-  <script>
-    // Paths to your transparent PNGs (to be added later)
-    const IMAGE_UP = "img/guy-up.png";     // thumbs up, moon background shirt
-    const IMAGE_DOWN = "img/guy-down.png"; // thumbs down, burning down shirt
+    <script>
+    // ==========================
+    // Alpha Vantage config
+    // ==========================
 
+    const AV_API_KEY = "ATN4K9KX9G6X7WP8"; // your key
+    function buildAvUrl(from) {
+      return (
+        "https://www.alphavantage.co/query" +
+        "?function=CURRENCY_EXCHANGE_RATE" +
+        "&from_currency=" +
+        encodeURIComponent(from) +
+        "&to_currency=USD" +
+        "&apikey=" +
+        encodeURIComponent(AV_API_KEY)
+      );
+    }
+
+    // Metals
+    const METALS = [
+      { code: "XAU", label: "Gold" },
+      { code: "XAG", label: "Silver" },
+      { code: "XPT", label: "Platinum" },
+      { code: "XPD", label: "Palladium" },
+    ];
+
+    // Cache windows
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const SIX_HOURS_MS = 6 * ONE_HOUR_MS;
+
+    function lsKeyPrice(code) {
+      return `av_price_${code}`;
+    }
+    function lsKeyTime(code) {
+      return `av_time_${code}`;
+    }
+
+    // DOM refs
     const bodyEl = document.body;
     const characterImgEl = document.getElementById("character-img");
     const shirtPriceEl = document.getElementById("shirt-price");
@@ -325,49 +358,72 @@
     const trendTextEl = document.getElementById("trend-text");
     const lastUpdatedEl = document.getElementById("last-updated");
     const refreshBtn = document.getElementById("refresh-btn");
+    const metalsTbodyEl = document.getElementById("metals-tbody");
 
-    let lastPrice = null;
+    const IMAGE_UP = "img/guy-up.png";
+    const IMAGE_DOWN = "img/guy-down.png";
+
+    let lastSilverPrice = null;
 
     function setTrendMode(mode) {
       bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
-      if (mode === "up") {
-        bodyEl.classList.add("trend-up");
-      } else if (mode === "down") {
-        bodyEl.classList.add("trend-down");
-      } else {
-        bodyEl.classList.add("trend-neutral");
-      }
+      if (mode === "up") bodyEl.classList.add("trend-up");
+      else if (mode === "down") bodyEl.classList.add("trend-down");
+      else bodyEl.classList.add("trend-neutral");
     }
 
-    // TODO: Replace this with your real silver price API.
-    async function fetchSilverPriceFromApi() {
-      await new Promise((r) => setTimeout(r, 500));
-      if (lastPrice === null) {
-        lastPrice = 79.68;
+    // Generic AV fetch with localStorage caching
+    async function fetchMetalPriceCached(code, maxAgeMs) {
+      const now = Date.now();
+      const cachedPrice = localStorage.getItem(lsKeyPrice(code));
+      const cachedTime = localStorage.getItem(lsKeyTime(code));
+
+      if (cachedPrice && cachedTime) {
+        const age = now - Number(cachedTime);
+        if (!Number.isNaN(age) && age < maxAgeMs) {
+          return Number(cachedPrice);
+        }
       }
-      const change = (Math.random() - 0.5) * 0.4; // +/- ~0.20
-      const next = Math.max(5, lastPrice + change);
-      return Number(next.toFixed(2));
+
+      const url = buildAvUrl(code);
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Alpha Vantage HTTP error ${res.status} for ${code}`);
+      }
+      const data = await res.json();
+      const rateObj = data["Realtime Currency Exchange Rate"];
+      if (!rateObj || !rateObj["5. Exchange Rate"]) {
+        throw new Error("Unexpected Alpha Vantage response for " + code);
+      }
+
+      const price = Number(rateObj["5. Exchange Rate"]);
+      if (Number.isNaN(price)) {
+        throw new Error("Invalid price from Alpha Vantage for " + code);
+      }
+
+      localStorage.setItem(lsKeyPrice(code), String(price));
+      localStorage.setItem(lsKeyTime(code), String(now));
+
+      return price;
     }
 
-    function updateUiWithPrice(newPrice) {
-      const formatted = `$${newPrice.toFixed(2)}`;
+    function updateHeroWithSilverPrice(price) {
+      if (price == null || Number.isNaN(price)) return;
+      const formatted = `$${price.toFixed(2)}`;
 
-      // Text
-      shirtPriceEl.textContent = formatted;
       headlinePriceEl.textContent = formatted;
+      shirtPriceEl.textContent = formatted;
 
       const now = new Date();
       lastUpdatedEl.textContent = now.toLocaleTimeString();
 
-      // Trend logic
       let mode = "neutral";
-      if (lastPrice === null || newPrice === lastPrice) {
+      if (lastSilverPrice == null || price === lastSilverPrice) {
         mode = "neutral";
         trendPillEl.className = "trend-pill neutral";
         trendTextEl.textContent = "No change";
         trendPillEl.querySelector(".trend-arrow").textContent = "↔";
-      } else if (newPrice > lastPrice) {
+      } else if (price > lastSilverPrice) {
         mode = "up";
         trendPillEl.className = "trend-pill up";
         trendTextEl.textContent = "Silver up";
@@ -382,19 +438,70 @@
       }
 
       setTrendMode(mode);
-      lastPrice = newPrice;
+      lastSilverPrice = price;
     }
 
-    async function refreshPrice() {
+    function renderMetalsTable(pricesByCode) {
+      metalsTbodyEl.innerHTML = "";
+      METALS.forEach(({ code, label }) => {
+        const price = pricesByCode[code];
+        if (price == null || Number.isNaN(price)) return;
+
+        const tr = document.createElement("tr");
+
+        const tdName = document.createElement("td");
+        tdName.className = "metal-name";
+        tdName.textContent = label;
+
+        const tdPrice = document.createElement("td");
+        tdPrice.className = "price-cell";
+        tdPrice.textContent = `$${price.toFixed(2)}`;
+
+        const tdChange = document.createElement("td");
+        tdChange.className = "change-cell";
+
+        const spanChange = document.createElement("span");
+        spanChange.className = "change neutral";
+        spanChange.textContent = "—"; // AV endpoint here has no 24h change
+
+        tdChange.appendChild(spanChange);
+        tr.appendChild(tdName);
+        tr.appendChild(tdPrice);
+        tr.appendChild(tdChange);
+        metalsTbodyEl.appendChild(tr);
+      });
+    }
+
+    async function refreshAll() {
       try {
         refreshBtn.disabled = true;
         refreshBtn.textContent = "…";
-        const price = await fetchSilverPriceFromApi();
-        updateUiWithPrice(price);
+
+        const pricesByCode = {};
+
+        // Silver: cache max 1 hour
+        const silverPrice = await fetchMetalPriceCached("XAG", ONE_HOUR_MS);
+        pricesByCode["XAG"] = silverPrice;
+        updateHeroWithSilverPrice(silverPrice);
+
+        // Other metals: cache max 6 hours
+        const otherCodes = ["XAU", "XPT", "XPD"];
+        const otherPromises = otherCodes.map((code) =>
+          fetchMetalPriceCached(code, SIX_HOURS_MS).catch((err) => {
+            console.error("Error fetching", code, err);
+            return null;
+          })
+        );
+        const otherPrices = await Promise.all(otherPromises);
+        otherCodes.forEach((code, idx) => {
+          pricesByCode[code] = otherPrices[idx];
+        });
+
+        renderMetalsTable(pricesByCode);
       } catch (err) {
         console.error(err);
         trendPillEl.className = "trend-pill neutral";
-        trendTextEl.textContent = "Error fetching price";
+        trendTextEl.textContent = "Error fetching prices";
         setTrendMode("neutral");
       } finally {
         refreshBtn.disabled = false;
@@ -402,12 +509,8 @@
       }
     }
 
-    refreshBtn.addEventListener("click", refreshPrice);
-
-    // Initial load
-    refreshPrice();
-    // Auto-refresh every 5 minutes
-    setInterval(refreshPrice, 5 * 60 * 1000);
+    refreshBtn.addEventListener("click", refreshAll);
+    refreshAll();
   </script>
 </body>
 </html>
