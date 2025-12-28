@@ -1,355 +1,387 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Live Silver Tracker</title>
+  <meta charset="utf-8" />
+  <title>Silver Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-up: radial-gradient(circle at top, #2c7df0 0%, #050816 55%, #02040a 100%);
+      --bg-down: radial-gradient(circle at top, #f97373 0%, #3b0a0a 55%, #120101 100%);
+      --bg-neutral: radial-gradient(circle at top, #4b5563 0%, #020617 60%, #020107 100%);
+      --card-bg: rgba(15, 23, 42, 0.92);
+      --card-border: rgba(148, 163, 184, 0.3);
+      --accent-up: #22c55e;
+      --accent-down: #ef4444;
+      --accent-neutral: #e5e7eb;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+    }
+
     * {
       box-sizing: border-box;
     }
 
-    :root {
-      --bg-dark: #020617;
-      --text-main: #f9fafb;
-      --accent-gold: #facc15;
-      --accent-green: #22c55e;
-      --accent-red: #ef4444;
-    }
-
     body {
       margin: 0;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
       min-height: 100vh;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: stretch;
       padding: 16px;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text-main);
-      background: radial-gradient(circle at top, #111827 0%, #020617 50%, #000 100%);
+      background: var(--bg-neutral);
       transition: background 0.6s ease;
     }
 
-    /* UP (to the moon): dark space + subtle stars */
     body.trend-up {
-      background:
-        radial-gradient(circle at top, #1f2937 0%, #020617 45%, #000 100%),
-        radial-gradient(circle at 10% 20%, rgba(248, 250, 252, 0.2) 0, transparent 50%),
-        radial-gradient(circle at 80% 10%, rgba(248, 250, 252, 0.18) 0, transparent 55%);
-      background-blend-mode: lighten, normal;
+      background: var(--bg-up);
     }
-
-    /* DOWN (burning down): fiery gradient */
     body.trend-down {
-      background:
-        radial-gradient(circle at bottom, rgba(248, 113, 113, 0.6) 0, transparent 45%),
-        radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      background: var(--bg-down);
     }
-
     body.trend-neutral {
-      background: radial-gradient(circle at top, #111827 0%, #020617 50%, #000 100%);
+      background: var(--bg-neutral);
     }
 
-    .app {
+    .page {
       width: 100%;
-      max-width: 720px;
-      background: rgba(15, 23, 42, 0.88);
-      border-radius: 28px;
-      padding: 20px 20px 22px;
-      box-shadow: 0 26px 70px rgba(0, 0, 0, 0.85);
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      backdrop-filter: blur(14px);
+      max-width: 1024px;
+      margin: 0 auto;
     }
 
-    .app-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 12px;
+    header {
+      text-align: center;
+      margin-bottom: 16px;
     }
 
-    .titles {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .app-title {
-      font-size: 1.3rem;
-      font-weight: 800;
+    header h1 {
+      font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+      margin: 0;
       letter-spacing: 0.03em;
-      text-transform: uppercase;
     }
 
-    .app-subtitle {
-      font-size: 0.8rem;
-      color: #9ca3af;
-    }
-
-    .pill {
-      font-size: 0.75rem;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      color: #cbd5f5;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      white-space: nowrap;
-    }
-
-    .main-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr);
-      gap: 16px;
-      align-items: center;
-    }
-
-    @media (max-width: 640px) {
-      .app {
-        padding: 14px 14px 18px;
-      }
-      .main-row {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    /* LEFT PANE: price and status */
-    .left-pane {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .headline-price {
-      font-size: 2.1rem;
-      font-weight: 900;
-      letter-spacing: 0.05em;
-    }
-
-    .headline-price span {
-      background: radial-gradient(circle, #ffffff 0%, #fef9c3 40%, var(--accent-gold) 80%);
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-
-    .status-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
+    header p {
+      margin: 6px 0 0;
+      color: var(--text-muted);
       font-size: 0.9rem;
     }
 
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 800px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(10px);
+    }
+
+    .shirt-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .shirt-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .shirt-wrapper img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 16px;
+    }
+
+    .shirt-price-overlay {
+      position: absolute;
+      right: 8%;
+      top: 9%;
+      font-size: clamp(1.4rem, 3.2vw, 1.9rem);
+      font-weight: 700;
+      color: #fefce8;
+      text-shadow: 0 0 6px rgba(0,0,0,0.85), 0 0 14px rgba(37, 99, 235, 0.75);
+      letter-spacing: 0.06em;
+      pointer-events: none;
+    }
+
+    .shirt-caption {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .hero-info {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: space-between;
+      height: 100%;
+    }
+
+    .headline-price {
+      font-size: clamp(2.2rem, 3.8vw, 2.8rem);
+      font-weight: 700;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .headline-price span.small {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .trend-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
     .trend-pill {
-      padding: 4px 11px;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 600;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+
+    .trend-pill .trend-arrow {
+      font-size: 0.9rem;
     }
 
     .trend-pill.up {
-      background: rgba(22, 163, 74, 0.12);
-      border: 1px solid rgba(22, 163, 74, 0.7);
+      background: rgba(22,163,74,0.15);
+      border-color: rgba(34,197,94,0.7);
       color: #bbf7d0;
     }
 
     .trend-pill.down {
-      background: rgba(220, 38, 38, 0.12);
-      border: 1px solid rgba(220, 38, 38, 0.8);
+      background: rgba(220,38,38,0.18);
+      border-color: rgba(248,113,113,0.8);
       color: #fecaca;
     }
 
     .trend-pill.neutral {
-      background: rgba(148, 163, 184, 0.12);
-      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(148,163,184,0.15);
+      border-color: rgba(148,163,184,0.6);
       color: #e5e7eb;
     }
 
-    .trend-arrow {
-      font-size: 1rem;
+    .last-updated {
+      font-size: 0.8rem;
+      color: var(--text-muted);
     }
 
-    .meta-text {
-      font-size: 0.78rem;
-      color: #9ca3af;
-      line-height: 1.4;
-    }
-
-    .meta-text strong {
-      color: #e5e7eb;
-      font-weight: 600;
-    }
-
-    button.refresh-btn {
-      margin-top: 4px;
-      border: 1px solid rgba(148, 163, 184, 0.7);
-      background: rgba(15, 23, 42, 0.9);
+    #refresh-btn {
+      margin-left: auto;
+      padding: 7px 14px;
       border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.8);
       color: #e5e7eb;
       font-size: 0.8rem;
-      padding: 6px 12px;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      cursor: pointer;
+      transition: background 0.15s ease, transform 0.05s ease, border-color 0.15s ease;
     }
 
-    button.refresh-btn:active {
+    #refresh-btn:hover {
+      background: rgba(30,64,175,0.9);
+      border-color: rgba(129,140,248,0.9);
+    }
+
+    #refresh-btn:active {
       transform: translateY(1px);
     }
 
-    /* RIGHT PANE: guy wearing shirt */
-    .right-pane {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    #refresh-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
     }
 
-    .character-wrapper {
-      position: relative;
+    .mini-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .table-card {
+      margin-top: 18px;
+    }
+
+    table {
       width: 100%;
-      max-width: 320px;
+      border-collapse: collapse;
     }
 
-    .character-img {
-      width: 100%;
-      display: block;
-      object-fit: contain;
-      filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.85));
-      transition: opacity 0.35s ease;
+    thead {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
     }
 
-    .character-img.hidden {
-      opacity: 0;
+    th, td {
+      padding: 8px 2px;
+      text-align: left;
+      font-size: 0.85rem;
     }
 
-    /* Price overlay on his shirt */
-    .shirt-price-overlay {
-      position: absolute;
-      /* tweak these percentages once you see where his chest is in the PNG */
-      top: 54%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 1.7rem;
-      font-weight: 900;
-      letter-spacing: 0.06em;
-      text-shadow: 0 0 8px rgba(0, 0, 0, 0.85),
-                   0 0 18px rgba(0, 0, 0, 0.95);
-      pointer-events: none;
-      user-select: none;
-      white-space: nowrap;
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.8rem;
     }
 
-    .shirt-price-overlay span {
-      background: radial-gradient(circle, #ffffff 0%, #fef9c3 45%, var(--accent-gold) 80%);
-      -webkit-background-clip: text;
-      color: transparent;
+    .metal-name {
+      font-weight: 600;
     }
 
-    @media (max-width: 640px) {
-      .shirt-price-overlay {
-        font-size: 1.4rem;
-      }
+    .price-cell {
+      text-align: right;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+    }
+
+    .change-cell {
+      text-align: right;
+    }
+
+    .change {
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-size: 0.8rem;
+    }
+
+    .change.up {
+      color: var(--accent-up);
+    }
+
+    .change.down {
+      color: var(--accent-down);
+    }
+
+    .change.neutral {
+      color: var(--text-muted);
+    }
+
+    footer {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body class="trend-neutral">
-  <div class="app">
-    <header class="app-header">
-      <div class="titles">
-        <div class="app-title">Long John Silver's Silver Tracker</div>
-        <div class="app-subtitle">Live spot price, pirate edition.</div>
-      </div>
-      <div class="pill">Live • XAG / USD</div>
+  <div class="page">
+    <header>
+      <h1>Long John Silver’s Spot Price Tracker</h1>
+      <p>Live silver price on the rocket-fillet shirt, plus gold, platinum &amp; palladium.</p>
     </header>
 
-    <div class="main-row">
-      <!-- LEFT: Text and controls -->
-      <div class="left-pane">
-        <div class="headline-price">
-          <span id="headline-price">$79.68</span>
+    <div class="layout">
+      <!-- Shirt / hero image -->
+      <section class="card shirt-card">
+        <div class="shirt-wrapper">
+          <!-- TODO: replace src with your final “up” shirt mockup -->
+          <img id="character-img" src="img/guy-up.png" alt="Pirate riding fried fish rocket T-shirt" />
+          <div class="shirt-price-overlay" id="shirt-price">$0.00</div>
         </div>
+        <div class="shirt-caption">
+          When silver moons, he rides the fillet. When it dumps, he eats the loss.
+        </div>
+      </section>
 
-        <div class="status-row">
-          <div id="trend-pill" class="trend-pill neutral">
-            <span class="trend-arrow">↔</span>
-            <span id="trend-text">Loading…</span>
+      <!-- Right side: numbers -->
+      <section class="card hero-info">
+        <div>
+          <div class="headline-price">
+            <span id="headline-price">$0.00</span>
+            <span class="small">/ troy ounce</span>
+          </div>
+
+          <div class="trend-row" style="margin-top: 6px;">
+            <div id="trend-pill" class="trend-pill neutral">
+              <span class="trend-arrow">↔</span>
+              <span id="trend-text">Loading…</span>
+            </div>
+
+            <button id="refresh-btn" type="button">
+              <span>⟳</span>
+              <span>Refresh now</span>
+            </button>
+          </div>
+
+          <div class="last-updated" style="margin-top: 8px;">
+            Last updated: <span id="last-updated">—</span>
           </div>
         </div>
 
-        <div class="meta-text">
-          Last update: <strong id="last-updated">–</strong><br />
-          Source: <span id="source-label">Your API</span><br />
-          Auto-refreshes every 5 minutes.
+        <div class="mini-note">
+          Prices cached from the Metals.Dev API via Cloudflare Workers. Updated automatically ~every 8 hours.
         </div>
-
-        <button id="refresh-btn" class="refresh-btn" type="button">
-          ⟳ Refresh now
-        </button>
-      </div>
-
-      <!-- RIGHT: Character image + shirt price overlay -->
-      <div class="right-pane">
-        <div class="character-wrapper">
-          <!-- Default image will be the "up" guy once you add it -->
-          <img
-            id="character-img"
-            class="character-img"
-            src="img/guy-up.png"
-            alt="Guy wearing Long John Silver's silver tracker shirt"
-          />
-
-          <div class="shirt-price-overlay">
-            <span id="shirt-price">$79.68</span>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
+
+    <section class="card table-card">
+      <h2 style="font-size: 1rem; margin: 0 0 8px;">Other metals</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Metal</th>
+            <th style="text-align:right;">Price (USD/toz)</th>
+            <th style="text-align:right;">Change (24h)</th>
+          </tr>
+        </thead>
+        <tbody id="metals-tbody">
+          <!-- Filled by JS -->
+        </tbody>
+      </table>
+      <div class="mini-note" style="margin-top: 6px;">
+        Change column is currently a placeholder (—) until we add historical data.
+      </div>
+    </section>
+
+    <footer>
+      This site is a joke fan project and not investment advice. Data courtesy of <a href="https://metals.dev/" target="_blank" rel="noopener noreferrer">Metals.Dev</a>.
+    </footer>
   </div>
 
-    <script>
-    // ==========================
-    // Alpha Vantage config
-    // ==========================
+  <script>
+    const BACKEND_URL = "https://metal-prices.djacne.workers.dev";
 
-    const AV_API_KEY = "ATN4K9KX9G6X7WP8"; // your key
-    function buildAvUrl(from) {
-      return (
-        "https://www.alphavantage.co/query" +
-        "?function=CURRENCY_EXCHANGE_RATE" +
-        "&from_currency=" +
-        encodeURIComponent(from) +
-        "&to_currency=USD" +
-        "&apikey=" +
-        encodeURIComponent(AV_API_KEY)
-      );
-    }
-
-    // Metals
-    const METALS = [
-      { code: "XAU", label: "Gold" },
-      { code: "XAG", label: "Silver" },
-      { code: "XPT", label: "Platinum" },
-      { code: "XPD", label: "Palladium" },
-    ];
-
-    // Cache windows
-    const ONE_HOUR_MS = 60 * 60 * 1000;
-    const SIX_HOURS_MS = 6 * ONE_HOUR_MS;
-
-    function lsKeyPrice(code) {
-      return `av_price_${code}`;
-    }
-    function lsKeyTime(code) {
-      return `av_time_${code}`;
-    }
-
-    // DOM refs
     const bodyEl = document.body;
     const characterImgEl = document.getElementById("character-img");
     const shirtPriceEl = document.getElementById("shirt-price");
@@ -372,50 +404,25 @@
       else bodyEl.classList.add("trend-neutral");
     }
 
-    // Generic AV fetch with localStorage caching
-    async function fetchMetalPriceCached(code, maxAgeMs) {
-      const now = Date.now();
-      const cachedPrice = localStorage.getItem(lsKeyPrice(code));
-      const cachedTime = localStorage.getItem(lsKeyTime(code));
+    function updateHeroWithSilver(silver, updatedAt) {
+      if (!silver || silver.price == null) return;
+      const price = Number(silver.price);
+      if (Number.isNaN(price)) return;
 
-      if (cachedPrice && cachedTime) {
-        const age = now - Number(cachedTime);
-        if (!Number.isNaN(age) && age < maxAgeMs) {
-          return Number(cachedPrice);
-        }
-      }
-
-      const url = buildAvUrl(code);
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(`Alpha Vantage HTTP error ${res.status} for ${code}`);
-      }
-      const data = await res.json();
-      const rateObj = data["Realtime Currency Exchange Rate"];
-      if (!rateObj || !rateObj["5. Exchange Rate"]) {
-        throw new Error("Unexpected Alpha Vantage response for " + code);
-      }
-
-      const price = Number(rateObj["5. Exchange Rate"]);
-      if (Number.isNaN(price)) {
-        throw new Error("Invalid price from Alpha Vantage for " + code);
-      }
-
-      localStorage.setItem(lsKeyPrice(code), String(price));
-      localStorage.setItem(lsKeyTime(code), String(now));
-
-      return price;
-    }
-
-    function updateHeroWithSilverPrice(price) {
-      if (price == null || Number.isNaN(price)) return;
       const formatted = `$${price.toFixed(2)}`;
-
       headlinePriceEl.textContent = formatted;
       shirtPriceEl.textContent = formatted;
 
-      const now = new Date();
-      lastUpdatedEl.textContent = now.toLocaleTimeString();
+      if (updatedAt) {
+        const dt = new Date(updatedAt);
+        if (!isNaN(dt.getTime())) {
+          lastUpdatedEl.textContent = dt.toLocaleString();
+        } else {
+          lastUpdatedEl.textContent = "Unknown";
+        }
+      } else {
+        lastUpdatedEl.textContent = new Date().toLocaleString();
+      }
 
       let mode = "neutral";
       if (lastSilverPrice == null || price === lastSilverPrice) {
@@ -441,11 +448,15 @@
       lastSilverPrice = price;
     }
 
-    function renderMetalsTable(pricesByCode) {
+    function renderMetalsTable(metals) {
       metalsTbodyEl.innerHTML = "";
-      METALS.forEach(({ code, label }) => {
-        const price = pricesByCode[code];
-        if (price == null || Number.isNaN(price)) return;
+
+      function addRow(key, label) {
+        const m = metals[key];
+        if (!m || m.price == null) return;
+
+        const price = Number(m.price);
+        if (Number.isNaN(price)) return;
 
         const tr = document.createElement("tr");
 
@@ -462,14 +473,21 @@
 
         const spanChange = document.createElement("span");
         spanChange.className = "change neutral";
-        spanChange.textContent = "—"; // AV endpoint here has no 24h change
+        spanChange.textContent = "—";
 
         tdChange.appendChild(spanChange);
+
         tr.appendChild(tdName);
         tr.appendChild(tdPrice);
         tr.appendChild(tdChange);
+
         metalsTbodyEl.appendChild(tr);
-      });
+      }
+
+      addRow("gold", "Gold");
+      addRow("silver", "Silver");
+      addRow("platinum", "Platinum");
+      addRow("palladium", "Palladium");
     }
 
     async function refreshAll() {
@@ -477,27 +495,18 @@
         refreshBtn.disabled = true;
         refreshBtn.textContent = "…";
 
-        const pricesByCode = {};
+        const res = await fetch(BACKEND_URL);
+        if (!res.ok) {
+          throw new Error("Backend HTTP error " + res.status);
+        }
+        const data = await res.json();
 
-        // Silver: cache max 1 hour
-        const silverPrice = await fetchMetalPriceCached("XAG", ONE_HOUR_MS);
-        pricesByCode["XAG"] = silverPrice;
-        updateHeroWithSilverPrice(silverPrice);
+        const metals = data.metals || {};
+        const updatedAt = data.updatedAt || null;
+        const silver = metals.silver;
 
-        // Other metals: cache max 6 hours
-        const otherCodes = ["XAU", "XPT", "XPD"];
-        const otherPromises = otherCodes.map((code) =>
-          fetchMetalPriceCached(code, SIX_HOURS_MS).catch((err) => {
-            console.error("Error fetching", code, err);
-            return null;
-          })
-        );
-        const otherPrices = await Promise.all(otherPromises);
-        otherCodes.forEach((code, idx) => {
-          pricesByCode[code] = otherPrices[idx];
-        });
-
-        renderMetalsTable(pricesByCode);
+        updateHeroWithSilver(silver, updatedAt);
+        renderMetalsTable(metals);
       } catch (err) {
         console.error(err);
         trendPillEl.className = "trend-pill neutral";
@@ -505,7 +514,7 @@
         setTrendMode("neutral");
       } finally {
         refreshBtn.disabled = false;
-        refreshBtn.textContent = "⟳ Refresh now";
+        refreshBtn.textContent = "Refresh now";
       }
     }
 
