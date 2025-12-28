@@ -366,7 +366,7 @@
         <div class="hero-main">
           <div class="headline-price">
             <span id="headline-price">—</span>
-            <span class="small">/ Troy Ounce</span>
+            <span class="small">/ troy ounce</span>
           </div>
 
           <div class="trend-row">
@@ -464,7 +464,7 @@
     if (v == null) return "—";
     const n = Number(v);
     if (!Number.isFinite(n)) return "—";
-    return Math.abs(n).toFixed(2); // no +/- (arrow + color already communicates)
+    return Math.abs(n).toFixed(2);
   }
 
   function setMarketClosedPill() {
@@ -482,7 +482,7 @@
     if (direction === "up") {
       trendPillEl.className = "trend-pill up";
       arrowEl.textContent = "↑";
-      trendTextEl.textContent = "Silver is mooning";
+      trendTextEl.textContent = "Closing in on retirement...";
       setTrendMode("up");
       characterImgEl.src = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
       return;
@@ -491,14 +491,18 @@
     if (direction === "down") {
       trendPillEl.className = "trend-pill down";
       arrowEl.textContent = "↓";
-      trendTextEl.textContent = "Silver is tanking";
+      trendTextEl.textContent = "Sell!";
       setTrendMode("down");
       characterImgEl.src = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
       return;
     }
 
-    // FLAT = treat as closed
-    setMarketClosedPill();
+    // FLAT but market is OPEN
+    trendPillEl.className = "trend-pill neutral";
+    arrowEl.textContent = "↔";
+    trendTextEl.textContent = "Well this is boring.";
+    setTrendMode("neutral");
+    characterImgEl.src = IMAGE_CLOSED;
   }
 
   function renderMetalsTable(metals) {
@@ -534,8 +538,6 @@
 
       const spanTrend = document.createElement("span");
       const d = m?.direction || "same";
-
-      // Expecting backend to provide m.change (24h change). If missing, show —.
       const changeText = fmtChange(m?.change);
 
       spanTrend.className = "change " + dirClass(d);
@@ -557,8 +559,6 @@
   }
 
   function setHeadlinePriceColor(direction, marketIsOpen) {
-    // Uses your existing CSS variables; no new CSS required.
-    // (Assumes headlinePriceEl default is white.)
     if (!marketIsOpen) {
       headlinePriceEl.style.color = "var(--text-main)";
       return;
