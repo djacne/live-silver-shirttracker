@@ -481,7 +481,7 @@
     if (direction === "up") {
       trendPillEl.className = "trend-pill up";
       arrowEl.textContent = "↑";
-      trendTextEl.textContent = "Closing in on retirement...";
+      trendTextEl.textContent = "Getting closer to retirement";
       setTrendMode("up");
       characterImgEl.src = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
       return;
@@ -490,7 +490,7 @@
     if (direction === "down") {
       trendPillEl.className = "trend-pill down";
       arrowEl.textContent = "↓";
-      trendTextEl.textContent = "Get back to work!";
+      trendTextEl.textContent = "Better get back to work";
       setTrendMode("down");
       characterImgEl.src = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
       return;
@@ -499,7 +499,7 @@
     // FLAT but market is OPEN
     trendPillEl.className = "trend-pill neutral";
     arrowEl.textContent = "↔";
-    trendTextEl.textContent = "Well this is boring.";
+    trendTextEl.textContent = "Well this is boring";
     setTrendMode("neutral");
     characterImgEl.src = IMAGE_CLOSED;
   }
