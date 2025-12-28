@@ -405,178 +405,206 @@
     </section>
   </div>
 
-  <script>
-    const BACKEND_URL = "https://api.dansretirement.com/";
+<script>
+  const BACKEND_URL = "https://api.dansretirement.com/";
 
-    const bodyEl = document.body;
-    const characterImgEl = document.getElementById("character-img");
-    const headlinePriceEl = document.getElementById("headline-price");
-    const trendPillEl = document.getElementById("trend-pill");
-    const trendTextEl = document.getElementById("trend-text");
-    const lastUpdatedEl = document.getElementById("last-updated");
-    const metalsTbodyEl = document.getElementById("metals-tbody");
+  const bodyEl = document.body;
+  const characterImgEl = document.getElementById("character-img");
+  const headlinePriceEl = document.getElementById("headline-price");
+  const trendPillEl = document.getElementById("trend-pill");
+  const trendTextEl = document.getElementById("trend-text");
+  const lastUpdatedEl = document.getElementById("last-updated");
+  const metalsTbodyEl = document.getElementById("metals-tbody");
 
-    const IMAGE_UP = "img/silver-up.png";
-    const IMAGE_DOWN = "img/guy-down.png"; 
-    const IMAGE_CLOSED = "img/silver-closed.png";
+  const IMAGE_UP = "img/silver-up.png";
+  const IMAGE_DOWN = "img/guy-down.png";
+  const IMAGE_CLOSED = "img/silver-closed.png";
 
-    function setTrendMode(mode) {
-      bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
-      if (mode === "up") bodyEl.classList.add("trend-up");
-      else if (mode === "down") bodyEl.classList.add("trend-down");
-      else bodyEl.classList.add("trend-neutral");
+  // ---- Random image lists (loaded from img/images.json) ----
+  let IMAGE_LISTS = { up: [], down: [] };
+
+  function pickRandom(arr) {
+    if (!arr || arr.length === 0) return null;
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  async function loadImageLists() {
+    try {
+      const res = await fetch("img/images.json?t=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) throw new Error("images.json HTTP " + res.status);
+      const json = await res.json();
+      IMAGE_LISTS.up = Array.isArray(json.up) ? json.up : [];
+      IMAGE_LISTS.down = Array.isArray(json.down) ? json.down : [];
+    } catch (e) {
+      console.warn("Could not load img/images.json; falling back to defaults", e);
+      IMAGE_LISTS = { up: [], down: [] };
+    }
+  }
+
+  function setTrendMode(mode) {
+    bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
+    if (mode === "up") bodyEl.classList.add("trend-up");
+    else if (mode === "down") bodyEl.classList.add("trend-down");
+    else bodyEl.classList.add("trend-neutral");
+  }
+
+  function fmtMoney(v) {
+    if (v == null) return "—";
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "—";
+    return `$${n.toFixed(2)}`;
+  }
+
+  function fmtUpdatedAt(updatedAt) {
+    if (!updatedAt) return "—";
+    const dt = new Date(updatedAt);
+    if (Number.isNaN(dt.getTime())) return "—";
+    return dt.toLocaleString();
+  }
+
+  function setTrendPill(direction) {
+    const arrowEl = trendPillEl.querySelector(".trend-arrow");
+
+    if (direction === "up") {
+      trendPillEl.className = "trend-pill up";
+      arrowEl.textContent = "↑";
+      trendTextEl.textContent = "Silver is mooning";
+      setTrendMode("up");
+
+      // Random UP image each load
+      characterImgEl.src = pickRandom(IMAGE_LISTS.up) || IMAGE_UP;
+      return;
     }
 
-    function fmtMoney(v) {
-      if (v == null) return "—";
-      const n = Number(v);
-      if (!Number.isFinite(n)) return "—";
-      return `$${n.toFixed(2)}`;
+    if (direction === "down") {
+      trendPillEl.className = "trend-pill down";
+      arrowEl.textContent = "↓";
+      trendTextEl.textContent = "Silver is tanking";
+      setTrendMode("down");
+
+      // Random DOWN image each load
+      characterImgEl.src = pickRandom(IMAGE_LISTS.down) || IMAGE_DOWN;
+      return;
     }
 
-    function fmtUpdatedAt(updatedAt) {
-      if (!updatedAt) return "—";
-      const dt = new Date(updatedAt);
-      if (Number.isNaN(dt.getTime())) return "—";
-      return dt.toLocaleString();
+    // FLAT = treat like closed
+    setMarketClosedPill();
+    characterImgEl.src = IMAGE_CLOSED;
+  }
+
+  function setMarketClosedPill() {
+    const arrowEl = trendPillEl.querySelector(".trend-arrow");
+    trendPillEl.className = "trend-pill neutral";
+    arrowEl.textContent = "⏸";
+    trendTextEl.textContent = "Market opens Sunday 5pm CT";
+    setTrendMode("neutral");
+  }
+
+  function renderMetalsTable(metals) {
+    metalsTbodyEl.innerHTML = "";
+
+    function dirSymbol(d) {
+      if (d === "up") return "▲";
+      if (d === "down") return "▼";
+      return "↔";
     }
 
-    function setTrendPill(direction) {
-      const arrowEl = trendPillEl.querySelector(".trend-arrow");
-
-      if (direction === "up") {
-        trendPillEl.className = "trend-pill up";
-        arrowEl.textContent = "↑";
-        trendTextEl.textContent = "Silver is mooning";
-        setTrendMode("up");
-        characterImgEl.src = IMAGE_UP;
-        return;
-      }
-      if (direction === "down") {
-        trendPillEl.className = "trend-pill down";
-        arrowEl.textContent = "↓";
-        trendTextEl.textContent = "Silver is tanking";
-        setTrendMode("down");
-        characterImgEl.src = IMAGE_DOWN;
-        return;
-      }
-      trendPillEl.className = "trend-pill neutral";
-      arrowEl.textContent = "↔";
-      trendTextEl.textContent = "Silver is flat";
-      setTrendMode("neutral");
+    function dirClass(d) {
+      if (d === "up") return "up";
+      if (d === "down") return "down";
+      return "neutral";
     }
 
-    function setMarketClosedPill() {
-      const arrowEl = trendPillEl.querySelector(".trend-arrow");
-      trendPillEl.className = "trend-pill neutral";
-      arrowEl.textContent = "⏸";
-      trendTextEl.textContent = "Market opens Sunday 5pm CT";
-      setTrendMode("neutral");
-      // keep image as-is
+    function addRow(key, label) {
+      const m = metals?.[key] || null;
+
+      const tr = document.createElement("tr");
+
+      const tdName = document.createElement("td");
+      tdName.className = "metal-name";
+      tdName.textContent = label;
+
+      const tdPrice = document.createElement("td");
+      tdPrice.className = "price-cell";
+      tdPrice.textContent = fmtMoney(m?.price);
+
+      const tdTrend = document.createElement("td");
+      tdTrend.className = "change-cell";
+
+      const spanTrend = document.createElement("span");
+      const d = m?.direction || "same";
+      spanTrend.className = "change " + dirClass(d);
+      spanTrend.textContent = dirSymbol(d);
+
+      tdTrend.appendChild(spanTrend);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdTrend);
+
+      metalsTbodyEl.appendChild(tr);
     }
 
-    function renderMetalsTable(metals) {
-      metalsTbodyEl.innerHTML = "";
+    addRow("gold", "Gold");
+    addRow("silver", "Silver");
+    addRow("platinum", "Platinum");
+    addRow("palladium", "Palladium");
+  }
 
-      function dirSymbol(d) {
-        if (d === "up") return "▲";
-        if (d === "down") return "▼";
-        return "↔";
-      }
+  function updateUI(data) {
+    const metals = data?.metals || {};
+    const silver = metals.silver || {};
+    const updatedAt = data?.updatedAt || null;
+    const market = data?.market || null;
 
-      function dirClass(d) {
-        if (d === "up") return "up";
-        if (d === "down") return "down";
-        return "neutral";
-      }
+    lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
 
-      function addRow(key, label) {
-        const m = metals?.[key] || null;
+    // Price display (headline only)
+    const priceText = fmtMoney(silver.price);
+    headlinePriceEl.textContent = priceText;
 
-        const tr = document.createElement("tr");
-
-        const tdName = document.createElement("td");
-        tdName.className = "metal-name";
-        tdName.textContent = label;
-
-        const tdPrice = document.createElement("td");
-        tdPrice.className = "price-cell";
-        tdPrice.textContent = fmtMoney(m?.price);
-
-        const tdTrend = document.createElement("td");
-        tdTrend.className = "change-cell";
-
-        const spanTrend = document.createElement("span");
-        const d = m?.direction || "same";
-        spanTrend.className = "change " + dirClass(d);
-        spanTrend.textContent = dirSymbol(d);
-
-        tdTrend.appendChild(spanTrend);
-
-        tr.appendChild(tdName);
-        tr.appendChild(tdPrice);
-        tr.appendChild(tdTrend);
-
-        metalsTbodyEl.appendChild(tr);
-      }
-
-      addRow("gold", "Gold");
-      addRow("silver", "Silver");
-      addRow("platinum", "Platinum");
-      addRow("palladium", "Palladium");
-    }
-
-    function updateUI(data) {
-      const metals = data?.metals || {};
-      const silver = metals.silver || {};
-      const updatedAt = data?.updatedAt || null;
-      const market = data?.market || null;
-
-      lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
-
-      // Price display (headline only)
-      const priceText = fmtMoney(silver.price);
-      headlinePriceEl.textContent = priceText;
-
-      // If market is closed, show closed image + paused pill (always)
-      if (market && market.isOpen === false) {
-        characterImgEl.src = IMAGE_CLOSED;
-        setMarketClosedPill();
-        renderMetalsTable(metals);
-        return;
-      }
-
-      // Market open / normal operation
-      const direction = silver.direction || "same";
-      setTrendPill(direction);
+    // If market is closed, show closed image + paused pill (always)
+    if (market && market.isOpen === false) {
+      characterImgEl.src = IMAGE_CLOSED;
+      setMarketClosedPill();
       renderMetalsTable(metals);
+      return;
     }
 
-    async function refreshAllOnce() {
-      try {
-        trendTextEl.textContent = "Loading…";
+    // Market open / normal operation
+    const direction = silver.direction || "same";
+    setTrendPill(direction);
+    renderMetalsTable(metals);
+  }
 
-        const url = BACKEND_URL + "?t=" + Date.now();
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error("Backend HTTP error " + res.status);
+  async function refreshAllOnce() {
+    try {
+      trendTextEl.textContent = "Loading…";
 
-        const data = await res.json();
-        updateUI(data);
-      } catch (err) {
-        console.error(err);
-        const arrowEl = trendPillEl.querySelector(".trend-arrow");
-        trendPillEl.className = "trend-pill neutral";
-        arrowEl.textContent = "!";
-        trendTextEl.textContent = "Error fetching prices";
-        setTrendMode("neutral");
-      }
+      const url = BACKEND_URL + "?t=" + Date.now();
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error("Backend HTTP error " + res.status);
+
+      const data = await res.json();
+      updateUI(data);
+    } catch (err) {
+      console.error(err);
+      const arrowEl = trendPillEl.querySelector(".trend-arrow");
+      trendPillEl.className = "trend-pill neutral";
+      arrowEl.textContent = "!";
+      trendTextEl.textContent = "Error fetching prices";
+      setTrendMode("neutral");
     }
+  }
 
-    // Load once; cron keeps KV updated
+  // Load images.json once, then fetch prices
+  (async () => {
+    await loadImageLists();
     refreshAllOnce();
+  })();
 
-    // Optional: refresh periodically (safe; hits KV only)
-    // setInterval(refreshAllOnce, 5 * 60 * 1000);
-  </script>
+  // Optional: refresh periodically (safe; hits KV only)
+  // setInterval(refreshAllOnce, 5 * 60 * 1000);
+</script>
 </body>
 </html>
