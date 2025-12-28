@@ -460,6 +460,13 @@
     return dt.toLocaleString();
   }
 
+  function fmtChange(v) {
+    if (v == null) return "—";
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "—";
+    return Math.abs(n).toFixed(2); // no +/- (arrow + color already communicates)
+  }
+
   function setMarketClosedPill() {
     const arrowEl = trendPillEl.querySelector(".trend-arrow");
     trendPillEl.className = "trend-pill neutral";
@@ -527,8 +534,12 @@
 
       const spanTrend = document.createElement("span");
       const d = m?.direction || "same";
+
+      // Expecting backend to provide m.change (24h change). If missing, show —.
+      const changeText = fmtChange(m?.change);
+
       spanTrend.className = "change " + dirClass(d);
-      spanTrend.textContent = dirSymbol(d);
+      spanTrend.textContent = `${dirSymbol(d)} ${changeText}`;
 
       tdTrend.appendChild(spanTrend);
 
@@ -545,6 +556,23 @@
     addRow("palladium", "Palladium");
   }
 
+  function setHeadlinePriceColor(direction, marketIsOpen) {
+    // Uses your existing CSS variables; no new CSS required.
+    // (Assumes headlinePriceEl default is white.)
+    if (!marketIsOpen) {
+      headlinePriceEl.style.color = "var(--text-main)";
+      return;
+    }
+
+    if (direction === "up") {
+      headlinePriceEl.style.color = "var(--accent-up)";
+    } else if (direction === "down") {
+      headlinePriceEl.style.color = "var(--accent-down)";
+    } else {
+      headlinePriceEl.style.color = "var(--text-main)";
+    }
+  }
+
   function updateUI(data) {
     const metals = data?.metals || {};
     const silver = metals.silver || {};
@@ -554,12 +582,16 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    if (market && market.isOpen === false) {
+    const marketIsOpen = !(market && market.isOpen === false);
+
+    if (!marketIsOpen) {
+      setHeadlinePriceColor("same", false);
       setMarketClosedPill();
       renderMetalsTable(metals);
       return;
     }
 
+    setHeadlinePriceColor(silver.direction || "same", true);
     setTrendPill(silver.direction || "same");
     renderMetalsTable(metals);
   }
@@ -601,6 +633,7 @@
       trendPillEl.querySelector(".trend-arrow").textContent = "!";
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
+      headlinePriceEl.style.color = "var(--text-main)";
     }
   }
 
