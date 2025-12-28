@@ -9,8 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-up: radial-gradient(circle at top, #2c7df0 0%, #050816 55%, #02040a 100%);
-      --bg-down: radial-gradient(circle at top, #f97373 0%, #3b0a0a 55%, #120101 100%);
+      --bg-up: radial-gradient(circle at top, #4f46e5 0%, #020617 55%, #02010a 100%);
+      --bg-down: radial-gradient(circle at top, #f97316 0%, #7f1d1d 50%, #020106 100%);
       --bg-neutral: radial-gradient(circle at top, #4b5563 0%, #020617 60%, #020107 100%);
       --card-bg: rgba(15, 23, 42, 0.92);
       --card-border: rgba(148, 163, 184, 0.3);
@@ -21,9 +21,7 @@
       --text-muted: #9ca3af;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -36,22 +34,120 @@
       padding: 16px;
       background: var(--bg-neutral);
       transition: background 0.6s ease;
+      overflow-x: hidden;
     }
 
-    body.trend-up {
-      background: var(--bg-up);
+    body.trend-up { background: var(--bg-up); }
+    body.trend-down { background: var(--bg-down); }
+    body.trend-neutral { background: var(--bg-neutral); }
+
+    /* Animated background layers */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
     }
-    body.trend-down {
-      background: var(--bg-down);
+
+    .bg-stars {
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(248,250,252,0.7) 0, transparent 55%),
+        radial-gradient(circle at 80% 10%, rgba(191,219,254,0.5) 0, transparent 55%),
+        radial-gradient(circle at 50% 85%, rgba(129,140,248,0.5) 0, transparent 55%);
     }
-    body.trend-neutral {
-      background: var(--bg-neutral);
+
+    .bg-stars::before {
+      content: "";
+      position: absolute;
+      inset: -200px;
+      background-image:
+        radial-gradient(2px 2px at 10% 20%, #e5e7eb 70%, transparent 71%),
+        radial-gradient(2px 2px at 30% 80%, #c4b5fd 70%, transparent 71%),
+        radial-gradient(2px 2px at 60% 40%, #bfdbfe 70%, transparent 71%),
+        radial-gradient(2px 2px at 90% 70%, #e5e7eb 70%, transparent 71%);
+      opacity: 0.7;
+      animation: twinkle 5s linear infinite alternate;
     }
+
+    @keyframes twinkle {
+      0% { opacity: 0.4; transform: translateY(0); }
+      100% { opacity: 1; transform: translateY(12px); }
+    }
+
+    .bg-fire {
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      background-image:
+        radial-gradient(circle at 50% 120%, rgba(239,68,68,0.8) 0, transparent 60%),
+        radial-gradient(circle at 0% 120%, rgba(249,115,22,0.75) 0, transparent 60%),
+        radial-gradient(circle at 100% 120%, rgba(251,146,60,0.7) 0, transparent 60%);
+      mix-blend-mode: screen;
+    }
+
+    .bg-fire::before {
+      content: "";
+      position: absolute;
+      inset: 30% 0 -40%;
+      background: radial-gradient(circle, rgba(248,250,252,0.08) 0, transparent 55%);
+      opacity: 0.8;
+      animation: heatWave 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes heatWave {
+      0% { transform: translateY(0) scaleY(1); opacity: 0.4; }
+      100% { transform: translateY(-18px) scaleY(1.1); opacity: 0.9; }
+    }
+
+    /* Falling coins (up) */
+    .coins-rain,
+    .bills-rain {
+      position: absolute;
+      inset: -20vh 0;
+      overflow: visible;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      font-size: 1.4rem;
+    }
+
+    .coin,
+    .bill {
+      position: absolute;
+      top: -10vh;
+      animation-name: fall;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+
+    .coin { filter: drop-shadow(0 0 6px rgba(250, 250, 210, 0.8)); }
+    .bill { filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.9)); }
+
+    @keyframes fall {
+      0% {
+        transform: translate3d(var(--x), -120vh, 0) rotate(0deg);
+        opacity: 0;
+      }
+      10% { opacity: 1; }
+      100% {
+        transform: translate3d(calc(var(--x) + 20px), 120vh, 0) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    body.trend-up .bg-stars { opacity: 1; }
+    body.trend-up .coins-rain { opacity: 0.9; }
+    body.trend-down .bg-fire { opacity: 1; }
+    body.trend-down .bills-rain { opacity: 0.9; }
 
     .page {
       width: 100%;
       max-width: 1024px;
       margin: 0 auto;
+      position: relative;
+      z-index: 1;
     }
 
     header {
@@ -125,12 +221,6 @@
       pointer-events: none;
     }
 
-    .shirt-caption {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      text-align: center;
-    }
-
     .hero-info {
       display: flex;
       flex-direction: column;
@@ -180,13 +270,11 @@
       border-color: rgba(34,197,94,0.7);
       color: #bbf7d0;
     }
-
     .trend-pill.down {
       background: rgba(220,38,38,0.18);
       border-color: rgba(248,113,113,0.8);
       color: #fecaca;
     }
-
     .trend-pill.neutral {
       background: rgba(148,163,184,0.15);
       border-color: rgba(148,163,184,0.6);
@@ -236,14 +324,8 @@
       margin-top: 18px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    thead {
-      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
-    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { border-bottom: 1px solid rgba(148, 163, 184, 0.4); }
 
     th, td {
       padding: 8px 2px;
@@ -257,35 +339,20 @@
       font-size: 0.8rem;
     }
 
-    .metal-name {
-      font-weight: 600;
-    }
-
+    .metal-name { font-weight: 600; }
     .price-cell {
       text-align: right;
       font-feature-settings: "tnum" 1, "lnum" 1;
     }
-
-    .change-cell {
-      text-align: right;
-    }
+    .change-cell { text-align: right; }
 
     .change {
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-size: 0.8rem;
     }
-
-    .change.up {
-      color: var(--accent-up);
-    }
-
-    .change.down {
-      color: var(--accent-down);
-    }
-
-    .change.neutral {
-      color: var(--text-muted);
-    }
+    .change.up { color: var(--accent-up); }
+    .change.down { color: var(--accent-down); }
+    .change.neutral { color: var(--text-muted); }
 
     footer {
       margin-top: 18px;
@@ -293,34 +360,44 @@
       font-size: 0.75rem;
       color: var(--text-muted);
     }
-
-    footer a {
-      color: #93c5fd;
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
   </style>
 </head>
 <body class="trend-neutral">
+  <!-- Animated background layers -->
+  <div class="bg-layer bg-stars"></div>
+  <div class="bg-layer bg-fire"></div>
+  <div class="bg-layer">
+    <div class="coins-rain" id="coins-rain">
+      <!-- coins with different x positions / speeds -->
+      <div class="coin" style="--x:5vw; animation-duration:9s;">🪙</div>
+      <div class="coin" style="--x:20vw; animation-duration:11s; animation-delay:1s;">🪙</div>
+      <div class="coin" style="--x:35vw; animation-duration:8s; animation-delay:2s;">🪙</div>
+      <div class="coin" style="--x:50vw; animation-duration:10s; animation-delay:0.5s;">🪙</div>
+      <div class="coin" style="--x:65vw; animation-duration:12s; animation-delay:1.7s;">🪙</div>
+      <div class="coin" style="--x:80vw; animation-duration:9.5s; animation-delay:2.8s;">🪙</div>
+    </div>
+    <div class="bills-rain" id="bills-rain">
+      <div class="bill" style="--x:10vw; animation-duration:9s;">💵</div>
+      <div class="bill" style="--x:28vw; animation-duration:11s; animation-delay:0.7s;">💵</div>
+      <div class="bill" style="--x:46vw; animation-duration:8.5s; animation-delay:1.8s;">💵</div>
+      <div class="bill" style="--x:62vw; animation-duration:10.5s; animation-delay:0.3s;">💵</div>
+      <div class="bill" style="--x:78vw; animation-duration:12.5s; animation-delay:2.2s;">💵</div>
+    </div>
+  </div>
+
   <div class="page">
     <header>
-      <h1>Long John Silver’s Spot Price Tracker</h1>
-      <p>Live silver price on the rocket-fillet shirt, plus gold, platinum &amp; palladium.</p>
+      <h1>Retirement Fund Tracker</h1>
+      <!-- tagline intentionally removed -->
     </header>
 
     <div class="layout">
       <!-- Shirt / hero image -->
       <section class="card shirt-card">
         <div class="shirt-wrapper">
-          <!-- TODO: replace src with your final “up” shirt mockup -->
-          <img id="character-img" src="img/guy-up.png" alt="Pirate riding fried fish rocket T-shirt" />
+          <!-- replace src with your actual “up” shirt mockup when ready -->
+          <img id="character-img" src="img/guy-up.png" alt="Silver rocket T-shirt" />
           <div class="shirt-price-overlay" id="shirt-price">$0.00</div>
-        </div>
-        <div class="shirt-caption">
-          When silver moons, he rides the fillet. When it dumps, he eats the loss.
         </div>
       </section>
 
@@ -350,7 +427,7 @@
         </div>
 
         <div class="mini-note">
-          Prices cached from the Metals.Dev API via Cloudflare Workers. Updated automatically ~every 8 hours.
+          Updated automatically every 8 hours.
         </div>
       </section>
     </div>
@@ -366,7 +443,7 @@
           </tr>
         </thead>
         <tbody id="metals-tbody">
-          <!-- Filled by JS -->
+          <!-- filled by JS -->
         </tbody>
       </table>
       <div class="mini-note" style="margin-top: 6px;">
@@ -375,7 +452,7 @@
     </section>
 
     <footer>
-      This site is a joke fan project and not investment advice. Data courtesy of <a href="https://metals.dev/" target="_blank" rel="noopener noreferrer">Metals.Dev</a>.
+      <!-- footer intentionally left minimal -->
     </footer>
   </div>
 
