@@ -466,13 +466,10 @@
     const trendPillEl = document.getElementById("trend-pill");
     const trendTextEl = document.getElementById("trend-text");
     const lastUpdatedEl = document.getElementById("last-updated");
-    const refreshBtn = document.getElementById("refresh-btn");
     const metalsTbodyEl = document.getElementById("metals-tbody");
 
     const IMAGE_UP = "img/guy-up.png";
     const IMAGE_DOWN = "img/guy-down.png";
-
-    let lastSilverPrice = null;
 
     function setTrendMode(mode) {
       bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
@@ -501,28 +498,30 @@
         lastUpdatedEl.textContent = new Date().toLocaleString();
       }
 
+      const direction = silver.direction || "same";
       let mode = "neutral";
-      if (lastSilverPrice == null || price === lastSilverPrice) {
-        mode = "neutral";
-        trendPillEl.className = "trend-pill neutral";
-        trendTextEl.textContent = "No change";
-        trendPillEl.querySelector(".trend-arrow").textContent = "↔";
-      } else if (price > lastSilverPrice) {
+
+      if (direction === "up") {
         mode = "up";
         trendPillEl.className = "trend-pill up";
         trendTextEl.textContent = "Silver up";
         trendPillEl.querySelector(".trend-arrow").textContent = "↑";
         characterImgEl.src = IMAGE_UP;
-      } else {
+      } else if (direction === "down") {
         mode = "down";
         trendPillEl.className = "trend-pill down";
         trendTextEl.textContent = "Silver down";
         trendPillEl.querySelector(".trend-arrow").textContent = "↓";
         characterImgEl.src = IMAGE_DOWN;
+      } else {
+        mode = "neutral";
+        trendPillEl.className = "trend-pill neutral";
+        trendTextEl.textContent = "No change";
+        trendPillEl.querySelector(".trend-arrow").textContent = "↔";
+        // Keep whatever image was last set – up or down art still makes sense
       }
 
       setTrendMode(mode);
-      lastSilverPrice = price;
     }
 
     function renderMetalsTable(metals) {
@@ -567,10 +566,9 @@
       addRow("palladium", "Palladium");
     }
 
-    async function refreshAll() {
+    async function refreshAllOnce() {
       try {
-        refreshBtn.disabled = true;
-        refreshBtn.textContent = "…";
+        trendTextEl.textContent = "Loading…";
 
         const res = await fetch(BACKEND_URL);
         if (!res.ok) {
@@ -589,14 +587,11 @@
         trendPillEl.className = "trend-pill neutral";
         trendTextEl.textContent = "Error fetching prices";
         setTrendMode("neutral");
-      } finally {
-        refreshBtn.disabled = false;
-        refreshBtn.textContent = "Refresh now";
       }
     }
 
-    refreshBtn.addEventListener("click", refreshAll);
-    refreshAll();
+    // Single load on page open – Worker + cron keep it fresh
+    refreshAllOnce();
   </script>
 </body>
 </html>
