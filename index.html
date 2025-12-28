@@ -194,6 +194,15 @@
       align-items: center;
       gap: 10px;
     }
+    .shirt-card {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
+
+    .shirt-wrapper img {
+     filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6));
+    }
 
     .shirt-wrapper {
       position: relative;
@@ -207,6 +216,7 @@
       width: 100%;
       height: auto;
       border-radius: 16px;
+      background: transparent;
     }
 
     .shirt-price-overlay {
@@ -404,9 +414,7 @@
       <!-- Shirt / hero image -->
       <section class="card shirt-card">
         <div class="shirt-wrapper">
-          <!-- replace src with your actual “up” shirt mockup when ready -->
-          <img id="character-img" src="img/guy-up.png" alt="Silver rocket T-shirt" />
-          <div class="shirt-price-overlay" id="shirt-price">$0.00</div>
+          <img id="character-img" src="img/silver-closed.png" alt="Market closed image" />
         </div>
       </section>
 
