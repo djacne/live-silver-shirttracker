@@ -2,12 +2,12 @@
   "up": [
     "/img/up/up-1.png",
     "/img/up/up-2.png",
-    "/img/up/up-3.png"
+    "/img/up/up-3.png",
+    "/img/up/up-4.png"
   ],
   "down": [
     "/img/down/down-1.png",
     "/img/down/down-2.png",
-    "/img/down/down-3.png",
-    "/img/down/down-4.png"
-  ]
+    "/img/down/down-3.png"
+   ]
 }
