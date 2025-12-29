@@ -290,31 +290,30 @@
       backdrop-filter: blur(10px);
     }
 
-    .shirt-card {
+    .hero-image-card {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 10px;
     }
-
-   .shirt-wrapper {
-     position: relative;
-     width: 100%;
-     max-width: 420px;        /* keeps mobile layout identical */
-     aspect-ratio: 1 / 1;    /* 1024 × 1024 square */
-     overflow: hidden;       /* crop anything extra */
-     border-radius: 16px;
+    
+    .hero-image-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      border-radius: 16px;
     }
-
-    .shirt-wrapper img {
-     width: 100%;
-     height: 100%;
-     object-fit: cover;      /* fill square, crop if needed */
-     object-position: center;
-     display: block;
+    
+    .hero-image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
     }
-
-
+    
     .hero-info {
       display: flex;
       flex-direction: column;
@@ -485,9 +484,9 @@
     </header>
 
     <div class="layout">
-      <section class="card shirt-card">
-        <div class="shirt-wrapper">
-          <img id="character-img" src="img/guy-up.png" alt="Silver rocket T-shirt" />
+      <section class="card hero-image-card">
+        <div class="hero-image-wrapper">
+          <img id="character-img" src="img/guy-up.png" alt="Silver price character" />
         </div>
       </section>
 
