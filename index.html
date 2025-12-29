@@ -220,6 +220,49 @@
       100% { transform: translate3d(120vw, -140vh, 0) rotate(-35deg) scale(1.05); opacity: 0; }
     }
 
+    /* -----------------------------
+       PATCH: Down-mode diagonal streaks (📉/💥)
+       Same cadence as rockets
+    ------------------------------ */
+    .crash-rockets-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    body.trend-down .crash-rockets-layer { opacity: 0.85; }
+
+    .crash-rocket {
+      position: absolute;
+      top: -14vh;
+      font-size: 1.6rem;
+      filter: drop-shadow(0 0 10px rgba(239,68,68,0.35));
+      opacity: 0;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      animation-delay: var(--delay);
+      animation-duration: var(--dur);
+      transform-origin: center;
+      will-change: transform, opacity;
+    }
+
+    /* Start off to the right, fly down-left */
+    .crash-rocket-r {
+      left: var(--x);
+      animation-name: crashFlyR;
+    }
+
+    @keyframes crashFlyR {
+      0%   { transform: translate3d(120vw, 0, 0) rotate(35deg) scale(0.95); opacity: 0; }
+      10%  { opacity: 0.55; }
+      60%  { opacity: 0.55; }
+      100% { transform: translate3d(-140vw, 120vh, 0) rotate(35deg) scale(1.05); opacity: 0; }
+    }
+
     /* Up-mode slow falling moons + occasional cents */
     .sprinkles-layer {
       position: absolute;
@@ -449,6 +492,14 @@
       <div class="rocket rocket-l" style="--x:40vw;  --dur:9.4s; --delay:4.2s;">🚀</div>
     </div>
 
+    <!-- PATCH: DOWN-mode diagonal streaks (same cadence as rockets) -->
+    <div class="crash-rockets-layer" aria-hidden="true">
+      <div class="crash-rocket crash-rocket-r" style="--x:-10vw; --dur:8.2s; --delay:0.3s;">📉</div>
+      <div class="crash-rocket crash-rocket-r" style="--x:8vw;   --dur:9.0s; --delay:1.6s;">💥</div>
+      <div class="crash-rocket crash-rocket-r" style="--x:24vw;  --dur:8.6s; --delay:2.9s;">📉</div>
+      <div class="crash-rocket crash-rocket-r" style="--x:40vw;  --dur:9.4s; --delay:4.2s;">💥</div>
+    </div>
+
     <!-- Up-mode: slow falling moons + occasional cents -->
     <div class="sprinkles-layer" aria-hidden="true">
       <div class="sprinkle" style="--x:12vw; --dur:18s; --delay:0.2s;">🌙</div>
@@ -477,7 +528,7 @@
       <div class="bill" style="--x:78vw; animation-duration:12.5s; animation-delay:2.2s;">💵</div>
     </div>
 
-    <!-- PATCH: stock crash emojis fall on DOWN -->
+    <!-- stock crash emojis fall on DOWN -->
     <div class="crash-rain" id="crash-rain" aria-hidden="true">
       <div class="crash" style="--x:8vw;  animation-duration:9s;">📉</div>
       <div class="crash" style="--x:22vw; animation-duration:11s; animation-delay:1.2s;">💥</div>
@@ -566,7 +617,7 @@
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
-  // PATCH: load lists from ROOT and normalize paths to absolute
+  // load lists from ROOT and normalize paths to absolute
   async function loadImageLists() {
     try {
       const res = await fetch("/images.json?t=" + Date.now(), { cache: "no-store" });
