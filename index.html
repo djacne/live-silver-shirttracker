@@ -75,7 +75,7 @@
       animation: twinkle 5s linear infinite alternate;
     }
 
-    /* UPDATED: extra stars layer (a bit more starry, still subtle) */
+    /* extra stars layer */
     .bg-stars::after{
       content:"";
       position:absolute;
@@ -136,7 +136,8 @@
 
     /* Falling coins / bills */
     .coins-rain,
-    .bills-rain {
+    .bills-rain,
+    .crash-rain {
       position: absolute;
       inset: -20vh 0;
       overflow: visible;
@@ -147,7 +148,8 @@
     }
 
     .coin,
-    .bill {
+    .bill,
+    .crash {
       position: absolute;
       top: -10vh;
       animation-name: fall;
@@ -157,6 +159,7 @@
 
     .coin { filter: drop-shadow(0 0 6px rgba(250, 250, 210, 0.8)); }
     .bill { filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.9)); }
+    .crash { filter: drop-shadow(0 0 8px rgba(239,68,68,0.85)); font-size: 1.6rem; }
 
     @keyframes fall {
       0% {
@@ -175,10 +178,10 @@
     body.trend-down .bg-fire { opacity: 1; }
     body.trend-down .bills-rain { opacity: 0.9; }
 
-    /* -----------------------------
-       Up-mode rockets (diagonal from bottom)
-       (Does NOT affect down/neutral)
-    ------------------------------ */
+    /* PATCH: Stock crash emojis fall only on DOWN */
+    body.trend-down .crash-rain { opacity: 0.95; }
+
+    /* Up-mode rockets */
     .rockets-layer {
       position: absolute;
       inset: 0;
@@ -205,7 +208,6 @@
       will-change: transform, opacity;
     }
 
-    /* UPDATED: one-side only (bottom-left → up-right) */
     .rocket-l {
       left: var(--x);
       animation-name: rocketFlyL;
@@ -218,10 +220,7 @@
       100% { transform: translate3d(120vw, -140vh, 0) rotate(-35deg) scale(1.05); opacity: 0; }
     }
 
-    /* -----------------------------
-       UPDATED: Up-mode slow falling moons + occasional cents
-       (subtle + slower than before)
-    ------------------------------ */
+    /* Up-mode slow falling moons + occasional cents */
     .sprinkles-layer {
       position: absolute;
       inset: -10vh 0;
@@ -296,7 +295,7 @@
       align-items: center;
       gap: 10px;
     }
-    
+
     .hero-image-wrapper {
       position: relative;
       width: 100%;
@@ -305,7 +304,7 @@
       overflow: hidden;
       border-radius: 16px;
     }
-    
+
     .hero-image-wrapper img {
       width: 100%;
       height: 100%;
@@ -313,7 +312,7 @@
       object-position: center;
       display: block;
     }
-    
+
     .hero-info {
       display: flex;
       flex-direction: column;
@@ -442,7 +441,7 @@
   <div class="bg-layer bg-fire"></div>
 
   <div class="bg-layer">
-    <!-- Rockets for UP mode (UPDATED: one-side only + fewer rockets) -->
+    <!-- Rockets for UP mode -->
     <div class="rockets-layer" aria-hidden="true">
       <div class="rocket rocket-l" style="--x:-10vw; --dur:8.2s; --delay:0.3s;">🚀</div>
       <div class="rocket rocket-l" style="--x:8vw;   --dur:9.0s; --delay:1.6s;">🚀</div>
@@ -460,7 +459,7 @@
       <div class="sprinkle" style="--x:86vw; --dur:30s; --delay:7.0s;">¢</div>
     </div>
 
-    <!-- Existing (kept): coins/bills layers -->
+    <!-- coins/bills/crash layers -->
     <div class="coins-rain" id="coins-rain">
       <div class="coin" style="--x:5vw; animation-duration:9s;">🪙</div>
       <div class="coin" style="--x:20vw; animation-duration:11s; animation-delay:1s;">🪙</div>
@@ -469,12 +468,23 @@
       <div class="coin" style="--x:65vw; animation-duration:12s; animation-delay:1.7s;">🪙</div>
       <div class="coin" style="--x:80vw; animation-duration:9.5s; animation-delay:2.8s;">🪙</div>
     </div>
+
     <div class="bills-rain" id="bills-rain">
       <div class="bill" style="--x:10vw; animation-duration:9s;">💵</div>
       <div class="bill" style="--x:28vw; animation-duration:11s; animation-delay:0.7s;">💵</div>
       <div class="bill" style="--x:46vw; animation-duration:8.5s; animation-delay:1.8s;">💵</div>
       <div class="bill" style="--x:62vw; animation-duration:10.5s; animation-delay:0.3s;">💵</div>
       <div class="bill" style="--x:78vw; animation-duration:12.5s; animation-delay:2.2s;">💵</div>
+    </div>
+
+    <!-- PATCH: stock crash emojis fall on DOWN -->
+    <div class="crash-rain" id="crash-rain" aria-hidden="true">
+      <div class="crash" style="--x:8vw;  animation-duration:9s;">📉</div>
+      <div class="crash" style="--x:22vw; animation-duration:11s; animation-delay:1.2s;">💥</div>
+      <div class="crash" style="--x:36vw; animation-duration:8.5s; animation-delay:0.6s;">📉</div>
+      <div class="crash" style="--x:50vw; animation-duration:10.5s; animation-delay:2.1s;">🔻</div>
+      <div class="crash" style="--x:64vw; animation-duration:9.5s; animation-delay:0.9s;">📉</div>
+      <div class="crash" style="--x:78vw; animation-duration:12s; animation-delay:1.7s;">💥</div>
     </div>
   </div>
 
@@ -486,7 +496,7 @@
     <div class="layout">
       <section class="card hero-image-card">
         <div class="hero-image-wrapper">
-          <img id="character-img" src="img/guy-up.png" alt="Silver price character" />
+          <img id="character-img" src="/img/guy-up.png" alt="Silver price character" />
         </div>
       </section>
 
@@ -545,9 +555,10 @@
   const lastUpdatedEl = document.getElementById("last-updated");
   const metalsTbodyEl = document.getElementById("metals-tbody");
 
-  const IMAGE_CLOSED = "img/silver-closed.png";
+  // Sad guy = market closed OR neutral/no-change
+  const IMAGE_CLOSED = "/img/silver-closed.png";
 
-  // ---- Random image lists (loaded from img/images.json) ----
+  // ---- Random image lists (loaded from /images.json) ----
   let IMAGE_LISTS = { up: [], down: [] };
 
   function pickRandom(arr) {
@@ -555,15 +566,22 @@
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
+  // PATCH: load lists from ROOT and normalize paths to absolute
   async function loadImageLists() {
     try {
-      const res = await fetch("img/images.json?t=" + Date.now(), { cache: "no-store" });
+      const res = await fetch("/images.json?t=" + Date.now(), { cache: "no-store" });
       if (!res.ok) throw new Error("images.json HTTP " + res.status);
       const json = await res.json();
-      IMAGE_LISTS.up = Array.isArray(json.up) ? json.up : [];
-      IMAGE_LISTS.down = Array.isArray(json.down) ? json.down : [];
+
+      const normalize = (p) => {
+        if (typeof p !== "string") return null;
+        return p.startsWith("/") ? p : ("/" + p);
+      };
+
+      IMAGE_LISTS.up = Array.isArray(json.up) ? json.up.map(normalize).filter(Boolean) : [];
+      IMAGE_LISTS.down = Array.isArray(json.down) ? json.down.map(normalize).filter(Boolean) : [];
     } catch (e) {
-      console.warn("Could not load img/images.json; falling back to empty lists", e);
+      console.warn("Could not load /images.json; falling back to empty lists", e);
       IMAGE_LISTS = { up: [], down: [] };
     }
   }
@@ -626,7 +644,7 @@
       return;
     }
 
-    // FLAT but market is OPEN
+    // FLAT but market is OPEN -> sad guy
     trendPillEl.className = "trend-pill neutral";
     arrowEl.textContent = "↔";
     trendTextEl.textContent = "Well this is boring";
@@ -743,7 +761,17 @@
 
     if (mode === "up") fake.metals.silver.direction = "up";
     if (mode === "down") fake.metals.silver.direction = "down";
-    if (mode === "flat" || mode === "closed") fake.market.isOpen = false;
+
+    // flat/neutral = market OPEN, direction same
+    if (mode === "flat" || mode === "neutral") {
+      fake.metals.silver.direction = "same";
+      fake.market.isOpen = true;
+    }
+
+    // closed = market closed
+    if (mode === "closed") {
+      fake.market.isOpen = false;
+    }
 
     updateUI(fake);
     return true;
@@ -763,6 +791,7 @@
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
       headlinePriceEl.style.color = "var(--text-main)";
+      characterImgEl.src = IMAGE_CLOSED; // keep sad guy on errors too
     }
   }
 
