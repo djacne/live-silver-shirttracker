@@ -15,6 +15,11 @@
       --bg-up: radial-gradient(circle at top, #4f46e5 0%, #020617 55%, #02010a 100%);
       --bg-down: radial-gradient(circle at top, #f97316 0%, #7f1d1d 50%, #020106 100%);
       --bg-neutral: radial-gradient(circle at top, #4b5563 0%, #020617 60%, #020107 100%);
+
+      /* NEW: separate closed themes */
+      --bg-maintenance: radial-gradient(circle at top, #64748b 0%, #0b1220 55%, #03030b 100%);
+      --bg-weekend: radial-gradient(circle at top, #111827 0%, #020617 55%, #000108 100%);
+
       --card-bg: rgba(15, 23, 42, 0.92);
       --card-border: rgba(148, 163, 184, 0.3);
       --accent-up: #22c55e;
@@ -43,6 +48,10 @@
     body.trend-up { background: var(--bg-up); }
     body.trend-down { background: var(--bg-down); }
     body.trend-neutral { background: var(--bg-neutral); }
+
+    /* NEW: closed themes */
+    body.market-maintenance { background: var(--bg-maintenance); }
+    body.market-weekend { background: var(--bg-weekend); }
 
     /* Animated background layers */
     .bg-layer {
@@ -177,6 +186,8 @@
     body.trend-up .coins-rain { opacity: 0.9; }
     body.trend-down .bg-fire { opacity: 1; }
     body.trend-down .bills-rain { opacity: 0.9; }
+
+    /* PATCH: Stock crash emojis fall only on DOWN */
     body.trend-down .crash-rain { opacity: 0.95; }
 
     /* Up-mode rockets */
@@ -206,7 +217,10 @@
       will-change: transform, opacity;
     }
 
-    .rocket-l { left: var(--x); animation-name: rocketFlyL; }
+    .rocket-l {
+      left: var(--x);
+      animation-name: rocketFlyL;
+    }
 
     @keyframes rocketFlyL {
       0%   { transform: translate3d(0, 0, 0) rotate(-35deg) scale(0.95); opacity: 0; }
@@ -215,7 +229,10 @@
       100% { transform: translate3d(120vw, -140vh, 0) rotate(-35deg) scale(1.05); opacity: 0; }
     }
 
-    /* DOWN-mode diagonal streaks */
+    /* -----------------------------
+       PATCH: Down-mode diagonal streaks (📉/💥)
+       Same cadence as rockets
+    ------------------------------ */
     .crash-rockets-layer {
       position: absolute;
       inset: 0;
@@ -242,7 +259,11 @@
       will-change: transform, opacity;
     }
 
-    .crash-rocket-r { left: var(--x); animation-name: crashFlyR; }
+    /* Start off to the right, fly down-left */
+    .crash-rocket-r {
+      left: var(--x);
+      animation-name: crashFlyR;
+    }
 
     @keyframes crashFlyR {
       0%   { transform: translate3d(120vw, 0, 0) rotate(35deg) scale(0.95); opacity: 0; }
@@ -382,12 +403,6 @@
       font-weight: 500;
     }
 
-    .hero-subline {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: -2px;
-    }
-
     .trend-row {
       display: flex;
       flex-wrap: wrap;
@@ -486,7 +501,7 @@
       <div class="rocket rocket-l" style="--x:40vw;  --dur:9.4s; --delay:4.2s;">🚀</div>
     </div>
 
-    <!-- DOWN-mode diagonal streaks -->
+    <!-- PATCH: DOWN-mode diagonal streaks (same cadence as rockets) -->
     <div class="crash-rockets-layer" aria-hidden="true">
       <div class="crash-rocket crash-rocket-r" style="--x:-10vw; --dur:8.2s; --delay:0.3s;">📉</div>
       <div class="crash-rocket crash-rocket-r" style="--x:8vw;   --dur:9.0s; --delay:1.6s;">💥</div>
@@ -554,9 +569,6 @@
             <span class="small">/ troy ounce</span>
           </div>
 
-          <!-- NEW: 24h High (above quirk/pill) -->
-          <div class="hero-subline" id="silver-24h-high">24h high: —</div>
-
           <div class="trend-row">
             <div id="trend-pill" class="trend-pill neutral">
               <span class="trend-arrow">↔</span>
@@ -572,22 +584,11 @@
             Last updated: <span id="last-updated">—</span>
           </div>
           <div class="hero-frequency">
-            Updates every 30 minutes during market hours
+            Updates hourly during market hours
           </div>
         </div>
       </section>
     </div>
-
-    <!-- NEW: Weekly silver trend chart -->
-    <section class="card table-card" id="weekly-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-        <div style="font-weight:700;">Silver — 7 Day Trend</div>
-        <div id="weekly-dir" style="color:var(--text-muted);font-size:0.85rem;">—</div>
-      </div>
-      <div style="margin-top:10px;">
-        <svg id="weekly-spark" viewBox="0 0 300 80" width="100%" height="80" aria-label="Weekly silver trend"></svg>
-      </div>
-    </section>
 
     <section class="card table-card">
       <table>
@@ -595,7 +596,6 @@
           <tr>
             <th>Metal</th>
             <th style="text-align:right;">Price (USD/toz)</th>
-            <th style="text-align:right;">52W High</th>
             <th style="text-align:right;">Trend</th>
           </tr>
         </thead>
@@ -614,7 +614,6 @@
   const trendTextEl = document.getElementById("trend-text");
   const lastUpdatedEl = document.getElementById("last-updated");
   const metalsTbodyEl = document.getElementById("metals-tbody");
-  const silver24hHighEl = document.getElementById("silver-24h-high");
 
   // Sad guy = market closed OR neutral/no-change
   const IMAGE_CLOSED = "/img/silver-closed.png";
@@ -627,6 +626,7 @@
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
+  // load lists from ROOT and normalize paths to absolute
   async function loadImageLists() {
     try {
       const res = await fetch("/images.json?t=" + Date.now(), { cache: "no-store" });
@@ -646,8 +646,14 @@
     }
   }
 
+  function clearMarketClosedThemes() {
+    bodyEl.classList.remove("market-maintenance", "market-weekend");
+  }
+
   function setTrendMode(mode) {
     bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
+    clearMarketClosedThemes(); // NEW: ensure closed themes don’t “stick” when market is open
+
     if (mode === "up") bodyEl.classList.add("trend-up");
     else if (mode === "down") bodyEl.classList.add("trend-down");
     else bodyEl.classList.add("trend-neutral");
@@ -674,17 +680,27 @@
     return Math.abs(n).toFixed(2);
   }
 
+  // NEW: maintenance vs weekend closed themes + messages
   function setMarketClosedPill(market) {
     const arrowEl = trendPillEl.querySelector(".trend-arrow");
     trendPillEl.className = "trend-pill neutral";
     arrowEl.textContent = "⏸";
-    trendTextEl.textContent = "Market opens Sunday 5pm CT";
-    setTrendMode("neutral");
-    characterImgEl.src = IMAGE_CLOSED;
 
-    // If backend gives us a reason, show a clean 24h high line anyway
-    // (will be "—" if not available)
-    // Leave weekly chart visible (it’s daily data).
+    // Always neutral base + then add one closed theme
+    bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
+    clearMarketClosedThemes();
+
+    const reason = (market?.reason || "").toLowerCase();
+
+    if (reason.includes("daily")) {
+      bodyEl.classList.add("market-maintenance");
+      trendTextEl.textContent = "Daily break — resumes at 5pm CT";
+    } else {
+      bodyEl.classList.add("market-weekend");
+      trendTextEl.textContent = "Market opens Sunday 5pm CT";
+    }
+
+    characterImgEl.src = IMAGE_CLOSED;
   }
 
   function setTrendPill(direction) {
@@ -708,6 +724,7 @@
       return;
     }
 
+    // FLAT but market is OPEN -> sad guy
     trendPillEl.className = "trend-pill neutral";
     arrowEl.textContent = "↔";
     trendTextEl.textContent = "Well this is boring";
@@ -743,10 +760,6 @@
       tdPrice.className = "price-cell";
       tdPrice.textContent = fmtMoney(m?.price);
 
-      const td52w = document.createElement("td");
-      td52w.className = "price-cell";
-      td52w.textContent = fmtMoney(m?.high52w);
-
       const tdTrend = document.createElement("td");
       tdTrend.className = "change-cell";
 
@@ -761,7 +774,6 @@
 
       tr.appendChild(tdName);
       tr.appendChild(tdPrice);
-      tr.appendChild(td52w);
       tr.appendChild(tdTrend);
 
       metalsTbodyEl.appendChild(tr);
@@ -779,60 +791,13 @@
       return;
     }
 
-    if (direction === "up") headlinePriceEl.style.color = "var(--accent-up)";
-    else if (direction === "down") headlinePriceEl.style.color = "var(--accent-down)";
-    else headlinePriceEl.style.color = "var(--text-main)";
-  }
-
-  function renderWeeklySpark(points) {
-    const svg = document.getElementById("weekly-spark");
-    const dirEl = document.getElementById("weekly-dir");
-    if (!svg || !dirEl) return;
-
-    svg.innerHTML = "";
-
-    if (!Array.isArray(points) || points.length < 2) {
-      dirEl.textContent = "No data";
-      return;
+    if (direction === "up") {
+      headlinePriceEl.style.color = "var(--accent-up)";
+    } else if (direction === "down") {
+      headlinePriceEl.style.color = "var(--accent-down)";
+    } else {
+      headlinePriceEl.style.color = "var(--text-main)";
     }
-
-    const vals = points.map(p => Number(p.close)).filter(Number.isFinite);
-    if (vals.length < 2) {
-      dirEl.textContent = "No data";
-      return;
-    }
-
-    const min = Math.min(...vals);
-    const max = Math.max(...vals);
-    const pad = 6;
-    const W = 300, H = 80;
-
-    const xStep = (W - pad * 2) / (vals.length - 1);
-    const y = (v) => {
-      if (max === min) return H / 2;
-      const t = (v - min) / (max - min);
-      return (H - pad) - t * (H - pad * 2);
-    };
-
-    let d = "";
-    vals.forEach((v, i) => {
-      const x = pad + i * xStep;
-      const yy = y(v);
-      d += (i === 0 ? `M ${x} ${yy}` : ` L ${x} ${yy}`);
-    });
-
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", d);
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke-width", "3");
-    path.setAttribute("stroke-linecap", "round");
-    path.setAttribute("stroke-linejoin", "round");
-    path.setAttribute("stroke", "rgba(229,231,235,0.9)");
-    svg.appendChild(path);
-
-    const start = vals[0], end = vals[vals.length - 1];
-    const arrow = end > start ? "↑" : end < start ? "↓" : "↔";
-    dirEl.textContent = `${arrow} ${fmtMoney(end)} (from ${fmtMoney(start)})`;
   }
 
   function updateUI(data) {
@@ -844,17 +809,11 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    // 24h high line
-    silver24hHighEl.textContent = `24h high: ${fmtMoney(silver.high24h)}`;
-
-    // weekly chart
-    renderWeeklySpark(data?.weekly?.silver);
-
     const marketIsOpen = !(market && market.isOpen === false);
 
     if (!marketIsOpen) {
       setHeadlinePriceColor("same", false);
-      setMarketClosedPill(market);
+      setMarketClosedPill(market);   // maintenance vs weekend theme handled here
       renderMetalsTable(metals);
       return;
     }
@@ -872,32 +831,33 @@
     const fake = {
       updatedAt: new Date().toISOString(),
       metals: {
-        silver: { price: 79.33, direction: "same", change: 0.0, high52w: 90.12, high24h: 80.01 },
-        gold: { price: 4533.42, direction: "same", change: 0.0, high52w: 5100.00 },
-        platinum: { price: 2446.5, direction: "same", change: 0.0, high52w: 2800.00 },
-        palladium: { price: 1925, direction: "same", change: 0.0, high52w: 2400.00 },
+        silver: { price: 79.33, direction: "same" },
+        gold: { price: 4533.42, direction: "same" },
+        platinum: { price: 2446.5, direction: "same" },
+        palladium: { price: 1925, direction: "same" },
       },
-      weekly: { silver: [
-        { date:"2025-12-22", close: 74.1 },
-        { date:"2025-12-23", close: 74.9 },
-        { date:"2025-12-24", close: 75.2 },
-        { date:"2025-12-26", close: 76.0 },
-        { date:"2025-12-29", close: 76.5 },
-        { date:"2025-12-30", close: 76.1 },
-      ]},
-      market: { isOpen: true },
+      market: { isOpen: true, reason: "Open" },
     };
 
     if (mode === "up") fake.metals.silver.direction = "up";
     if (mode === "down") fake.metals.silver.direction = "down";
 
+    // flat/neutral = market OPEN, direction same
     if (mode === "flat" || mode === "neutral") {
       fake.metals.silver.direction = "same";
       fake.market.isOpen = true;
     }
 
+    // closed = market closed
     if (mode === "closed") {
       fake.market.isOpen = false;
+      fake.market.reason = "Daily maintenance break (4–5 PM CT)";
+    }
+
+    // weekend closed test
+    if (mode === "weekend") {
+      fake.market.isOpen = false;
+      fake.market.reason = "Weekend close";
     }
 
     updateUI(fake);
@@ -911,7 +871,6 @@
       if (!res.ok) throw new Error("Backend HTTP error " + res.status);
       const data = await res.json();
       updateUI(data);
-      return data;
     } catch (err) {
       console.error(err);
       trendPillEl.className = "trend-pill neutral";
@@ -919,41 +878,15 @@
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
       headlinePriceEl.style.color = "var(--text-main)";
-      characterImgEl.src = IMAGE_CLOSED;
-      silver24hHighEl.textContent = "24h high: —";
-      return null;
+      characterImgEl.src = IMAGE_CLOSED; // keep sad guy on errors too
     }
-  }
-
-  // 30-minute aligned refresh loop (stops if market is closed)
-  function msUntilNextHalfHour() {
-    const now = new Date();
-    const m = now.getMinutes();
-    const s = now.getSeconds();
-    const ms = now.getMilliseconds();
-    const nextMin = (m < 30) ? 30 : 60;
-    const deltaMin = nextMin - m - 1;
-    const deltaSec = 60 - s - 1;
-    const deltaMs = 1000 - ms;
-    return ((deltaMin * 60) + deltaSec) * 1000 + deltaMs;
-  }
-
-  function startHalfHourRefreshLoop() {
-    const run = async () => {
-      const data = await refreshAllOnce();
-      if (data?.market?.isOpen === false) return; // discreet stop while closed
-      setTimeout(run, 30 * 60 * 1000);
-    };
-
-    setTimeout(run, msUntilNextHalfHour());
   }
 
   // ---- BOOTSTRAP ----
   (async () => {
     await loadImageLists();
     if (!applyForcedModeIfAny()) {
-      await refreshAllOnce();
-      startHalfHourRefreshLoop();
+      refreshAllOnce();
     }
   })();
 </script>
