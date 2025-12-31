@@ -460,15 +460,32 @@
       padding: 10px;
     }
 
+    /* Desktop defaults */
+    .chart-wrap svg {
+      width: 100%;
+      height: 260px;
+      display: block;
+      touch-action: pan-y;
+      user-select: none;
+    }
+
     .chart-wrap svg text {
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      fill: rgba(156,163,175,0.95);
+      fill: rgba(170,180,195,0.95);
       font-size: 14px;
     }
 
     .chart-wrap svg .gridline {
-      stroke: rgba(148,163,184,0.14);
+      stroke: rgba(148,163,184,0.12);
       stroke-width: 1;
+    }
+
+    /* ✅ Mobile readability: taller chart + bigger labels */
+    @media (max-width: 600px) {
+      .chart-wrap { padding: 10px; }
+      #silver7d-svg { height: 380px; }
+      #silver12m-svg { height: 420px; }
+      .chart-wrap svg text { font-size: 17px; }
     }
 
     .chart-meta {
@@ -613,8 +630,7 @@
       <div class="section-title">Silver weekly trend</div>
 
       <div class="chart-wrap">
-        <svg id="silver7d-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 7-day trend chart">
-          <!-- ✅ Added defs + area path for shaded fill -->
+        <svg id="silver7d-svg" viewBox="0 0 1000 260" role="img" aria-label="Silver 7-day trend chart">
           <defs id="silver7d-defs"></defs>
           <g id="silver7d-grid"></g>
           <path id="silver7d-area" d="" fill="none"></path>
@@ -636,8 +652,7 @@
       <div class="section-title">Silver yearly trend</div>
 
       <div class="chart-wrap">
-        <svg id="silver12m-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 12-month trend chart">
-          <!-- ✅ Added defs + area path for shaded fill -->
+        <svg id="silver12m-svg" viewBox="0 0 1000 260" role="img" aria-label="Silver 12-month trend chart">
           <defs id="silver12m-defs"></defs>
           <g id="silver12m-grid"></g>
           <path id="silver12m-area" d="" fill="none"></path>
@@ -710,6 +725,10 @@
   const IMAGE_CLOSED = "/img/silver-closed.png";
 
   let IMAGE_LISTS = { up: [], down: [] };
+
+  function isMobileNow() {
+    return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
+  }
 
   function pickRandom(arr) {
     if (!arr || arr.length === 0) return null;
@@ -951,7 +970,6 @@
     if (defsEl) defsEl.innerHTML = "";
   }
 
-  // ✅ Create per-chart gradient for area fill, based on direction + open/closed
   function ensureAreaGradient(defsEl, gradientId, marketIsOpen, direction) {
     if (!defsEl) return;
     defsEl.innerHTML = "";
@@ -1010,7 +1028,6 @@
     borderEl,
     marketIsOpen,
     direction,
-    // ✅ New: chartType controls how tight padding is
     chartType = "weekly", // "weekly" | "yearly"
   }) {
     clearChart(gridEl, ptsEl, xLabelsEl, yLabelsEl, lineEl, borderEl, areaEl, defsEl);
@@ -1033,12 +1050,10 @@
     if (minEl) minEl.textContent = fmtMoney(min);
     if (maxEl) maxEl.textContent = fmtMoney(max);
 
-    // ✅ TIGHTER Y padding (Yahoo-like). Weekly tighter than yearly.
+    // ✅ Tighten y padding (Yahoo-ish)
     const range = (max - min);
-    const pct = chartType === "weekly" ? 0.06 : 0.08; // tightened from 0.12
+    const pct = chartType === "weekly" ? 0.06 : 0.08;
     let pad = range * pct;
-
-    // clamp pad so it doesn't get ridiculous or too tiny
     const minPad = 0.35;
     const maxPad = Math.max(minPad, range * 0.15);
     pad = Math.min(maxPad, Math.max(minPad, pad || 0));
@@ -1047,13 +1062,13 @@
     const yMax = max + pad;
 
     const W = 1000, H = 260;
+    const mobile = isMobileNow();
 
-    // keep your existing paddings (not changing layout here),
-    // since you asked only shaded fill + tighten y padding.
-    const padL = 20;
-    const padR = 78;
-    const padT = 18;
-    const padB = 52;
+    // ✅ Yahoo-readable mobile layout: y labels inside + less padding
+    const padL = mobile ? 18 : 20;
+    const padR = mobile ? 16 : 78;   // much smaller on mobile (because labels go inside)
+    const padT = mobile ? 14 : 18;
+    const padB = mobile ? 48 : 52;
 
     const innerW = W - padL - padR;
     const innerH = H - padT - padB;
@@ -1067,7 +1082,11 @@
     const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
     borderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
-    const ticks = makeTicks(yMin, yMax, 5);
+    // ✅ More readable y tick format like finance charts
+    const yLabelFmt = (range < 20) ? (n) => n.toFixed(1) : (n) => n.toFixed(0);
+
+    // Grid + y labels
+    const ticks = makeTicks(yMin, yMax, mobile ? 4 : 5);
     for (const t of ticks) {
       const y = yFor(t);
 
@@ -1080,44 +1099,71 @@
       gridEl.appendChild(gl);
 
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      tx.setAttribute("x", x1 + 10);
+
+      if (mobile) {
+        // ✅ Inside labels on mobile (huge collision fix)
+        tx.setAttribute("x", x1 - 8);
+        tx.setAttribute("text-anchor", "end");
+      } else {
+        tx.setAttribute("x", x1 + 10);
+        tx.setAttribute("text-anchor", "start");
+      }
+
       tx.setAttribute("y", y + 5);
-      tx.setAttribute("text-anchor", "start");
-      tx.textContent = t.toFixed(0);
+      tx.textContent = yLabelFmt(t);
       yLabelsEl.appendChild(tx);
     }
 
-    for (let i = 0; i < pts.length; i++) {
-      const x = xFor(i);
+    // X label strategy: fewer labels on cramped screens, always show first/last
+    const n = pts.length;
+    let step = 1;
+    if (mobile) {
+      if (chartType === "weekly") step = (n <= 6) ? 1 : 2;
+      else step = 2;
+    } else {
+      if (chartType === "yearly") step = 1; // desktop can show all months comfortably
+    }
 
+    const shouldShowX = (i) => {
+      if (i === 0 || i === n - 1) return true;
+      return (i % step === 0);
+    };
+
+    for (let i = 0; i < n; i++) {
+      if (!shouldShowX(i)) continue;
+
+      const x = xFor(i);
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
       tx.setAttribute("x", x);
-      tx.setAttribute("y", y1 + 32);
-      tx.setAttribute("text-anchor", "middle");
-      tx.textContent = formatX(pts[i], i, pts.length);
+      tx.setAttribute("y", y1 + (mobile ? 34 : 32));
+
+      // ✅ Prevent edge collisions: first left, last right
+      if (i === 0) tx.setAttribute("text-anchor", "start");
+      else if (i === n - 1) tx.setAttribute("text-anchor", "end");
+      else tx.setAttribute("text-anchor", "middle");
+
+      tx.textContent = formatX(pts[i], i, n);
       xLabelsEl.appendChild(tx);
     }
 
-    // Build line path
+    // Line path
     let d = `M ${xFor(0).toFixed(2)} ${yFor(pts[0].value).toFixed(2)}`;
-    for (let i = 1; i < pts.length; i++) {
+    for (let i = 1; i < n; i++) {
       d += ` L ${xFor(i).toFixed(2)} ${yFor(pts[i].value).toFixed(2)}`;
     }
     lineEl.setAttribute("d", d);
 
-    // ✅ Build area path (shaded fill under line)
+    // ✅ Area fill path
     if (areaEl && defsEl) {
       const gradientId = (chartType === "weekly") ? "silver7d-area-grad" : "silver12m-area-grad";
       ensureAreaGradient(defsEl, gradientId, marketIsOpen, direction);
 
-      // baseline at bottom of plot
       const baseY = y1;
-
       let a = `M ${xFor(0).toFixed(2)} ${baseY.toFixed(2)} L ${xFor(0).toFixed(2)} ${yFor(pts[0].value).toFixed(2)}`;
-      for (let i = 1; i < pts.length; i++) {
+      for (let i = 1; i < n; i++) {
         a += ` L ${xFor(i).toFixed(2)} ${yFor(pts[i].value).toFixed(2)}`;
       }
-      a += ` L ${xFor(pts.length - 1).toFixed(2)} ${baseY.toFixed(2)} Z`;
+      a += ` L ${xFor(n - 1).toFixed(2)} ${baseY.toFixed(2)} Z`;
 
       areaEl.setAttribute("d", a);
       areaEl.setAttribute("fill", `url(#${gradientId})`);
@@ -1125,13 +1171,18 @@
       areaEl.setAttribute("opacity", "1");
     }
 
-    for (let i = 0; i < pts.length; i++) {
+    // ✅ Thicker line + larger points on mobile (Yahoo-ish)
+    const strokeW = mobile ? 4.6 : 3;
+    lineEl.setAttribute("stroke-width", String(strokeW));
+
+    const r = mobile ? 6.3 : 4.2;
+    for (let i = 0; i < n; i++) {
       const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       c.setAttribute("cx", xFor(i));
       c.setAttribute("cy", yFor(pts[i].value));
-      c.setAttribute("r", 4.2);
+      c.setAttribute("r", String(r));
       c.setAttribute("fill", "currentColor");
-      c.setAttribute("opacity", "0.95");
+      c.setAttribute("opacity", mobile ? "0.98" : "0.95");
       ptsEl.appendChild(c);
     }
 
@@ -1198,10 +1249,7 @@
       renderLineChart({
         rows: yearlyRows,
         mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
-        formatX: (p) => {
-          const raw = p?.raw;
-          return raw?.month || monthNameFromYYYYMM(p.xLabel);
-        },
+        formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
         minEl: null,
         maxEl: null,
         lineEl: yearlyLineEl,
@@ -1246,10 +1294,7 @@
     renderLineChart({
       rows: yearlyRows,
       mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
-      formatX: (p) => {
-        const raw = p?.raw;
-        return raw?.month || monthNameFromYYYYMM(p.xLabel);
-      },
+      formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
       minEl: null,
       maxEl: null,
       lineEl: yearlyLineEl,
@@ -1277,33 +1322,34 @@
       { date: "2025-12-26", close: 73.9 },
       { date: "2025-12-29", close: 76.0 },
       { date: "2025-12-30", close: 75.4 },
+      { date: "2025-12-31", close: 72.27 },
     ];
 
     const fakeYearly = [
-      { ym: "2025-01", month: "Jan", close: 69.1 },
-      { ym: "2025-02", month: "Feb", close: 70.2 },
-      { ym: "2025-03", month: "Mar", close: 71.6 },
-      { ym: "2025-04", month: "Apr", close: 73.0 },
-      { ym: "2025-05", month: "May", close: 74.4 },
-      { ym: "2025-06", month: "Jun", close: 72.8 },
-      { ym: "2025-07", month: "Jul", close: 73.7 },
-      { ym: "2025-08", month: "Aug", close: 75.9 },
-      { ym: "2025-09", month: "Sep", close: 77.2 },
-      { ym: "2025-10", month: "Oct", close: 76.1 },
-      { ym: "2025-11", month: "Nov", close: 78.4 },
-      { ym: "2025-12", month: "Dec", close: 76.2 },
+      { ym: "2025-01", month: "Jan", close: 31.73 },
+      { ym: "2025-02", month: "Feb", close: 33.10 },
+      { ym: "2025-03", month: "Mar", close: 34.50 },
+      { ym: "2025-04", month: "Apr", close: 33.90 },
+      { ym: "2025-05", month: "May", close: 33.50 },
+      { ym: "2025-06", month: "Jun", close: 37.20 },
+      { ym: "2025-07", month: "Jul", close: 39.40 },
+      { ym: "2025-08", month: "Aug", close: 39.80 },
+      { ym: "2025-09", month: "Sep", close: 47.30 },
+      { ym: "2025-10", month: "Oct", close: 55.10 },
+      { ym: "2025-11", month: "Nov", close: 58.30 },
+      { ym: "2025-12", month: "Dec", close: 83.96 },
     ];
 
     const fake = {
       updatedAt: new Date().toISOString(),
       metals: {
-        silver: { price: 76.09, direction: "same", change: -0.12, high24h: 77.88, low24h: 74.91 },
-        gold: { price: 4343.23, direction: "same", change: 1.1 },
-        platinum: { price: 2186.65, direction: "same", change: 0.0 },
-        palladium: { price: 1625.39, direction: "same", change: -2.0 },
+        silver: { price: 72.27, direction: "down", change: -4.12, high24h: 83.96, low24h: 72.27 },
+        gold: { price: 4326.15, direction: "down", change: -4.94 },
+        platinum: { price: 1012.40, direction: "same", change: 0.0 },
+        palladium: { price: 967.35, direction: "same", change: 0.0 },
       },
       weekly: { silver: fakeWeekly },
-      yearly: { silver12m: fakeYearly, low12m: 69.1, high12m: 78.4 },
+      yearly: { silver12m: fakeYearly, low12m: 31.73, high12m: 83.96 },
       market: { isOpen: true, reason: "Open", closedType: null },
     };
 
@@ -1350,11 +1396,21 @@
       silver24hHighEl.textContent = "24h high: —";
       silver24hLowEl.textContent  = "24h low: —";
 
-      // clear charts if error
       clearChart(weeklyGridEl, weeklyPtsEl, weeklyXLabelsEl, weeklyYLabelsEl, weeklyLineEl, weeklyBorderEl, weeklyAreaEl, weeklyDefsEl);
       clearChart(yearlyGridEl, yearlyPtsEl, yearlyXLabelsEl, yearlyYLabelsEl, yearlyLineEl, yearlyBorderEl, yearlyAreaEl, yearlyDefsEl);
     }
   }
+
+  // ✅ Re-render charts on rotate / resize so the mobile layout rules apply immediately
+  let _lastResizeAt = 0;
+  window.addEventListener("resize", () => {
+    const now = Date.now();
+    if (now - _lastResizeAt < 250) return;
+    _lastResizeAt = now;
+    // re-fetch not needed; just re-draw with same data would be ideal, but we don't store it yet.
+    // Simple approach: refresh once (still respects cache on your worker).
+    refreshAllOnce();
+  });
 
   (async () => {
     await loadImageLists();
