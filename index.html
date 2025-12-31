@@ -632,7 +632,6 @@
       <div class="section-title">Silver weekly trend</div>
 
       <div class="chart-wrap">
-        <!-- ✅ CHANGED: viewBox is taller so mobile can truly be larger (not just stretched). -->
         <svg id="silver7d-svg" viewBox="0 0 1000 420" role="img" aria-label="Silver 7-day trend chart">
           <defs id="silver7d-defs"></defs>
           <g id="silver7d-grid"></g>
@@ -655,7 +654,6 @@
       <div class="section-title">Silver yearly trend</div>
 
       <div class="chart-wrap">
-        <!-- ✅ CHANGED: viewBox is taller so mobile can truly be larger (not just stretched). -->
         <svg id="silver12m-svg" viewBox="0 0 1000 420" role="img" aria-label="Silver 12-month trend chart">
           <defs id="silver12m-defs"></defs>
           <g id="silver12m-grid"></g>
@@ -729,6 +727,10 @@
   const IMAGE_CLOSED = "/img/silver-closed.png";
 
   let IMAGE_LISTS = { up: [], down: [] };
+
+  // ✅ FIX: cache last data and lock the random image per mode
+  let LAST_DATA = null;
+  let LAST_IMAGE_MODE = null; // "up" | "down" | "same"
 
   function isMobileNow() {
     return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
@@ -814,17 +816,25 @@
     }
 
     characterImgEl.src = IMAGE_CLOSED;
+    LAST_IMAGE_MODE = "same";
   }
 
+  // ✅ FIX: only pick a new random image when direction changes (prevents scroll/resize churn)
   function setTrendPill(direction) {
     const arrowEl = trendPillEl.querySelector(".trend-arrow");
+    const modeKey = direction || "same";
+    const modeChanged = (LAST_IMAGE_MODE !== modeKey);
 
     if (direction === "up") {
       trendPillEl.className = "trend-pill up";
       arrowEl.textContent = "↑";
       trendTextEl.textContent = "Closer to retirement";
       setTrendMode("up");
-      characterImgEl.src = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
+
+      if (modeChanged) {
+        characterImgEl.src = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
+        LAST_IMAGE_MODE = modeKey;
+      }
       return;
     }
 
@@ -833,7 +843,11 @@
       arrowEl.textContent = "↓";
       trendTextEl.textContent = "Get back to work";
       setTrendMode("down");
-      characterImgEl.src = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
+
+      if (modeChanged) {
+        characterImgEl.src = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
+        LAST_IMAGE_MODE = modeKey;
+      }
       return;
     }
 
@@ -841,7 +855,11 @@
     arrowEl.textContent = "↔";
     trendTextEl.textContent = "Well this is boring";
     setTrendMode("neutral");
-    characterImgEl.src = IMAGE_CLOSED;
+
+    if (modeChanged) {
+      characterImgEl.src = IMAGE_CLOSED;
+      LAST_IMAGE_MODE = modeKey;
+    }
   }
 
   function renderMetalsTable(metals) {
@@ -1054,7 +1072,6 @@
     if (minEl) minEl.textContent = fmtMoney(min);
     if (maxEl) maxEl.textContent = fmtMoney(max);
 
-    // ✅ Tighten y padding (more "finance chart" feel)
     const range = (max - min);
     const pct = chartType === "weekly" ? 0.06 : 0.08;
     let pad = range * pct;
@@ -1067,12 +1084,9 @@
 
     const W = 1000;
 
-    // ✅ ACTUAL BIG CHANGE:
-    // We draw into a taller coordinate space when on mobile to match the taller viewBox.
     const mobile = isMobileNow();
     const H = mobile ? 420 : 260;
 
-    // ✅ Yahoo-readable mobile layout: y labels inside + less padding
     const padL = mobile ? 18 : 20;
     const padR = mobile ? 16 : 78;
     const padT = mobile ? 18 : 18;
@@ -1092,7 +1106,6 @@
 
     const yLabelFmt = (range < 20) ? (n) => n.toFixed(1) : (n) => n.toFixed(0);
 
-    // Grid + y labels
     const ticks = makeTicks(yMin, yMax, mobile ? 4 : 5);
     for (const t of ticks) {
       const y = yFor(t);
@@ -1120,7 +1133,6 @@
       yLabelsEl.appendChild(tx);
     }
 
-    // X label strategy: fewer labels on cramped screens, always show first/last
     const n = pts.length;
     let step = 1;
     if (mobile) {
@@ -1151,14 +1163,12 @@
       xLabelsEl.appendChild(tx);
     }
 
-    // Line path
     let d = `M ${xFor(0).toFixed(2)} ${yFor(pts[0].value).toFixed(2)}`;
     for (let i = 1; i < n; i++) {
       d += ` L ${xFor(i).toFixed(2)} ${yFor(pts[i].value).toFixed(2)}`;
     }
     lineEl.setAttribute("d", d);
 
-    // ✅ Area fill path
     if (areaEl && defsEl) {
       const gradientId = (chartType === "weekly") ? "silver7d-area-grad" : "silver12m-area-grad";
       ensureAreaGradient(defsEl, gradientId, marketIsOpen, direction);
@@ -1176,7 +1186,6 @@
       areaEl.setAttribute("opacity", "1");
     }
 
-    // Thicker line + larger points on mobile
     const strokeW = mobile ? 5 : 3;
     lineEl.setAttribute("stroke-width", String(strokeW));
 
@@ -1207,6 +1216,9 @@
   }
 
   function updateUI(data) {
+    // ✅ cache last payload so we can re-render charts without re-fetching
+    LAST_DATA = data;
+
     const metals = data?.metals || {};
     const silver = metals.silver || {};
     const updatedAt = data?.updatedAt || null;
@@ -1316,6 +1328,57 @@
     });
   }
 
+  // ✅ charts-only rerender (no fetch, no image randomization)
+  function rerenderChartsOnly() {
+    if (!LAST_DATA) return;
+
+    const metals = LAST_DATA?.metals || {};
+    const silver = metals.silver || {};
+    const market = LAST_DATA?.market || null;
+    const marketIsOpen = !(market && market.isOpen === false);
+
+    const weeklyRows = LAST_DATA?.weekly?.silver || [];
+    const yearlyRows = LAST_DATA?.yearly?.silver12m || [];
+
+    renderLineChart({
+      rows: weeklyRows,
+      mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
+      formatX: (p) => fmtMMDD(p.xLabel),
+      minEl: silver7dLowEl,
+      maxEl: silver7dHighEl,
+      lineEl: weeklyLineEl,
+      areaEl: weeklyAreaEl,
+      defsEl: weeklyDefsEl,
+      gridEl: weeklyGridEl,
+      ptsEl: weeklyPtsEl,
+      xLabelsEl: weeklyXLabelsEl,
+      yLabelsEl: weeklyYLabelsEl,
+      borderEl: weeklyBorderEl,
+      marketIsOpen,
+      direction: silver.direction || "same",
+      chartType: "weekly",
+    });
+
+    renderLineChart({
+      rows: yearlyRows,
+      mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
+      formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
+      minEl: null,
+      maxEl: null,
+      lineEl: yearlyLineEl,
+      areaEl: yearlyAreaEl,
+      defsEl: yearlyDefsEl,
+      gridEl: yearlyGridEl,
+      ptsEl: yearlyPtsEl,
+      xLabelsEl: yearlyXLabelsEl,
+      yLabelsEl: yearlyYLabelsEl,
+      borderEl: yearlyBorderEl,
+      marketIsOpen,
+      direction: silver.direction || "same",
+      chartType: "yearly",
+    });
+  }
+
   function applyForcedModeIfAny() {
     const params = new URLSearchParams(window.location.search);
     const mode = (params.get("mode") || "").toLowerCase();
@@ -1406,14 +1469,18 @@
     }
   }
 
-  // Re-render on resize/rotate so mobile sizing always kicks in
-  let _lastResizeAt = 0;
+  // ✅ FIX: On mobile Safari, "resize" can fire while scrolling (URL bar show/hide).
+  // Only rerender charts when WIDTH actually changes (rotation / real resize). No fetch.
+  let _lastW = window.innerWidth;
+  let _raf = 0;
+
   window.addEventListener("resize", () => {
-    const now = Date.now();
-    if (now - _lastResizeAt < 250) return;
-    _lastResizeAt = now;
-    refreshAllOnce();
-  });
+    if (window.innerWidth === _lastW) return;
+    _lastW = window.innerWidth;
+
+    cancelAnimationFrame(_raf);
+    _raf = requestAnimationFrame(() => rerenderChartsOnly());
+  }, { passive: true });
 
   (async () => {
     await loadImageLists();
