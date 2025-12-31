@@ -465,8 +465,8 @@
 
     @media (max-width: 600px) {
       .chart-wrap { padding: 10px; }
-      .chart-wrap svg { height: 240px; }         /* same-ish size as other cards */
-      .chart-wrap svg text { font-size: 16.5px; }/* readable on mobile */
+      .chart-wrap svg { height: 240px; }          /* same-ish size as other cards */
+      .chart-wrap svg text { font-size: 16.5px; } /* readable on mobile */
     }
 
     .chart-meta {
@@ -616,7 +616,6 @@
       <div class="section-title">Silver weekly trend</div>
 
       <div class="chart-wrap">
-        <!-- same viewBox size as yearly to look professional -->
         <svg id="silver7d-svg" viewBox="0 0 1000 260" role="img" aria-label="Silver 7-day trend chart">
           <g id="silver7d-grid"></g>
           <g id="silver7d-bars"></g>
@@ -1007,13 +1006,17 @@
     if (minEl) minEl.textContent = fmtMoney(min);
     if (maxEl) maxEl.textContent = fmtMoney(max);
 
-    // ✅ Make bars fill the box: minimal headroom, no huge fixed pad.
+    // ✅ Make bars LOOK tall: give the chart a meaningful "floor" below min
     let range = (max - min);
-    const minVisualRange = chartType === "weekly" ? 0.35 : 0.60;
+
+    // prevent "flat" ranges from producing microscopic bars
+    const minVisualRange = chartType === "weekly" ? 0.9 : 2.0;
     if (range < minVisualRange) range = minVisualRange;
 
-    const padTop = range * 0.06;   // keeps top from clipping
-    const padBot = range * 0.02;   // tiny breathing room
+    // bottom padding makes even the lowest bar tall
+    const padBot = range * 0.55;   // <-- key change
+    const padTop = range * 0.10;   // small headroom
+
     const yMin = min - padBot;
     const yMax = max + padTop;
 
@@ -1070,7 +1073,8 @@
     const n = pts.length;
     const slotW = innerW / n;
 
-    const gap = mobile ? 2.2 : 2.6; // ✅ tiny gap requested
+    // ✅ tiny gap requested (slightly tighter on mobile)
+    const gap = mobile ? 2.0 : 2.6;
     const barW = Math.max(2, slotW - gap);
 
     const barX = (i) => padL + i * slotW + (gap / 2);
