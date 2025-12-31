@@ -67,7 +67,7 @@
       z-index: 0;
     }
 
-    /* ✅ More stars, and visible on mobile too (subtle by default, stronger on trend-up) */
+    /* More stars + visible on mobile */
     .bg-stars {
       opacity: 0.35;
       transition: opacity 0.6s ease;
@@ -76,14 +76,12 @@
         radial-gradient(circle at 80% 10%, rgba(191,219,254,0.28) 0, transparent 55%),
         radial-gradient(circle at 50% 85%, rgba(129,140,248,0.28) 0, transparent 55%);
     }
-
     body.trend-up .bg-stars { opacity: 0.85; }
 
     .bg-stars::before {
       content: "";
       position: absolute;
       inset: -220px;
-      /* “big” stars */
       background-image:
         radial-gradient(2px 2px at 4% 12%, rgba(226,232,240,0.95) 70%, transparent 71%),
         radial-gradient(2px 2px at 9% 48%, rgba(199,210,254,0.85) 70%, transparent 71%),
@@ -108,7 +106,6 @@
       content:"";
       position:absolute;
       inset:-240px;
-      /* “small” stars (lots) */
       background-image:
         radial-gradient(1px 1px at 6% 8%, rgba(226,232,240,0.85) 70%, transparent 71%),
         radial-gradient(1px 1px at 10% 26%, rgba(199,210,254,0.70) 70%, transparent 71%),
@@ -525,14 +522,19 @@
     .chart-meta .low { color: var(--accent-down); font-weight: 600; }
     .chart-meta .high { color: var(--accent-up); font-weight: 600; }
 
-    /* ✅ Make charts bigger on mobile */
+    /* Desktop defaults */
     #silver7d-svg, #silver12m-svg { height: 260px; }
+
+    /* ✅ DO-IT-NOW COMBO: BIG charts on mobile (no scrolling) */
     @media (max-width: 600px) {
       body { padding: 12px; }
       .card { padding: 14px; }
-      .chart-wrap { padding: 10px; }
-      #silver7d-svg, #silver12m-svg { height: 340px; }
-      .chart-wrap svg text { font-size: 16px; }
+      .chart-wrap { padding: 8px; } /* slightly less frame/padding so plot area grows */
+      .chart-wrap svg text { font-size: 18px; } /* bigger labels */
+
+      /* weekly bigger, yearly even bigger */
+      #silver7d-svg { height: 420px; }
+      #silver12m-svg { height: 480px; }
     }
 
     .table-card { margin-top: 18px; }
@@ -560,7 +562,6 @@
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
 
-    /* ✅ Reduced motion support */
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; }
       .coins-rain, .bills-rain, .crash-rain,
@@ -730,19 +731,12 @@
   </div>
 
 <script>
-  // =========================
-  // Config
-  // =========================
   const BACKEND_URL = "https://api.dansretirement.com/";
   const IMAGE_CLOSED = "/img/silver-closed.png";
 
-  // Keep this — it makes failures feel “solid” instead of broken.
   const LOCAL_CACHE_KEY = "metals-last-good-v2";
   const LOCAL_CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
-  // =========================
-  // Elements
-  // =========================
   const bodyEl = document.body;
   const characterImgEl = document.getElementById("character-img");
   const headlinePriceEl = document.getElementById("headline-price");
@@ -780,9 +774,6 @@
 
   let IMAGE_LISTS = { up: [], down: [] };
 
-  // =========================
-  // Helpers
-  // =========================
   function pickRandom(arr) {
     if (!arr || arr.length === 0) return null;
     return arr[Math.floor(Math.random() * arr.length)];
@@ -1048,9 +1039,7 @@
     return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
   }
 
-  // ---------- Tooltip / Interactivity ----------
   function ensureTooltipNodes(tooltipEl) {
-    // vertical line + bubble (rect + 2 lines of text)
     const svgns = "http://www.w3.org/2000/svg";
 
     const g = document.createElementNS(svgns, "g");
@@ -1101,7 +1090,6 @@
     vline.setAttribute("y1", yTop);
     vline.setAttribute("y2", yBottom);
 
-    // bubble positioning: prefer above the point, but clamp
     const bw = innerBox.bw;
     const bh = innerBox.bh;
     const pad = 10;
@@ -1153,10 +1141,8 @@
       const p = getSvgPoint(evt);
       if (!p) return;
 
-      // clamp inside plot
       const x = Math.max(st.x0, Math.min(p.x, st.x1));
 
-      // nearest index
       let bestI = 0;
       let bestD = Infinity;
       for (let i = 0; i < st.pts.length; i++) {
@@ -1165,7 +1151,6 @@
       }
 
       const cx = st.xFor(bestI);
-      const cy = st.yFor(st.pts[bestI].value);
 
       if (!tooltipNodes) tooltipNodes = ensureTooltipNodes(tooltipEl);
 
@@ -1189,23 +1174,17 @@
     }
 
     svgEl.addEventListener("pointermove", onMove, { passive: true });
-    svgEl.addEventListener("pointerdown", onMove, { passive: true }); // mobile “touch”
+    svgEl.addEventListener("pointerdown", onMove, { passive: true });
     svgEl.addEventListener("pointerleave", onLeave);
     svgEl.addEventListener("pointerup", onLeave);
   }
 
-  // Keep chart state objects so hover/touch can read them
-  const chartState = {
-    weekly: null,
-    yearly: null,
-  };
+  const chartState = { weekly: null, yearly: null };
 
   function renderLineChart({
     rows,
     mapPoint,
     formatX,
-    minEl,
-    maxEl,
     lineEl,
     gridEl,
     ptsEl,
@@ -1215,11 +1194,10 @@
     borderEl,
     marketIsOpen,
     direction,
+    mobileHeight,     // ✅ allow different chart heights on mobile
+    desktopHeight,    // ✅ keep desktop same
   }) {
     clearChart(gridEl, ptsEl, xLabelsEl, yLabelsEl, tooltipEl, lineEl, borderEl);
-
-    if (minEl) minEl.textContent = "—";
-    if (maxEl) maxEl.textContent = "—";
 
     if (!Array.isArray(rows) || rows.length < 2) return null;
 
@@ -1233,22 +1211,19 @@
     }
     if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
 
-    if (minEl) minEl.textContent = fmtMoney(min);
-    if (maxEl) maxEl.textContent = fmtMoney(max);
-
     const pad = (max - min) * 0.12 || (min * 0.02) || 0.5;
     const yMin = min - pad;
     const yMax = max + pad;
 
-    // ✅ bigger plot on mobile + less wasted padding
     const mobile = isMobileChart();
     const W = 1000;
-    const H = mobile ? 340 : 260;
+    const H = mobile ? (mobileHeight || 420) : (desktopHeight || 260);
 
+    // ✅ reduced wasted padding + y labels INSIDE plot (right edge)
     const padL = mobile ? 18 : 20;
-    const padR = mobile ? 64 : 68;  // enough for y labels but less than before
-    const padT = mobile ? 16 : 18;
-    const padB = mobile ? 46 : 52;
+    const padR = mobile ? 20 : 20;   // keep tiny since y labels are inside now
+    const padT = mobile ? 14 : 18;
+    const padB = mobile ? 62 : 52;   // extra room for bigger x labels
 
     const innerW = W - padL - padR;
     const innerH = H - padT - padB;
@@ -1259,15 +1234,14 @@
       return padT + innerH * (1 - t);
     };
 
-    // Update the svg viewBox height so the drawing and visible area match
     const svg = lineEl.ownerSVGElement;
     if (svg) svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
     const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
     borderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
-    // Grid + Y labels (✅ put Y labels INSIDE chart at right edge to avoid smashing into last X label)
-    const ticks = makeTicks(yMin, yMax, 5);
+    // Grid + Y labels (inside)
+    const ticks = makeTicks(yMin, yMax, mobile ? 4 : 5);
     for (const t of ticks) {
       const y = yFor(t);
 
@@ -1281,41 +1255,48 @@
 
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
       tx.setAttribute("x", x1 - 6);
-      tx.setAttribute("y", y + 5);
+      tx.setAttribute("y", y + 6);
       tx.setAttribute("text-anchor", "end");
       tx.textContent = t.toFixed(0);
       yLabelsEl.appendChild(tx);
     }
 
-    // X labels (✅ nudge first/last labels inward so they never collide)
+    // ✅ fewer X labels on mobile when there are many points (yearly)
+    const manyPoints = pts.length >= 10;
+    const showEvery = (mobile && manyPoints) ? 2 : 1;
+
     for (let i = 0; i < pts.length; i++) {
+      const isFirst = i === 0;
+      const isLast = i === pts.length - 1;
+
+      if (showEvery > 1 && !isFirst && !isLast && (i % showEvery !== 0)) continue;
+
       const x = xFor(i);
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+
       let anchor = "middle";
       let xAdj = x;
-      if (i === 0) { anchor = "start"; xAdj = x + 4; }
-      if (i === pts.length - 1) { anchor = "end"; xAdj = x - 4; }
+      if (isFirst) { anchor = "start"; xAdj = x + 4; }
+      if (isLast) { anchor = "end"; xAdj = x - 4; }
 
       tx.setAttribute("x", xAdj);
-      tx.setAttribute("y", y1 + 32);
+      tx.setAttribute("y", y1 + (mobile ? 42 : 32));
       tx.setAttribute("text-anchor", anchor);
       tx.textContent = formatX(pts[i], i, pts.length);
       xLabelsEl.appendChild(tx);
     }
 
-    // Line path
     let d = `M ${xFor(0).toFixed(2)} ${yFor(pts[0].value).toFixed(2)}`;
     for (let i = 1; i < pts.length; i++) {
       d += ` L ${xFor(i).toFixed(2)} ${yFor(pts[i].value).toFixed(2)}`;
     }
     lineEl.setAttribute("d", d);
 
-    // Points
     for (let i = 0; i < pts.length; i++) {
       const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       c.setAttribute("cx", xFor(i));
       c.setAttribute("cy", yFor(pts[i].value));
-      c.setAttribute("r", mobile ? 5.2 : 4.2);
+      c.setAttribute("r", mobile ? 6 : 4.2);
       c.setAttribute("fill", "currentColor");
       c.setAttribute("opacity", "0.95");
       ptsEl.appendChild(c);
@@ -1338,9 +1319,6 @@
     return { min, max };
   }
 
-  // =========================
-  // LocalStorage fallback
-  // =========================
   function saveLocalCache(payload) {
     try {
       const wrapped = { savedAt: Date.now(), payload };
@@ -1363,9 +1341,6 @@
     }
   }
 
-  // =========================
-  // Main UI update
-  // =========================
   function updateUI(data) {
     const metals = data?.metals || {};
     const silver = metals.silver || {};
@@ -1375,7 +1350,6 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    // ✅ colored 24h high/low
     silver24hHighEl.textContent = fmtMoney(silver.high24h);
     silver24hLowEl.textContent  = fmtMoney(silver.low24h);
 
@@ -1384,12 +1358,10 @@
     const weeklyRows = data?.weekly?.silver || [];
     const yearlyRows = data?.yearly?.silver12m || [];
 
-    // Year min/max text (already colored via CSS class)
     const yy = computeMinMax(yearlyRows, (r) => r?.close);
     silver12mLowEl.textContent = fmtMoney(yy.min);
     silver12mHighEl.textContent = fmtMoney(yy.max);
 
-    // Weekly min/max text (already colored via CSS class)
     const ww = computeMinMax(weeklyRows, (r) => r?.close);
     silver7dLowEl.textContent = fmtMoney(ww.min);
     silver7dHighEl.textContent = fmtMoney(ww.max);
@@ -1403,8 +1375,6 @@
         rows: weeklyRows,
         mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
         formatX: (p) => fmtMMDD(p.xLabel),
-        minEl: null,
-        maxEl: null,
         lineEl: weeklyLineEl,
         gridEl: weeklyGridEl,
         ptsEl: weeklyPtsEl,
@@ -1414,14 +1384,14 @@
         borderEl: weeklyBorderEl,
         marketIsOpen: false,
         direction: "same",
+        desktopHeight: 260,
+        mobileHeight: 420,   // ✅ bigger
       });
 
       chartState.yearly = renderLineChart({
         rows: yearlyRows,
         mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
         formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
-        minEl: null,
-        maxEl: null,
         lineEl: yearlyLineEl,
         gridEl: yearlyGridEl,
         ptsEl: yearlyPtsEl,
@@ -1431,6 +1401,8 @@
         borderEl: yearlyBorderEl,
         marketIsOpen: false,
         direction: "same",
+        desktopHeight: 260,
+        mobileHeight: 480,   // ✅ bigger
       });
 
       return;
@@ -1444,8 +1416,6 @@
       rows: weeklyRows,
       mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
       formatX: (p) => fmtMMDD(p.xLabel),
-      minEl: null,
-      maxEl: null,
       lineEl: weeklyLineEl,
       gridEl: weeklyGridEl,
       ptsEl: weeklyPtsEl,
@@ -1455,14 +1425,14 @@
       borderEl: weeklyBorderEl,
       marketIsOpen: true,
       direction: silver.direction || "same",
+      desktopHeight: 260,
+      mobileHeight: 420,   // ✅ bigger
     });
 
     chartState.yearly = renderLineChart({
       rows: yearlyRows,
       mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
       formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
-      minEl: null,
-      maxEl: null,
       lineEl: yearlyLineEl,
       gridEl: yearlyGridEl,
       ptsEl: yearlyPtsEl,
@@ -1472,12 +1442,11 @@
       borderEl: yearlyBorderEl,
       marketIsOpen: true,
       direction: silver.direction || "same",
+      desktopHeight: 260,
+      mobileHeight: 480,   // ✅ bigger
     });
   }
 
-  // =========================
-  // Forced mode (kept)
-  // =========================
   function applyForcedModeIfAny() {
     const params = new URLSearchParams(window.location.search);
     const mode = (params.get("mode") || "").toLowerCase();
@@ -1537,9 +1506,6 @@
     return true;
   }
 
-  // =========================
-  // Fetch + auto refresh (aligned)
-  // =========================
   function backendUrlWithBuster() {
     const url = new URL(BACKEND_URL);
     url.searchParams.set("t", Date.now());
@@ -1595,20 +1561,15 @@
     }, msToNext);
   }
 
-  // =========================
-  // Boot
-  // =========================
   (async () => {
     await loadImageLists();
     preloadImages(IMAGE_LISTS.up, 8);
     preloadImages(IMAGE_LISTS.down, 8);
     preloadImages([IMAGE_CLOSED], 1);
 
-    // Attach hover/touch tooltip once
     attachChartInteractivity(weeklySvgEl, weeklyTooltipEl, () => chartState.weekly);
     attachChartInteractivity(yearlySvgEl, yearlyTooltipEl, () => chartState.yearly);
 
-    // If local cache exists, render instantly
     const local = loadLocalCache();
     if (local?.payload) updateUI(local.payload);
 
@@ -1617,13 +1578,11 @@
       scheduleAutoRefresh();
     }
 
-    // Re-render charts cleanly if device rotates / resizes across breakpoint
     let lastMobile = isMobileChart();
     window.addEventListener("resize", () => {
       const nowMobile = isMobileChart();
       if (nowMobile !== lastMobile) {
         lastMobile = nowMobile;
-        // force a redraw using local cache if available (or keep whatever is displayed)
         const local2 = loadLocalCache();
         if (local2?.payload) updateUI(local2.payload);
       }
