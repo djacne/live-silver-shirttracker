@@ -7,13 +7,12 @@
   <meta charset="utf-8" />
   <title>Dan's Retirement Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
-    :root{
+    :root {
       --bg-up: radial-gradient(circle at top, #4f46e5 0%, #020617 55%, #02010a 100%);
       --bg-down: radial-gradient(circle at top, #f97316 0%, #7f1d1d 50%, #020106 100%);
       --bg-neutral: radial-gradient(circle at top, #4b5563 0%, #020617 60%, #020107 100%);
@@ -26,58 +25,62 @@
 
       --accent-up: #22c55e;
       --accent-down: #ef4444;
-      --accent-neutral: #9ca3af;
 
+      --accent-neutral: #e5e7eb;
       --text-main: #f9fafb;
       --text-muted: #9ca3af;
+
+      --hi: #22c55e;
+      --lo: #ef4444;
     }
 
-    *{ box-sizing:border-box; }
+    * { box-sizing: border-box; }
 
-    body{
-      margin:0;
-      font-family:"Inter",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
-      color:var(--text-main);
-      min-height:100vh;
-      display:flex;
-      justify-content:center;
-      align-items:stretch;
-      padding:16px;
-      background:var(--bg-neutral);
-      transition:background .6s ease;
-      overflow-x:hidden;
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 16px;
+      background: var(--bg-neutral);
+      transition: background 0.6s ease;
+      overflow-x: hidden;
     }
 
-    body.trend-up{ background:var(--bg-up); }
-    body.trend-down{ background:var(--bg-down); }
-    body.trend-neutral{ background:var(--bg-neutral); }
-    body.market-maintenance{ background:var(--bg-maintenance); }
-    body.market-weekend{ background:var(--bg-weekend); }
+    body.trend-up { background: var(--bg-up); }
+    body.trend-down { background: var(--bg-down); }
+    body.trend-neutral { background: var(--bg-neutral); }
+    body.market-maintenance { background: var(--bg-maintenance); }
+    body.market-weekend { background: var(--bg-weekend); }
 
-    /* ---------- Background layers ---------- */
-    .bg-layer{
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      overflow:hidden;
-      z-index:0;
+    /* ===== Animated background layers ===== */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
     }
 
-    /* More visible stars (desktop + mobile) */
-    .bg-stars{
-      opacity:0;
-      transition:opacity .6s ease;
+    .bg-stars {
+      opacity: 0;
+      transition: opacity 0.6s ease;
       background-image:
-        radial-gradient(circle at 20% 20%, rgba(248,250,252,0.55) 0, transparent 55%),
-        radial-gradient(circle at 80% 10%, rgba(191,219,254,0.35) 0, transparent 55%),
-        radial-gradient(circle at 50% 85%, rgba(129,140,248,0.35) 0, transparent 55%);
+        radial-gradient(circle at 20% 20%, rgba(248,250,252,0.7) 0, transparent 55%),
+        radial-gradient(circle at 80% 10%, rgba(191,219,254,0.5) 0, transparent 55%),
+        radial-gradient(circle at 50% 85%, rgba(129,140,248,0.5) 0, transparent 55%);
     }
-    .bg-stars::before{
-      content:"";
-      position:absolute;
-      inset:-220px;
+
+    /* More obvious stars (desktop + mobile) */
+    .bg-stars::before {
+      content: "";
+      position: absolute;
+      inset: -200px;
       background-image:
-        radial-gradient(2px 2px at 6% 12%, rgba(226,232,240,0.95) 70%, transparent 71%),
+        radial-gradient(2px 2px at 6% 10%, rgba(226,232,240,0.95) 70%, transparent 71%),
         radial-gradient(2px 2px at 12% 58%, rgba(199,210,254,0.85) 70%, transparent 71%),
         radial-gradient(2px 2px at 18% 82%, rgba(226,232,240,0.9) 70%, transparent 71%),
         radial-gradient(2px 2px at 24% 28%, rgba(191,219,254,0.8) 70%, transparent 71%),
@@ -88,307 +91,422 @@
         radial-gradient(2px 2px at 58% 22%, rgba(226,232,240,0.92) 70%, transparent 71%),
         radial-gradient(2px 2px at 64% 72%, rgba(199,210,254,0.82) 70%, transparent 71%),
         radial-gradient(2px 2px at 71% 36%, rgba(226,232,240,0.9) 70%, transparent 71%),
-        radial-gradient(2px 2px at 78% 60%, rgba(191,219,254,0.8) 70%, transparent 71%),
+        radial-gradient(2px 2px at 78% 60%, rgba(191,219,254,0.78) 70%, transparent 71%),
         radial-gradient(2px 2px at 84% 18%, rgba(226,232,240,0.92) 70%, transparent 71%),
         radial-gradient(2px 2px at 90% 48%, rgba(199,210,254,0.82) 70%, transparent 71%),
         radial-gradient(2px 2px at 95% 86%, rgba(226,232,240,0.88) 70%, transparent 71%);
-      opacity:0.55;
-      animation:twinkle 6s linear infinite alternate;
+      opacity: 0.65;
+      animation: twinkle 6s linear infinite alternate;
     }
+
     .bg-stars::after{
       content:"";
       position:absolute;
       inset:-240px;
       background-image:
-        radial-gradient(1px 1px at 8% 30%, rgba(226,232,240,0.9) 70%, transparent 71%),
-        radial-gradient(1px 1px at 16% 8%, rgba(199,210,254,0.85) 70%, transparent 71%),
-        radial-gradient(1px 1px at 28% 44%, rgba(226,232,240,0.85) 70%, transparent 71%),
-        radial-gradient(1px 1px at 36% 78%, rgba(191,219,254,0.82) 70%, transparent 71%),
-        radial-gradient(1px 1px at 48% 16%, rgba(226,232,240,0.88) 70%, transparent 71%),
-        radial-gradient(1px 1px at 56% 50%, rgba(199,210,254,0.8) 70%, transparent 71%),
-        radial-gradient(1px 1px at 68% 86%, rgba(226,232,240,0.82) 70%, transparent 71%),
-        radial-gradient(1px 1px at 76% 26%, rgba(191,219,254,0.78) 70%, transparent 71%),
-        radial-gradient(1px 1px at 88% 10%, rgba(226,232,240,0.86) 70%, transparent 71%),
-        radial-gradient(1px 1px at 92% 64%, rgba(199,210,254,0.78) 70%, transparent 71%);
-      opacity:0.35;
-      animation:twinkle2 8s linear infinite alternate;
+        radial-gradient(1px 1px at 8% 18%, rgba(226,232,240,0.75) 70%, transparent 71%),
+        radial-gradient(1px 1px at 16% 72%, rgba(199,210,254,0.62) 70%, transparent 71%),
+        radial-gradient(1px 1px at 28% 40%, rgba(226,232,240,0.7) 70%, transparent 71%),
+        radial-gradient(1px 1px at 42% 16%, rgba(191,219,254,0.55) 70%, transparent 71%),
+        radial-gradient(1px 1px at 56% 84%, rgba(226,232,240,0.68) 70%, transparent 71%),
+        radial-gradient(1px 1px at 70% 28%, rgba(199,210,254,0.6) 70%, transparent 71%),
+        radial-gradient(1px 1px at 86% 66%, rgba(226,232,240,0.66) 70%, transparent 71%);
+      opacity:0.40;
+      animation: twinkle2 8s linear infinite alternate;
     }
-    @keyframes twinkle{ 0%{opacity:.35; transform:translateY(0);} 100%{opacity:.85; transform:translateY(10px);} }
-    @keyframes twinkle2{ 0%{opacity:.18; transform:translateY(0);} 100%{opacity:.48; transform:translateY(8px);} }
 
-    .bg-fire{
-      opacity:0;
-      transition:opacity .6s ease;
+    @keyframes twinkle { 0% { opacity: 0.40; transform: translateY(0); } 100% { opacity: 1; transform: translateY(10px); } }
+    @keyframes twinkle2{ 0% { opacity:0.22; transform: translateY(0); } 100% { opacity:0.52; transform: translateY(8px); } }
+
+    .bg-fire {
+      opacity: 0;
+      transition: opacity 0.6s ease;
       background-image:
         radial-gradient(circle at 50% 120%, rgba(239,68,68,0.8) 0, transparent 60%),
         radial-gradient(circle at 0% 120%, rgba(249,115,22,0.75) 0, transparent 60%),
         radial-gradient(circle at 100% 120%, rgba(251,146,60,0.7) 0, transparent 60%);
-      mix-blend-mode:screen;
-    }
-    .bg-fire::before{
-      content:"";
-      position:absolute;
-      inset:30% 0 -40%;
-      background:radial-gradient(circle, rgba(248,250,252,0.08) 0, transparent 55%);
-      opacity:.8;
-      animation:heatWave 4s ease-in-out infinite alternate;
-    }
-    @keyframes heatWave{ 0%{transform:translateY(0) scaleY(1); opacity:.4;} 100%{transform:translateY(-18px) scaleY(1.1); opacity:.9;} }
-
-    .coins-rain, .bills-rain, .crash-rain{
-      position:absolute; inset:-20vh 0;
-      overflow:visible;
-      pointer-events:none;
-      opacity:0;
-      transition:opacity .6s ease;
-      font-size:1.4rem;
-    }
-    .coin, .bill, .crash{
-      position:absolute;
-      top:-10vh;
-      animation-name:fall;
-      animation-timing-function:linear;
-      animation-iteration-count:infinite;
-    }
-    .coin{ filter:drop-shadow(0 0 6px rgba(250,250,210,0.8)); }
-    .bill{ filter:drop-shadow(0 0 6px rgba(248,113,113,0.9)); }
-    .crash{ filter:drop-shadow(0 0 8px rgba(239,68,68,0.85)); font-size:1.6rem; }
-
-    @keyframes fall{
-      0%{ transform:translate3d(var(--x),-120vh,0) rotate(0deg); opacity:0; }
-      10%{ opacity:1; }
-      100%{ transform:translate3d(calc(var(--x) + 20px),120vh,0) rotate(360deg); opacity:0; }
+      mix-blend-mode: screen;
     }
 
-    body.trend-up .bg-stars{ opacity:1; }
-    body.trend-up .coins-rain{ opacity:.9; }
-    body.trend-down .bg-fire{ opacity:1; }
-    body.trend-down .bills-rain{ opacity:.9; }
-    body.trend-down .crash-rain{ opacity:.95; }
-
-    .rockets-layer, .crash-rockets-layer, .sprinkles-layer{
-      position:absolute; inset:0;
-      pointer-events:none;
-      opacity:0;
-      transition:opacity .6s ease;
-      overflow:hidden;
-      z-index:0;
-    }
-    body.trend-up .rockets-layer{ opacity:.85; }
-    body.trend-down .crash-rockets-layer{ opacity:.85; }
-    body.trend-up .sprinkles-layer{ opacity:.55; }
-
-    .rocket, .crash-rocket{
-      position:absolute;
-      font-size:1.6rem;
-      opacity:0;
-      animation-timing-function:linear;
-      animation-iteration-count:infinite;
-      animation-delay:var(--delay);
-      animation-duration:var(--dur);
-      transform-origin:center;
-      will-change:transform,opacity;
-    }
-    .rocket{ bottom:-14vh; filter:drop-shadow(0 0 8px rgba(248,250,252,0.22)); }
-    .rocket-l{ left:var(--x); animation-name:rocketFlyL; }
-    @keyframes rocketFlyL{
-      0%{ transform:translate3d(0,0,0) rotate(-35deg) scale(.95); opacity:0; }
-      10%{ opacity:.55; }
-      60%{ opacity:.55; }
-      100%{ transform:translate3d(120vw,-140vh,0) rotate(-35deg) scale(1.05); opacity:0; }
+    .bg-fire::before {
+      content: "";
+      position: absolute;
+      inset: 30% 0 -40%;
+      background: radial-gradient(circle, rgba(248,250,252,0.08) 0, transparent 55%);
+      opacity: 0.8;
+      animation: heatWave 4s ease-in-out infinite alternate;
     }
 
-    .crash-rocket{ top:-14vh; filter:drop-shadow(0 0 10px rgba(239,68,68,0.35)); }
-    .crash-rocket-r{ left:var(--x); animation-name:crashFlyR; }
-    @keyframes crashFlyR{
-      0%{ transform:translate3d(120vw,0,0) rotate(35deg) scale(.95); opacity:0; }
-      10%{ opacity:.55; }
-      60%{ opacity:.55; }
-      100%{ transform:translate3d(-140vw,120vh,0) rotate(35deg) scale(1.05); opacity:0; }
+    @keyframes heatWave {
+      0% { transform: translateY(0) scaleY(1); opacity: 0.4; }
+      100% { transform: translateY(-18px) scaleY(1.1); opacity: 0.9; }
     }
 
-    .sprinkles-layer{ inset:-10vh 0; font-size:1.15rem; }
-    .sprinkle{
-      position:absolute; top:-12vh; left:var(--x);
-      opacity:0;
-      animation:sprinkleFall var(--dur) linear infinite;
-      animation-delay:var(--delay);
-      filter:drop-shadow(0 0 6px rgba(148,163,184,0.22));
-      will-change:transform,opacity;
-    }
-    @keyframes sprinkleFall{
-      0%{ transform:translate3d(0,-20vh,0) rotate(0deg); opacity:0; }
-      12%{ opacity:.5; }
-      85%{ opacity:.5; }
-      100%{ transform:translate3d(8px,140vh,0) rotate(160deg); opacity:0; }
+    .coins-rain, .bills-rain, .crash-rain {
+      position: absolute;
+      inset: -20vh 0;
+      overflow: visible;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      font-size: 1.4rem;
     }
 
-    /* ---------- Layout ---------- */
-    .page{
-      width:100%;
-      max-width:1024px;
-      margin:0 auto;
-      position:relative;
-      z-index:1;
+    .coin, .bill, .crash {
+      position: absolute;
+      top: -10vh;
+      animation-name: fall;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+    .coin { filter: drop-shadow(0 0 6px rgba(250, 250, 210, 0.8)); }
+    .bill { filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.9)); }
+    .crash { filter: drop-shadow(0 0 8px rgba(239,68,68,0.85)); font-size: 1.6rem; }
+
+    @keyframes fall {
+      0% { transform: translate3d(var(--x), -120vh, 0) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      100% { transform: translate3d(calc(var(--x) + 20px), 120vh, 0) rotate(360deg); opacity: 0; }
     }
 
-    header{ text-align:center; margin-bottom:16px; }
-    header h1{
-      font-size:clamp(1.6rem,2.6vw,2.2rem);
-      margin:0;
-      letter-spacing:.03em;
+    body.trend-up .bg-stars { opacity: 1; }
+    body.trend-up .coins-rain { opacity: 0.9; }
+    body.trend-down .bg-fire { opacity: 1; }
+    body.trend-down .bills-rain { opacity: 0.9; }
+    body.trend-down .crash-rain { opacity: 0.95; }
+
+    .rockets-layer, .crash-rockets-layer, .sprinkles-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      overflow: hidden;
+      z-index: 0;
+    }
+    body.trend-up .rockets-layer { opacity: 0.85; }
+    body.trend-down .crash-rockets-layer { opacity: 0.85; }
+    body.trend-up .sprinkles-layer { opacity: 0.55; }
+
+    .rocket, .crash-rocket {
+      position: absolute;
+      font-size: 1.6rem;
+      opacity: 0;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      animation-delay: var(--delay);
+      animation-duration: var(--dur);
+      transform-origin: center;
+      will-change: transform, opacity;
     }
 
-    .layout{
-      display:grid;
-      grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
-      gap:18px;
+    .rocket {
+      bottom: -14vh;
+      filter: drop-shadow(0 0 8px rgba(248,250,252,0.22));
     }
-    @media (max-width:800px){ .layout{ grid-template-columns:1fr; } }
-
-    .card{
-      background:var(--card-bg);
-      border:1px solid var(--card-border);
-      border-radius:18px;
-      padding:16px;
-      box-shadow:0 18px 40px rgba(0,0,0,.55);
-      backdrop-filter:blur(10px);
+    .rocket-l { left: var(--x); animation-name: rocketFlyL; }
+    @keyframes rocketFlyL {
+      0%   { transform: translate3d(0, 0, 0) rotate(-35deg) scale(0.95); opacity: 0; }
+      10%  { opacity: 0.55; }
+      60%  { opacity: 0.55; }
+      100% { transform: translate3d(120vw, -140vh, 0) rotate(-35deg) scale(1.05); opacity: 0; }
     }
 
-    .hero-image-card{ display:flex; flex-direction:column; align-items:center; gap:10px; }
-    .hero-image-wrapper{
-      position:relative;
-      width:100%;
-      max-width:420px;
-      aspect-ratio:1/1;
-      overflow:hidden;
-      border-radius:16px;
+    .crash-rocket {
+      top: -14vh;
+      filter: drop-shadow(0 0 10px rgba(239,68,68,0.35));
     }
-    .hero-image-wrapper img{ width:100%; height:100%; object-fit:cover; object-position:center; display:block; }
-
-    .hero-info{ display:flex; flex-direction:column; gap:12px; justify-content:space-between; align-items:stretch; text-align:center; }
-    .hero-topline{
-      font-size:.8rem;
-      text-transform:uppercase;
-      letter-spacing:.14em;
-      color:var(--text-muted);
-    }
-    .hero-main{ display:flex; flex-direction:column; gap:10px; align-items:center; }
-
-    .headline-price{
-      font-size:clamp(2.2rem,3.8vw,2.8rem);
-      font-weight:700;
-      display:flex;
-      align-items:baseline;
-      gap:8px;
-      justify-content:center;
-    }
-    .headline-price span.small{ font-size:.9rem; color:var(--text-muted); font-weight:500; }
-
-    .hero-subline{ font-size:.9rem; color:var(--text-muted); margin-top:0; }
-    .hero-substack{ display:flex; flex-direction:column; gap:4px; margin-top:2px; }
-
-    .pill-line{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; align-items:center; }
-    .trend-pill{
-      display:inline-flex; align-items:center; gap:6px;
-      padding:6px 11px;
-      border-radius:999px;
-      font-size:.85rem;
-      font-weight:600;
-      border:1px solid transparent;
-    }
-    .trend-pill .trend-arrow{ font-size:.95rem; }
-    .trend-pill.up{ background:rgba(22,163,74,.15); border-color:rgba(34,197,94,.7); color:#bbf7d0; }
-    .trend-pill.down{ background:rgba(220,38,38,.18); border-color:rgba(248,113,113,.8); color:#fecaca; }
-    .trend-pill.neutral{ background:rgba(148,163,184,.15); border-color:rgba(148,163,184,.6); color:#e5e7eb; }
-
-    .hero-divider{
-      height:1px; width:100%;
-      background:linear-gradient(to right, transparent, rgba(148,163,184,.6), transparent);
-      opacity:.7;
-    }
-    .hero-meta{ display:flex; flex-direction:column; gap:4px; align-items:center; font-size:.8rem; color:var(--text-muted); }
-    .last-updated{ font-size:.8rem; color:var(--text-muted); text-align:center; }
-
-    .section-title{
-      font-size:.95rem;
-      text-transform:uppercase;
-      letter-spacing:.14em;
-      color:var(--text-muted);
-      margin:0 0 10px 0;
-      text-align:center;
+    .crash-rocket-r { left: var(--x); animation-name: crashFlyR; }
+    @keyframes crashFlyR {
+      0%   { transform: translate3d(120vw, 0, 0) rotate(35deg) scale(0.95); opacity: 0; }
+      10%  { opacity: 0.55; }
+      60%  { opacity: 0.55; }
+      100% { transform: translate3d(-140vw, 120vh, 0) rotate(35deg) scale(1.05); opacity: 0; }
     }
 
-    /* ---------- Charts ---------- */
-    .chart-wrap{
-      width:100%;
-      overflow:hidden;
-      border-radius:16px;
-      border:1px solid rgba(148,163,184,.25);
-      background:rgba(2,6,23,.25);
-      padding:10px;
+    .sprinkles-layer { inset: -10vh 0; font-size: 1.15rem; }
+    .sprinkle {
+      position: absolute;
+      top: -12vh;
+      left: var(--x);
+      opacity: 0;
+      animation: sprinkleFall var(--dur) linear infinite;
+      animation-delay: var(--delay);
+      filter: drop-shadow(0 0 6px rgba(148,163,184,0.22));
+      will-change: transform, opacity;
+    }
+    @keyframes sprinkleFall {
+      0%   { transform: translate3d(0, -20vh, 0) rotate(0deg); opacity: 0; }
+      12%  { opacity: 0.5; }
+      85%  { opacity: 0.5; }
+      100% { transform: translate3d(8px, 140vh, 0) rotate(160deg); opacity: 0; }
     }
 
-    /* SAME size boxes for weekly + yearly */
-    .chart-wrap svg{
-      width:100%;
-      height:280px;          /* desktop */
-      display:block;
-      touch-action:pan-y;
-      user-select:none;
+    /* ===== Layout ===== */
+    .page {
+      width: 100%;
+      max-width: 1024px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
     }
 
-    /* Bigger chart text (desktop) */
-    .chart-wrap svg text{
-      font-family:"Inter",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
-      fill:rgba(190,200,215,.92);
-      font-size:16px;
+    header { text-align: center; margin-bottom: 16px; }
+    header h1 {
+      font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+      margin: 0;
+      letter-spacing: 0.03em;
     }
 
-    .chart-wrap svg .gridline{
-      stroke:rgba(148,163,184,.12);
-      stroke-width:1;
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 18px;
+    }
+    @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(10px);
     }
 
-    @media (max-width:600px){
-      .chart-wrap{ padding:10px; }
-      .chart-wrap svg{
-        height:340px;       /* mobile: readable but not insane */
-      }
-      .chart-wrap svg text{
-        font-size:18px;     /* mobile bigger labels */
-      }
+    .hero-image-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
 
-    .chart-meta{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      margin-top:8px;
-      font-size:.85rem;
-      color:var(--text-muted);
+    .hero-image-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      border-radius: 16px;
     }
 
-    .low-val{ color:var(--accent-down); font-weight:700; }
-    .high-val{ color:var(--accent-up); font-weight:700; }
-    .sub-low{ color:var(--accent-down); font-weight:700; }
-    .sub-high{ color:var(--accent-up); font-weight:700; }
+    .hero-image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
 
-    /* ---------- Table ---------- */
-    .table-card{ margin-top:18px; }
-    table{ width:100%; border-collapse:collapse; }
-    thead{ border-bottom:1px solid rgba(148,163,184,.4); }
-    th, td{ padding:8px 2px; text-align:left; font-size:.9rem; }
-    th{ color:var(--text-muted); font-weight:600; font-size:.85rem; }
+    .hero-info {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: stretch;
+      text-align: center;
+    }
 
-    .metal-name{ font-weight:600; }
-    .price-cell{ text-align:right; font-feature-settings:"tnum" 1,"lnum" 1; }
-    .change-cell{ text-align:right; }
+    .hero-topline {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
 
-    .change{ font-feature-settings:"tnum" 1,"lnum" 1; font-size:.85rem; }
-    .change.up{ color:var(--accent-up); }
-    .change.down{ color:var(--accent-down); }
-    .change.neutral{ color:var(--text-muted); }
+    .hero-main {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .headline-price {
+      font-size: clamp(2.2rem, 3.8vw, 2.8rem);
+      font-weight: 700;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .headline-price span.small {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .hero-subline {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 0;
+    }
+
+    .hero-subline .hi { color: var(--hi); font-weight: 700; }
+    .hero-subline .lo { color: var(--lo); font-weight: 700; }
+
+    .hero-substack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .trend-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .trend-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+
+    .trend-pill .trend-arrow { font-size: 0.95rem; }
+
+    .trend-pill.up {
+      background: rgba(22,163,74,0.15);
+      border-color: rgba(34,197,94,0.7);
+      color: #bbf7d0;
+    }
+    .trend-pill.down {
+      background: rgba(220,38,38,0.18);
+      border-color: rgba(248,113,113,0.8);
+      color: #fecaca;
+    }
+    .trend-pill.neutral {
+      background: rgba(148,163,184,0.15);
+      border-color: rgba(148,163,184,0.6);
+      color: #e5e7eb;
+    }
+
+    .hero-divider {
+      height: 1px;
+      width: 100%;
+      background: linear-gradient(to right, transparent, rgba(148,163,184,0.6), transparent);
+      opacity: 0.7;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .last-updated { font-size: 0.85rem; color: var(--text-muted); text-align: center; }
+    .hero-frequency { opacity: 0.9; text-align: center; }
+
+    .section-title {
+      font-size: 0.92rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      margin: 0 0 10px 0;
+      text-align: center;
+    }
+
+    .chart-wrap {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(2, 6, 23, 0.25);
+      padding: 10px;
+    }
+
+    /* Keep weekly/yearly boxes the SAME size */
+    .chart-wrap svg {
+      width: 100%;
+      height: 260px;  /* desktop */
+      display: block;
+      touch-action: pan-y; /* don't kill scrolling */
+      user-select: none;
+    }
+
+    /* BIGGER, readable text */
+    .chart-wrap svg text {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      fill: rgba(170,180,195,0.98);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .chart-wrap svg .gridline {
+      stroke: rgba(148,163,184,0.12);
+      stroke-width: 1;
+    }
+
+    .chart-wrap svg .bar {
+      shape-rendering: crispEdges;
+    }
+
+    .chart-wrap svg .crosshair {
+      stroke: rgba(226,232,240,0.70);
+      stroke-width: 2;
+      stroke-dasharray: 4 4;
+      opacity: 0;
+    }
+
+    .chart-wrap svg .tipbox {
+      opacity: 0;
+    }
+
+    @media (max-width: 600px) {
+      .chart-wrap { padding: 10px; }
+      .chart-wrap svg { height: 240px; }         /* same-ish size as other cards */
+      .chart-wrap svg text { font-size: 16.5px; }/* readable on mobile */
+    }
+
+    .chart-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .chart-meta .hi { color: var(--hi); }
+    .chart-meta .lo { color: var(--lo); }
+
+    .table-card { margin-top: 18px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { border-bottom: 1px solid rgba(148, 163, 184, 0.4); }
+
+    th, td {
+      padding: 10px 2px;
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .metal-name { font-weight: 700; }
+    .price-cell { text-align: right; font-feature-settings: "tnum" 1, "lnum" 1; font-weight: 700; }
+    .change-cell { text-align: right; }
+
+    .change { font-feature-settings: "tnum" 1, "lnum" 1; font-size: 0.9rem; font-weight: 800; }
+    .change.up { color: var(--accent-up); }
+    .change.down { color: var(--accent-down); }
+    .change.neutral { color: var(--text-muted); }
   </style>
 </head>
 
@@ -468,7 +586,7 @@
             <span class="small">/ troy ounce</span>
           </div>
 
-          <div class="pill-line">
+          <div class="trend-row">
             <div id="trend-pill" class="trend-pill neutral">
               <span class="trend-arrow">↔</span>
               <span id="trend-text">Loading…</span>
@@ -487,7 +605,9 @@
           <div class="last-updated">
             Last updated: <span id="last-updated">—</span>
           </div>
-          <div class="hero-frequency">Updates every 30 minutes</div>
+          <div class="hero-frequency">
+            Updates every 30 minutes
+          </div>
         </div>
       </section>
     </div>
@@ -496,18 +616,21 @@
       <div class="section-title">Silver weekly trend</div>
 
       <div class="chart-wrap">
-        <!-- Same viewBox for both charts -->
-        <svg id="silver7d-svg" viewBox="0 0 1000 300" role="img" aria-label="Silver 7-day trend bar chart">
+        <!-- same viewBox size as yearly to look professional -->
+        <svg id="silver7d-svg" viewBox="0 0 1000 260" role="img" aria-label="Silver 7-day trend chart">
           <g id="silver7d-grid"></g>
           <g id="silver7d-bars"></g>
+          <line id="silver7d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="260"></line>
           <g id="silver7d-xlabels"></g>
           <g id="silver7d-ylabels"></g>
+          <g id="silver7d-tip" class="tipbox"></g>
           <path id="silver7d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+          <rect id="silver7d-hit" x="0" y="0" width="1000" height="260" fill="transparent"></rect>
         </svg>
 
         <div class="chart-meta">
-          <div>Low: <span id="silver7d-low" class="low-val">—</span></div>
-          <div>High: <span id="silver7d-high" class="high-val">—</span></div>
+          <div>Low: <span id="silver7d-low" class="lo">—</span></div>
+          <div>High: <span id="silver7d-high" class="hi">—</span></div>
         </div>
       </div>
     </section>
@@ -516,23 +639,26 @@
       <div class="section-title">Silver yearly trend</div>
 
       <div class="chart-wrap">
-        <svg id="silver12m-svg" viewBox="0 0 1000 300" role="img" aria-label="Silver 12-month trend bar chart">
+        <svg id="silver12m-svg" viewBox="0 0 1000 260" role="img" aria-label="Silver 12-month trend chart">
           <g id="silver12m-grid"></g>
           <g id="silver12m-bars"></g>
+          <line id="silver12m-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="260"></line>
           <g id="silver12m-xlabels"></g>
           <g id="silver12m-ylabels"></g>
+          <g id="silver12m-tip" class="tipbox"></g>
           <path id="silver12m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+          <rect id="silver12m-hit" x="0" y="0" width="1000" height="260" fill="transparent"></rect>
         </svg>
 
         <div class="chart-meta">
-          <div>Low: <span id="silver12m-low" class="low-val">—</span></div>
-          <div>High: <span id="silver12m-high" class="high-val">—</span></div>
+          <div>Low: <span id="silver12m-low" class="lo">—</span></div>
+          <div>High: <span id="silver12m-high" class="hi">—</span></div>
         </div>
       </div>
     </section>
 
     <section class="card table-card">
-      <div class="section-title">Metals scoreboard</div>
+      <div class="section-title">Metal spot prices</div>
       <table>
         <thead>
           <tr>
@@ -568,6 +694,9 @@
   const weeklyXLabelsEl = document.getElementById("silver7d-xlabels");
   const weeklyYLabelsEl = document.getElementById("silver7d-ylabels");
   const weeklyBorderEl = document.getElementById("silver7d-border");
+  const weeklyHitEl = document.getElementById("silver7d-hit");
+  const weeklyCrosshairEl = document.getElementById("silver7d-crosshair");
+  const weeklyTipEl = document.getElementById("silver7d-tip");
 
   const silver12mLowEl = document.getElementById("silver12m-low");
   const silver12mHighEl = document.getElementById("silver12m-high");
@@ -577,17 +706,17 @@
   const yearlyXLabelsEl = document.getElementById("silver12m-xlabels");
   const yearlyYLabelsEl = document.getElementById("silver12m-ylabels");
   const yearlyBorderEl = document.getElementById("silver12m-border");
+  const yearlyHitEl = document.getElementById("silver12m-hit");
+  const yearlyCrosshairEl = document.getElementById("silver12m-crosshair");
+  const yearlyTipEl = document.getElementById("silver12m-tip");
 
   const IMAGE_CLOSED = "/img/silver-closed.png";
+
   let IMAGE_LISTS = { up: [], down: [] };
 
-  // Prevent iOS "scroll = resize" from re-fetching and re-randomizing the meme.
-  let _lastKnownWidth = window.innerWidth;
-  let _resizeTimer = null;
-
-  // Keep meme stable across re-renders unless direction changes or market closes.
-  let _lastHeroMode = null;   // "up" | "down" | "neutral" | "closed"
-  let _lockedHeroImg = null;
+  // Cache the current "chosen" image so refreshes don't shuffle it.
+  let _currentDirection = null;
+  let _currentImageSrc = null;
 
   function isMobileNow() {
     return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
@@ -672,14 +801,16 @@
       trendTextEl.textContent = "Market opens Sunday 5pm CT";
     }
 
-    // lock image
-    _lastHeroMode = "closed";
-    _lockedHeroImg = IMAGE_CLOSED;
-    characterImgEl.src = _lockedHeroImg;
+    _currentDirection = "closed";
+    _currentImageSrc = IMAGE_CLOSED;
+    characterImgEl.src = _currentImageSrc;
   }
 
   function setTrendPill(direction) {
     const arrowEl = trendPillEl.querySelector(".trend-arrow");
+
+    // Only change the image if the direction actually changed (prevents scroll/viewport weirdness from reshuffling)
+    const shouldSwapImage = direction !== _currentDirection;
 
     if (direction === "up") {
       trendPillEl.className = "trend-pill up";
@@ -687,11 +818,11 @@
       trendTextEl.textContent = "Closer to retirement";
       setTrendMode("up");
 
-      if (_lastHeroMode !== "up" || !_lockedHeroImg) {
-        _lockedHeroImg = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
-        _lastHeroMode = "up";
+      if (shouldSwapImage) {
+        _currentImageSrc = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
+        _currentDirection = "up";
       }
-      characterImgEl.src = _lockedHeroImg;
+      characterImgEl.src = _currentImageSrc || IMAGE_CLOSED;
       return;
     }
 
@@ -701,11 +832,11 @@
       trendTextEl.textContent = "Get back to work";
       setTrendMode("down");
 
-      if (_lastHeroMode !== "down" || !_lockedHeroImg) {
-        _lockedHeroImg = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
-        _lastHeroMode = "down";
+      if (shouldSwapImage) {
+        _currentImageSrc = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
+        _currentDirection = "down";
       }
-      characterImgEl.src = _lockedHeroImg;
+      characterImgEl.src = _currentImageSrc || IMAGE_CLOSED;
       return;
     }
 
@@ -714,9 +845,9 @@
     trendTextEl.textContent = "Well this is boring";
     setTrendMode("neutral");
 
-    _lastHeroMode = "neutral";
-    _lockedHeroImg = IMAGE_CLOSED;
-    characterImgEl.src = _lockedHeroImg;
+    _currentDirection = "neutral";
+    _currentImageSrc = IMAGE_CLOSED;
+    characterImgEl.src = _currentImageSrc;
   }
 
   function renderMetalsTable(metals) {
@@ -819,6 +950,7 @@
     const range = max - min;
     const rawStep = range / Math.max(1, count - 1);
     const step = niceNumber(rawStep);
+
     const start = Math.floor(min / step) * step;
     const end = Math.ceil(max / step) * step;
 
@@ -827,31 +959,19 @@
     return ticks;
   }
 
-  function clearBarChart(gridEl, barsEl, xLblEl, yLblEl, borderEl) {
+  function clearBarChart(gridEl, barsEl, xLblEl, yLblEl, borderEl, tipEl) {
     gridEl.innerHTML = "";
     barsEl.innerHTML = "";
     xLblEl.innerHTML = "";
     yLblEl.innerHTML = "";
     borderEl.setAttribute("d", "");
-  }
-
-  function barFillFor(delta, marketIsOpen) {
-    if (!marketIsOpen) return "rgba(148,163,184,0.55)";
-    if (delta > 0) return "rgba(34,197,94,0.78)";
-    if (delta < 0) return "rgba(239,68,68,0.78)";
-    return "rgba(148,163,184,0.58)";
-  }
-
-  function barStrokeFor(delta, marketIsOpen) {
-    if (!marketIsOpen) return "rgba(148,163,184,0.35)";
-    if (delta > 0) return "rgba(34,197,94,0.95)";
-    if (delta < 0) return "rgba(239,68,68,0.95)";
-    return "rgba(148,163,184,0.55)";
+    tipEl.innerHTML = "";
   }
 
   function renderBarChart({
     rows,
-    mapPoint,
+    getXLabel,
+    getValue,
     formatX,
     minEl,
     maxEl,
@@ -860,70 +980,68 @@
     xLabelsEl,
     yLabelsEl,
     borderEl,
+    hitEl,
+    crosshairEl,
+    tipEl,
     marketIsOpen,
-    chartType = "weekly", // "weekly" | "yearly"
+    direction,
+    chartType = "weekly", // weekly | yearly
   }) {
-    clearBarChart(gridEl, barsEl, xLabelsEl, yLabelsEl, borderEl);
+    clearBarChart(gridEl, barsEl, xLabelsEl, yLabelsEl, borderEl, tipEl);
 
     if (minEl) minEl.textContent = "—";
     if (maxEl) maxEl.textContent = "—";
+
     if (!Array.isArray(rows) || rows.length < 2) return;
 
-    // Normalize & filter
-    const pts = rows.map(mapPoint).filter((p) => p && p.xLabel && Number.isFinite(p.value));
+    const pts = rows
+      .map((r) => ({ xLabel: getXLabel(r), value: Number(getValue(r)), raw: r }))
+      .filter((p) => p && p.xLabel && Number.isFinite(p.value));
+
     if (pts.length < 2) return;
 
-    // Make sure sorted
-    if (chartType === "weekly") {
-      pts.sort((a,b) => String(a.xLabel).localeCompare(String(b.xLabel)));
-    } else {
-      pts.sort((a,b) => String(a.xLabel).localeCompare(String(b.xLabel)));
-    }
-
     let min = Infinity, max = -Infinity;
-    for (const p of pts) {
-      if (p.value < min) min = p.value;
-      if (p.value > max) max = p.value;
-    }
+    for (const p of pts) { if (p.value < min) min = p.value; if (p.value > max) max = p.value; }
     if (!Number.isFinite(min) || !Number.isFinite(max)) return;
 
     if (minEl) minEl.textContent = fmtMoney(min);
     if (maxEl) maxEl.textContent = fmtMoney(max);
 
-    // Tighter y padding but never crop the top
-    const range = (max - min);
-    const pct = chartType === "weekly" ? 0.05 : 0.06;
-    const minPad = 0.35;
-    let pad = Math.max(minPad, range * pct);
-    const yMin = min - pad;
-    const yMax = max + pad;
+    // ✅ Make bars fill the box: minimal headroom, no huge fixed pad.
+    let range = (max - min);
+    const minVisualRange = chartType === "weekly" ? 0.35 : 0.60;
+    if (range < minVisualRange) range = minVisualRange;
 
-    // Drawing box
-    const W = 1000, H = 300;
+    const padTop = range * 0.06;   // keeps top from clipping
+    const padBot = range * 0.02;   // tiny breathing room
+    const yMin = min - padBot;
+    const yMax = max + padTop;
+
+    const W = 1000;
+    const H = 260;
     const mobile = isMobileNow();
 
-    // This is what makes it “readable”: labels inside + more plot area
-    const padL = mobile ? 14 : 18;
-    const padR = mobile ? 12 : 16;
-    const padT = mobile ? 16 : 14;
-    const padB = mobile ? 54 : 46;
+    const padL = mobile ? 22 : 26;
+    const padR = mobile ? 18 : 76;
+    const padT = mobile ? 16 : 16;
+    const padB = mobile ? 54 : 48;
 
     const innerW = W - padL - padR;
     const innerH = H - padT - padB;
-
-    const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
-    borderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
     const yFor = (v) => {
       const t = (v - yMin) / (yMax - yMin || 1);
       return padT + innerH * (1 - t);
     };
 
-    // Grid + y labels (inside right)
-    const ticks = makeTicks(yMin, yMax, mobile ? 4 : 5);
-    const yLabelFmt = (range < 20) ? (n) => n.toFixed(1) : (n) => n.toFixed(0);
+    const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
+    borderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
-    for (const t of ticks) {
+    // grid + y labels
+    const yTicks = makeTicks(yMin, yMax, mobile ? 4 : 5);
+    const yLabelFmt = (range < 20) ? (n) => n.toFixed(2) : (n) => n.toFixed(0);
+
+    for (const t of yTicks) {
       const y = yFor(t);
 
       const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -935,69 +1053,168 @@
       gridEl.appendChild(gl);
 
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      tx.setAttribute("x", x1 - 6);
-      tx.setAttribute("text-anchor", "end");
+      // keep y labels inside on mobile so they don't get clipped
+      if (mobile) {
+        tx.setAttribute("x", x1 - 8);
+        tx.setAttribute("text-anchor", "end");
+      } else {
+        tx.setAttribute("x", x1 + 10);
+        tx.setAttribute("text-anchor", "start");
+      }
       tx.setAttribute("y", y + 6);
       tx.textContent = yLabelFmt(t);
       yLabelsEl.appendChild(tx);
     }
 
-    // Bars that touch
+    // Bars: touch each other, but add a tiny gap so they don't blur.
     const n = pts.length;
-    const barW = innerW / n;
+    const slotW = innerW / n;
+
+    const gap = mobile ? 2.2 : 2.6; // ✅ tiny gap requested
+    const barW = Math.max(2, slotW - gap);
+
+    const barX = (i) => padL + i * slotW + (gap / 2);
+
+    const yBase = y1;
+
+    // X labels: show fewer on mobile
+    let step = 1;
+    if (mobile) step = (chartType === "weekly") ? 2 : 2;
+
+    const shouldShowX = (i) => (i === 0 || i === n - 1 || (i % step === 0));
 
     for (let i = 0; i < n; i++) {
       const v = pts[i].value;
+      const yTop = yFor(v);
+      const h = Math.max(1, yBase - yTop);
+
       const prev = (i > 0) ? pts[i - 1].value : v;
-      const delta = v - prev;
+      const isUp = v >= prev;
 
-      const x = padL + i * barW;
-      const y = yFor(v);
-      const h = Math.max(0, y1 - y);
+      // if market is closed, gray out bars regardless
+      const fill = (!marketIsOpen)
+        ? "rgba(148,163,184,0.55)"
+        : (isUp ? "rgba(34,197,94,0.85)" : "rgba(239,68,68,0.85)");
 
-      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      rect.setAttribute("x", x.toFixed(2));
-      rect.setAttribute("y", y.toFixed(2));
-      rect.setAttribute("width", (barW + 0.6).toFixed(2)); // tiny overlap kills hairline gaps
-      rect.setAttribute("height", h.toFixed(2));
-      rect.setAttribute("fill", barFillFor(delta, marketIsOpen));
-      rect.setAttribute("stroke", barStrokeFor(delta, marketIsOpen));
-      rect.setAttribute("stroke-width", mobile ? "1.1" : "1");
-      rect.setAttribute("rx", "0"); // touching bars = no rounded corners
-      barsEl.appendChild(rect);
+      const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      r.setAttribute("class", "bar");
+      r.setAttribute("x", barX(i));
+      r.setAttribute("y", yTop);
+      r.setAttribute("width", barW);
+      r.setAttribute("height", h);
+      r.setAttribute("rx", mobile ? 3.5 : 3.0);
+      r.setAttribute("ry", mobile ? 3.5 : 3.0);
+      r.setAttribute("fill", fill);
+      r.setAttribute("opacity", "0.98");
+      barsEl.appendChild(r);
+
+      if (shouldShowX(i)) {
+        const x = barX(i) + (barW / 2);
+        const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        tx.setAttribute("x", x);
+        tx.setAttribute("y", y1 + (mobile ? 38 : 30));
+        tx.setAttribute("text-anchor", "middle");
+        tx.textContent = formatX(pts[i], i, n);
+        xLabelsEl.appendChild(tx);
+      }
     }
 
-    // X labels: fewer on mobile, always show first/last
-    const labelEvery = mobile ? (chartType === "weekly" ? 2 : 3) : (chartType === "weekly" ? 1 : 2);
+    // Tooltip / crosshair (kept simple, but works desktop + mobile finger)
+    const svgNS = "http://www.w3.org/2000/svg";
 
-    const shouldShow = (i) => {
-      if (i === 0 || i === n - 1) return true;
-      return (i % labelEvery === 0);
+    function hideTip() {
+      crosshairEl.style.opacity = "0";
+      tipEl.style.opacity = "0";
+      tipEl.innerHTML = "";
+    }
+
+    function showTip(i) {
+      i = Math.max(0, Math.min(n - 1, i));
+      const v = pts[i].value;
+      const xCenter = barX(i) + (barW / 2);
+
+      crosshairEl.setAttribute("x1", xCenter);
+      crosshairEl.setAttribute("x2", xCenter);
+      crosshairEl.style.opacity = "1";
+
+      const label = formatX(pts[i], i, n);
+      const price = fmtMoney(v);
+
+      // tip group
+      tipEl.innerHTML = "";
+      tipEl.style.opacity = "1";
+
+      const tipPaddingX = 12;
+      const tipPaddingY = 10;
+
+      const tx1 = document.createElementNS(svgNS, "text");
+      tx1.textContent = label;
+      tx1.setAttribute("x", 0);
+      tx1.setAttribute("y", 0);
+
+      const tx2 = document.createElementNS(svgNS, "text");
+      tx2.textContent = price;
+      tx2.setAttribute("x", 0);
+      tx2.setAttribute("y", 22);
+
+      // measure with a quick temp group
+      const g = document.createElementNS(svgNS, "g");
+      g.appendChild(tx1);
+      g.appendChild(tx2);
+      tipEl.appendChild(g);
+
+      const bb = g.getBBox();
+      const boxW = bb.width + tipPaddingX * 2;
+      const boxH = bb.height + tipPaddingY * 2;
+
+      // position near top; clamp within plot
+      let bx = xCenter - boxW / 2;
+      bx = Math.max(x0 + 6, Math.min(x1 - boxW - 6, bx));
+      const by = y0 + 8;
+
+      // background rect
+      const rect = document.createElementNS(svgNS, "rect");
+      rect.setAttribute("x", bx);
+      rect.setAttribute("y", by);
+      rect.setAttribute("width", boxW);
+      rect.setAttribute("height", boxH);
+      rect.setAttribute("rx", 10);
+      rect.setAttribute("ry", 10);
+      rect.setAttribute("fill", "rgba(2,6,23,0.78)");
+      rect.setAttribute("stroke", "rgba(148,163,184,0.35)");
+      rect.setAttribute("stroke-width", "1");
+
+      // move texts into place
+      g.setAttribute("transform", `translate(${bx + tipPaddingX}, ${by + tipPaddingY + 14})`);
+
+      tipEl.insertBefore(rect, g);
+    }
+
+    function indexFromClientX(clientX) {
+      const svg = hitEl.ownerSVGElement;
+      const pt = svg.createSVGPoint();
+      pt.x = clientX; pt.y = 0;
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return 0;
+      const p = pt.matrixTransform(ctm.inverse());
+      // convert x -> bar index
+      const rel = Math.max(0, Math.min(innerW - 1, p.x - padL));
+      const idx = Math.floor(rel / slotW);
+      return idx;
+    }
+
+    // pointer events (desktop hover + mobile finger)
+    hitEl.onpointerenter = (e) => { try { hitEl.setPointerCapture(e.pointerId); } catch(_) {} };
+    hitEl.onpointermove = (e) => {
+      const idx = indexFromClientX(e.clientX);
+      showTip(idx);
     };
+    hitEl.onpointerleave = () => hideTip();
+    hitEl.onpointerup = () => hideTip();
+    hitEl.onpointercancel = () => hideTip();
 
-    for (let i = 0; i < n; i++) {
-      if (!shouldShow(i)) continue;
-
-      const x = padL + i * barW + barW / 2;
-      const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      tx.setAttribute("x", x);
-      tx.setAttribute("y", y1 + (mobile ? 40 : 30));
-      tx.setAttribute("text-anchor", "middle");
-      tx.textContent = formatX(pts[i], i, n);
-      xLabelsEl.appendChild(tx);
-    }
-  }
-
-  function computeMinMax(rows, getVal) {
-    if (!Array.isArray(rows) || rows.length === 0) return { min: null, max: null };
-    let min = null, max = null;
-    for (const r of rows) {
-      const v = Number(getVal(r));
-      if (!Number.isFinite(v)) continue;
-      if (min == null || v < min) min = v;
-      if (max == null || v > max) max = v;
-    }
-    return { min, max };
+    // start hidden
+    hideTip();
   }
 
   function updateUI(data) {
@@ -1009,18 +1226,25 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    // 24h high/low colored
-    silver24hHighEl.innerHTML = `24h high: <span class="sub-high">${fmtMoney(silver.high24h)}</span>`;
-    silver24hLowEl.innerHTML  = `24h low: <span class="sub-low">${fmtMoney(silver.low24h)}</span>`;
+    // colorize 24h hi/lo
+    silver24hHighEl.innerHTML = `24h high: <span class="hi">${fmtMoney(silver.high24h)}</span>`;
+    silver24hLowEl.innerHTML  = `24h low: <span class="lo">${fmtMoney(silver.low24h)}</span>`;
 
     const marketIsOpen = !(market && market.isOpen === false);
 
     const weeklyRows = data?.weekly?.silver || [];
     const yearlyRows = data?.yearly?.silver12m || [];
 
-    const yy = computeMinMax(yearlyRows, (r) => r?.close);
-    silver12mLowEl.textContent = fmtMoney(yy.min);
-    silver12mHighEl.textContent = fmtMoney(yy.max);
+    // compute yearly hi/lo for meta
+    let yMin = null, yMax = null;
+    for (const r of yearlyRows) {
+      const v = Number(r?.close);
+      if (!Number.isFinite(v)) continue;
+      if (yMin == null || v < yMin) yMin = v;
+      if (yMax == null || v > yMax) yMax = v;
+    }
+    silver12mLowEl.textContent = fmtMoney(yMin);
+    silver12mHighEl.textContent = fmtMoney(yMax);
 
     if (!marketIsOpen) {
       setHeadlinePriceColor("same", false);
@@ -1029,7 +1253,8 @@
 
       renderBarChart({
         rows: weeklyRows,
-        mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
+        getXLabel: (r) => r?.date,
+        getValue: (r) => r?.close,
         formatX: (p) => fmtMMDD(p.xLabel),
         minEl: silver7dLowEl,
         maxEl: silver7dHighEl,
@@ -1038,13 +1263,18 @@
         xLabelsEl: weeklyXLabelsEl,
         yLabelsEl: weeklyYLabelsEl,
         borderEl: weeklyBorderEl,
+        hitEl: weeklyHitEl,
+        crosshairEl: weeklyCrosshairEl,
+        tipEl: weeklyTipEl,
         marketIsOpen: false,
+        direction: "same",
         chartType: "weekly",
       });
 
       renderBarChart({
         rows: yearlyRows,
-        mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
+        getXLabel: (r) => r?.ym,
+        getValue: (r) => r?.close,
         formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
         minEl: null,
         maxEl: null,
@@ -1053,7 +1283,11 @@
         xLabelsEl: yearlyXLabelsEl,
         yLabelsEl: yearlyYLabelsEl,
         borderEl: yearlyBorderEl,
+        hitEl: yearlyHitEl,
+        crosshairEl: yearlyCrosshairEl,
+        tipEl: yearlyTipEl,
         marketIsOpen: false,
+        direction: "same",
         chartType: "yearly",
       });
 
@@ -1066,7 +1300,8 @@
 
     renderBarChart({
       rows: weeklyRows,
-      mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
+      getXLabel: (r) => r?.date,
+      getValue: (r) => r?.close,
       formatX: (p) => fmtMMDD(p.xLabel),
       minEl: silver7dLowEl,
       maxEl: silver7dHighEl,
@@ -1075,13 +1310,18 @@
       xLabelsEl: weeklyXLabelsEl,
       yLabelsEl: weeklyYLabelsEl,
       borderEl: weeklyBorderEl,
+      hitEl: weeklyHitEl,
+      crosshairEl: weeklyCrosshairEl,
+      tipEl: weeklyTipEl,
       marketIsOpen: true,
+      direction: silver.direction || "same",
       chartType: "weekly",
     });
 
     renderBarChart({
       rows: yearlyRows,
-      mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
+      getXLabel: (r) => r?.ym,
+      getValue: (r) => r?.close,
       formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
       minEl: null,
       maxEl: null,
@@ -1090,7 +1330,11 @@
       xLabelsEl: yearlyXLabelsEl,
       yLabelsEl: yearlyYLabelsEl,
       borderEl: yearlyBorderEl,
+      hitEl: yearlyHitEl,
+      crosshairEl: yearlyCrosshairEl,
+      tipEl: yearlyTipEl,
       marketIsOpen: true,
+      direction: silver.direction || "same",
       chartType: "yearly",
     });
   }
@@ -1133,7 +1377,7 @@
         palladium: { price: 967.35, direction: "same", change: 0.0 },
       },
       weekly: { silver: fakeWeekly },
-      yearly: { silver12m: fakeYearly, low12m: 31.73, high12m: 83.96 },
+      yearly: { silver12m: fakeYearly },
       market: { isOpen: true, reason: "Open", closedType: null },
     };
 
@@ -1176,42 +1420,61 @@
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
       headlinePriceEl.style.color = "var(--text-main)";
+      characterImgEl.src = IMAGE_CLOSED;
 
-      _lastHeroMode = "closed";
-      _lockedHeroImg = IMAGE_CLOSED;
-      characterImgEl.src = _lockedHeroImg;
+      silver24hHighEl.innerHTML = "24h high: —";
+      silver24hLowEl.innerHTML  = "24h low: —";
 
-      silver24hHighEl.textContent = "24h high: —";
-      silver24hLowEl.textContent  = "24h low: —";
+      weeklyGridEl.innerHTML = "";
+      weeklyBarsEl.innerHTML = "";
+      weeklyXLabelsEl.innerHTML = "";
+      weeklyYLabelsEl.innerHTML = "";
 
-      clearBarChart(weeklyGridEl, weeklyBarsEl, weeklyXLabelsEl, weeklyYLabelsEl, weeklyBorderEl);
-      clearBarChart(yearlyGridEl, yearlyBarsEl, yearlyXLabelsEl, yearlyYLabelsEl, yearlyBorderEl);
+      yearlyGridEl.innerHTML = "";
+      yearlyBarsEl.innerHTML = "";
+      yearlyXLabelsEl.innerHTML = "";
+      yearlyYLabelsEl.innerHTML = "";
     }
   }
 
-  // Only re-render on REAL width changes (prevents iOS scroll address-bar resize refresh loop)
-  window.addEventListener("resize", () => {
-    if (_resizeTimer) clearTimeout(_resizeTimer);
-    _resizeTimer = setTimeout(() => {
-      const w = window.innerWidth;
-      if (Math.abs(w - _lastKnownWidth) < 20) return; // ignore scroll-induced resize
-      _lastKnownWidth = w;
-      refreshAllOnce(); // redraw for breakpoint changes
-    }, 250);
-  });
+  // ✅ Fix the “scroll refresh” bug:
+  // DO NOT refresh on window.resize (mobile address bar triggers resize during scroll).
+  // Instead, only re-render charts when the breakpoint changes (mobile<->desktop) or orientation changes.
+  let _lastIsMobile = isMobileNow();
 
-  // Better signal for rotation
+  function rerenderChartsOnly() {
+    // fetch not needed; just redraw using last data if available
+    if (window.__LAST_DATA__) updateUI(window.__LAST_DATA__);
+  }
+
+  const mq = window.matchMedia("(max-width: 600px)");
+  if (mq && mq.addEventListener) {
+    mq.addEventListener("change", () => {
+      const nowMobile = isMobileNow();
+      if (nowMobile !== _lastIsMobile) {
+        _lastIsMobile = nowMobile;
+        rerenderChartsOnly();
+      }
+    });
+  }
+
   window.addEventListener("orientationchange", () => {
-    setTimeout(() => {
-      _lastKnownWidth = window.innerWidth;
-      refreshAllOnce();
-    }, 200);
+    // rerender after rotate settles
+    setTimeout(() => rerenderChartsOnly(), 250);
   });
 
   (async () => {
     await loadImageLists();
+
+    const originalUpdateUI = updateUI;
+    updateUI = function(data){
+      window.__LAST_DATA__ = data;
+      return originalUpdateUI(data);
+    };
+
     if (!applyForcedModeIfAny()) {
       refreshAllOnce();
+      // (optional) keep your 30-min updates elsewhere; this file only renders once.
     }
   })();
 </script>
