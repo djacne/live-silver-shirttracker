@@ -333,7 +333,10 @@
       object-fit: cover;
       object-position: center;
       display: block;
+      transition: opacity 180ms ease; /* ✅ smooth image swap */
     }
+
+    .fade-out { opacity: 0.2; } /* ✅ */
 
     .hero-info {
       display: flex;
@@ -504,6 +507,14 @@
     .change.up { color: var(--accent-up); }
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
+
+    /* ✅ Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+      .coins-rain, .bills-rain, .crash-rain,
+      .rockets-layer, .crash-rockets-layer,
+      .sprinkles-layer { display: none !important; }
+    }
   </style>
 </head>
 
@@ -602,9 +613,16 @@
           <div class="last-updated">
             Last updated: <span id="last-updated">—</span>
           </div>
+          <div class="last-updated">
+            Market: <span id="market-status">—</span>
+          </div>
+          <div class="last-updated">
+            Next open: <span id="next-open">—</span>
+          </div>
           <div class="hero-frequency">
             Updates every 30 minutes
           </div>
+          <div class="last-updated" id="data-source-hint" style="opacity:0.85;"></div>
         </div>
       </section>
     </div>
@@ -664,14 +682,27 @@
   </div>
 
 <script>
+  // =========================
+  // Config
+  // =========================
   const BACKEND_URL = "https://api.dansretirement.com/";
+  const IMAGE_CLOSED = "/img/silver-closed.png";
 
+  const LOCAL_CACHE_KEY = "metals-last-good-v2"; // ✅ localStorage fallback
+  const LOCAL_CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours (stale guard)
+
+  // =========================
+  // Elements
+  // =========================
   const bodyEl = document.body;
   const characterImgEl = document.getElementById("character-img");
   const headlinePriceEl = document.getElementById("headline-price");
   const trendPillEl = document.getElementById("trend-pill");
   const trendTextEl = document.getElementById("trend-text");
   const lastUpdatedEl = document.getElementById("last-updated");
+  const marketStatusEl = document.getElementById("market-status");
+  const nextOpenEl = document.getElementById("next-open");
+  const dataSourceHintEl = document.getElementById("data-source-hint");
   const metalsTbodyEl = document.getElementById("metals-tbody");
 
   const silver24hHighEl = document.getElementById("silver-24h-high");
@@ -697,13 +728,35 @@
   const yearlyYLabelsEl = document.getElementById("silver12m-ylabels");
   const yearlyBorderEl = document.getElementById("silver12m-border");
 
-  const IMAGE_CLOSED = "/img/silver-closed.png";
-
   let IMAGE_LISTS = { up: [], down: [] };
 
+  // =========================
+  // Helpers
+  // =========================
   function pickRandom(arr) {
     if (!arr || arr.length === 0) return null;
     return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function preloadImages(paths, limit = 6) {
+    const uniq = [...new Set((paths || []).filter(Boolean))].slice(0, limit);
+    for (const src of uniq) {
+      const img = new Image();
+      img.decoding = "async";
+      img.loading = "eager";
+      img.src = src;
+    }
+  }
+
+  function swapCharacterImage(src) {
+    if (!src) return;
+    characterImgEl.classList.add("fade-out");
+    setTimeout(() => {
+      characterImgEl.src = src;
+      const done = () => characterImgEl.classList.remove("fade-out");
+      characterImgEl.onload = done;
+      characterImgEl.onerror = done;
+    }, 120);
   }
 
   async function loadImageLists() {
@@ -751,13 +804,132 @@
     return dt.toLocaleString();
   }
 
-  function fmtChange(v) {
+  function fmtSignedChange(v) {
     if (v == null) return "—";
     const n = Number(v);
     if (!Number.isFinite(n)) return "—";
-    return Math.abs(n).toFixed(2);
+    const sign = n > 0 ? "+" : n < 0 ? "−" : "";
+    return `${sign}${Math.abs(n).toFixed(2)}`;
   }
 
+  // =========================
+  // Market status + countdown (CT) — computed in frontend
+  // We avoid hard timezone math by scanning forward in time.
+  // =========================
+  function getChicagoPartsFromTs(ts) {
+    const dt = new Date(ts);
+    const fmt = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Chicago",
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const parts = fmt.formatToParts(dt);
+    const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+    return {
+      weekday: map.weekday,
+      hour: Number(map.hour),
+      minute: Number(map.minute),
+    };
+  }
+
+  function isDuringDailyBreakCT(parts) {
+    const { weekday, hour } = parts;
+    const isMonThu = weekday === "Mon" || weekday === "Tue" || weekday === "Wed" || weekday === "Thu";
+    return isMonThu && hour === 16; // 4–5 PM CT
+  }
+
+  function isWeekendClosedCT(parts) {
+    const { weekday, hour } = parts;
+    if (weekday === "Fri") return hour >= 16;
+    if (weekday === "Sat") return true;
+    if (weekday === "Sun") return hour < 17;
+    return false;
+  }
+
+  function marketStatusCTByTs(ts) {
+    const parts = getChicagoPartsFromTs(ts);
+    if (isWeekendClosedCT(parts)) {
+      return { isOpen: false, closedType: "weekend", reason: "Weekend close", tz: "America/Chicago", ...parts };
+    }
+    if (isDuringDailyBreakCT(parts)) {
+      return { isOpen: false, closedType: "maintenance", reason: "Daily maintenance break (4–5 PM CT)", tz: "America/Chicago", ...parts };
+    }
+    return { isOpen: true, closedType: null, reason: "Open", tz: "America/Chicago", ...parts };
+  }
+
+  function findNextMarketOpenTs(nowTs = Date.now()) {
+    // Scan forward up to 4 days in 5-minute steps; cheap + robust.
+    const STEP = 5 * 60 * 1000;
+    const MAX = 4 * 24 * 60 * 60 * 1000;
+    for (let t = nowTs + STEP; t <= nowTs + MAX; t += STEP) {
+      const st = marketStatusCTByTs(t);
+      if (st.isOpen) return t;
+    }
+    return null;
+  }
+
+  function fmtDuration(ms) {
+    if (!Number.isFinite(ms) || ms <= 0) return "0m";
+    const totalSec = Math.floor(ms / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hrs = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+
+    if (days > 0) return `${days}d ${hrs}h ${mins}m`;
+    if (hrs > 0) return `${hrs}h ${mins}m`;
+    return `${mins}m`;
+  }
+
+  function fmtCTTime(ts) {
+    try {
+      const dt = new Date(ts);
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Chicago",
+        weekday: "short",
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(dt);
+    } catch {
+      return "—";
+    }
+  }
+
+  let countdownTimer = null;
+  function startOrUpdateCountdown(market) {
+    if (!nextOpenEl) return;
+
+    if (countdownTimer) clearInterval(countdownTimer);
+
+    const marketIsOpen = !(market && market.isOpen === false);
+    if (marketIsOpen) {
+      nextOpenEl.textContent = "Now";
+      return;
+    }
+
+    const nextOpenTs = findNextMarketOpenTs(Date.now());
+    if (!nextOpenTs) {
+      nextOpenEl.textContent = "—";
+      return;
+    }
+
+    const tick = () => {
+      const ms = nextOpenTs - Date.now();
+      if (ms <= 0) {
+        nextOpenEl.textContent = "Now";
+        return;
+      }
+      nextOpenEl.textContent = `${fmtDuration(ms)} (at ${fmtCTTime(nextOpenTs)} CT)`;
+    };
+
+    tick();
+    countdownTimer = setInterval(tick, 1000);
+  }
+
+  // =========================
+  // UI theming
+  // =========================
   function setMarketClosedPill(market) {
     const arrowEl = trendPillEl.querySelector(".trend-arrow");
     trendPillEl.className = "trend-pill neutral";
@@ -780,7 +952,7 @@
       trendTextEl.textContent = "Market opens Sunday 5pm CT";
     }
 
-    characterImgEl.src = IMAGE_CLOSED;
+    swapCharacterImage(IMAGE_CLOSED);
   }
 
   function setTrendPill(direction) {
@@ -791,7 +963,7 @@
       arrowEl.textContent = "↑";
       trendTextEl.textContent = "Closer to retirement";
       setTrendMode("up");
-      characterImgEl.src = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
+      swapCharacterImage(pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED);
       return;
     }
 
@@ -800,7 +972,7 @@
       arrowEl.textContent = "↓";
       trendTextEl.textContent = "Get back to work";
       setTrendMode("down");
-      characterImgEl.src = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
+      swapCharacterImage(pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED);
       return;
     }
 
@@ -808,7 +980,7 @@
     arrowEl.textContent = "↔";
     trendTextEl.textContent = "Well this is boring";
     setTrendMode("neutral");
-    characterImgEl.src = IMAGE_CLOSED;
+    swapCharacterImage(IMAGE_CLOSED);
   }
 
   function renderMetalsTable(metals) {
@@ -844,7 +1016,7 @@
 
       const spanTrend = document.createElement("span");
       const d = m?.direction || "same";
-      const changeText = fmtChange(m?.change);
+      const changeText = fmtSignedChange(m?.change); // ✅ signed now
 
       spanTrend.className = "change " + dirClass(d);
       spanTrend.textContent = `${dirSymbol(d)} ${changeText}`;
@@ -1058,7 +1230,49 @@
     return { min, max };
   }
 
-  function updateUI(data) {
+  // =========================
+  // LocalStorage fallback
+  // =========================
+  function saveLocalCache(payload) {
+    try {
+      const wrapped = { savedAt: Date.now(), payload };
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(wrapped));
+    } catch {}
+  }
+
+  function loadLocalCache() {
+    try {
+      const raw = localStorage.getItem(LOCAL_CACHE_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || typeof obj !== "object") return null;
+      if (typeof obj.savedAt !== "number" || !obj.payload) return null;
+      const age = Date.now() - obj.savedAt;
+      if (age > LOCAL_CACHE_MAX_AGE_MS) return null; // stale guard
+      return obj;
+    } catch {
+      return null;
+    }
+  }
+
+  // =========================
+  // Market status text
+  // =========================
+  function setMarketStatusText(market) {
+    if (!marketStatusEl) return;
+    if (!market || market.isOpen !== false) {
+      marketStatusEl.textContent = "Open";
+      return;
+    }
+    const ct = (market.closedType || "").toLowerCase();
+    if (ct === "maintenance") marketStatusEl.textContent = "Daily break (4–5 PM CT)";
+    else marketStatusEl.textContent = "Weekend close";
+  }
+
+  // =========================
+  // Main UI update
+  // =========================
+  function updateUI(data, opts = {}) {
     const metals = data?.metals || {};
     const silver = metals.silver || {};
     const updatedAt = data?.updatedAt || null;
@@ -1072,9 +1286,17 @@
 
     const marketIsOpen = !(market && market.isOpen === false);
 
+    setMarketStatusText(market);
+    startOrUpdateCountdown(market);
+
+    if (dataSourceHintEl) {
+      dataSourceHintEl.textContent =
+        opts.sourceHint ? opts.sourceHint : "";
+    }
+
     const weeklyRows = data?.weekly?.silver || [];
 
-    // ✅ FIX: backend YTD is now `yearly.silver12m` (NOT `monthly.silver`)
+    // backend YTD is `yearly.silver12m`
     const yearlyRows = data?.yearly?.silver12m || [];
     const yy = computeMinMax(yearlyRows, (r) => r?.close);
     silver12mLowEl.textContent = fmtMoney(yy.min);
@@ -1104,11 +1326,7 @@
       renderLineChart({
         rows: yearlyRows,
         mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
-        // backend already supplies short month label in `month`
-        formatX: (p) => {
-          const raw = p?.raw;
-          return raw?.month || monthNameFromYYYYMM(p.xLabel);
-        },
+        formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
         minEl: null,
         maxEl: null,
         lineEl: yearlyLineEl,
@@ -1147,10 +1365,7 @@
     renderLineChart({
       rows: yearlyRows,
       mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
-      formatX: (p) => {
-        const raw = p?.raw;
-        return raw?.month || monthNameFromYYYYMM(p.xLabel);
-      },
+      formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
       minEl: null,
       maxEl: null,
       lineEl: yearlyLineEl,
@@ -1164,6 +1379,9 @@
     });
   }
 
+  // =========================
+  // Forced mode (your debug feature) — unchanged except sourceHint
+  // =========================
   function applyForcedModeIfAny() {
     const params = new URLSearchParams(window.location.search);
     const mode = (params.get("mode") || "").toLowerCase();
@@ -1177,7 +1395,6 @@
       { date: "2025-12-30", close: 75.4 },
     ];
 
-    // ✅ FIX: fake yearly now matches backend: `yearly.silver12m` with {ym, month, close}
     const fakeYearly = [
       { ym: "2025-01", month: "Jan", close: 69.1 },
       { ym: "2025-02", month: "Feb", close: 70.2 },
@@ -1227,34 +1444,92 @@
       fake.market.closedType = "weekend";
     }
 
-    updateUI(fake);
+    updateUI(fake, { sourceHint: "Forced mode preview" });
     return true;
+  }
+
+  // =========================
+  // Fetch + auto refresh (aligned)
+  // =========================
+  function backendUrlWithBuster() {
+    const url = new URL(BACKEND_URL);
+    url.searchParams.set("t", Date.now());
+    return url.toString();
   }
 
   async function refreshAllOnce() {
     try {
       trendTextEl.textContent = "Loading…";
-      const res = await fetch(BACKEND_URL + "?t=" + Date.now(), { cache: "no-store" });
+      const res = await fetch(backendUrlWithBuster(), { cache: "no-store" });
       if (!res.ok) throw new Error("Backend HTTP error " + res.status);
       const data = await res.json();
-      updateUI(data);
+
+      // Save last known good payload locally
+      saveLocalCache(data);
+
+      updateUI(data, { sourceHint: (data?.source ? `Source: ${data.source}` : "") });
     } catch (err) {
       console.error(err);
+
+      // Try localStorage fallback (instant “still shows something” behavior)
+      const local = loadLocalCache();
+      if (local?.payload) {
+        const ageMin = Math.floor((Date.now() - local.savedAt) / 60000);
+        updateUI(local.payload, { sourceHint: `Offline fallback (saved ${ageMin}m ago)` });
+
+        // Make pill show error but keep UI populated
+        trendPillEl.className = "trend-pill neutral";
+        trendPillEl.querySelector(".trend-arrow").textContent = "!";
+        trendTextEl.textContent = "Using cached data";
+        return;
+      }
+
+      // Hard failure (no local cache)
       trendPillEl.className = "trend-pill neutral";
       trendPillEl.querySelector(".trend-arrow").textContent = "!";
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
       headlinePriceEl.style.color = "var(--text-main)";
-      characterImgEl.src = IMAGE_CLOSED;
+      swapCharacterImage(IMAGE_CLOSED);
       silver24hHighEl.textContent = "24h high: —";
       silver24hLowEl.textContent  = "24h low: —";
+      if (marketStatusEl) marketStatusEl.textContent = "—";
+      if (nextOpenEl) nextOpenEl.textContent = "—";
+      if (dataSourceHintEl) dataSourceHintEl.textContent = "";
     }
   }
 
+  function scheduleAutoRefresh() {
+    const MS = 30 * 60 * 1000;
+    const now = new Date();
+    const msToNext =
+      MS - ((now.getMinutes() * 60 + now.getSeconds()) * 1000 + now.getMilliseconds()) % MS;
+
+    setTimeout(() => {
+      refreshAllOnce();
+      setInterval(refreshAllOnce, MS);
+    }, msToNext);
+  }
+
+  // =========================
+  // Boot
+  // =========================
   (async () => {
     await loadImageLists();
+    preloadImages(IMAGE_LISTS.up, 8);
+    preloadImages(IMAGE_LISTS.down, 8);
+    preloadImages([IMAGE_CLOSED], 1);
+
+    // If we have local cache, render it immediately for “instant load”
+    const local = loadLocalCache();
+    if (local?.payload) {
+      const ageMin = Math.floor((Date.now() - local.savedAt) / 60000);
+      updateUI(local.payload, { sourceHint: `Instant load (saved ${ageMin}m ago)` });
+    }
+
     if (!applyForcedModeIfAny()) {
-      refreshAllOnce();
+      await refreshAllOnce();
+      scheduleAutoRefresh();
     }
   })();
 </script>
