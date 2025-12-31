@@ -74,7 +74,6 @@
         radial-gradient(circle at 50% 85%, rgba(129,140,248,0.5) 0, transparent 55%);
     }
 
-    /* More obvious stars (desktop + mobile) */
     .bg-stars::before {
       content: "";
       position: absolute;
@@ -426,16 +425,14 @@
       padding: 10px;
     }
 
-    /* Keep weekly/yearly boxes the SAME size */
     .chart-wrap svg {
       width: 100%;
       height: 260px;  /* desktop */
       display: block;
-      touch-action: pan-y; /* don't kill scrolling */
+      touch-action: pan-y;
       user-select: none;
     }
 
-    /* BIGGER, readable text */
     .chart-wrap svg text {
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       fill: rgba(170,180,195,0.98);
@@ -448,9 +445,7 @@
       stroke-width: 1;
     }
 
-    .chart-wrap svg .bar {
-      shape-rendering: crispEdges;
-    }
+    .chart-wrap svg .bar { shape-rendering: crispEdges; }
 
     .chart-wrap svg .crosshair {
       stroke: rgba(226,232,240,0.70);
@@ -459,14 +454,11 @@
       opacity: 0;
     }
 
-    .chart-wrap svg .tipbox {
-      opacity: 0;
-    }
+    .chart-wrap svg .tipbox { opacity: 0; }
 
     @media (max-width: 600px) {
       .chart-wrap { padding: 10px; }
-      /* ✅ Slightly taller chart area on mobile so bars can dominate */
-      .chart-wrap svg { height: 280px; }
+      .chart-wrap svg { height: 280px; }         /* more vertical for bars */
       .chart-wrap svg text { font-size: 16.5px; }
     }
 
@@ -606,9 +598,7 @@
           <div class="last-updated">
             Last updated: <span id="last-updated">—</span>
           </div>
-          <div class="hero-frequency">
-            Updates every 30 minutes
-          </div>
+          <div class="hero-frequency">Updates every 30 minutes</div>
         </div>
       </section>
     </div>
@@ -714,7 +704,6 @@
 
   let IMAGE_LISTS = { up: [], down: [] };
 
-  // Cache the current "chosen" image so refreshes don't shuffle it.
   let _currentDirection = null;
   let _currentImageSrc = null;
 
@@ -808,8 +797,6 @@
 
   function setTrendPill(direction) {
     const arrowEl = trendPillEl.querySelector(".trend-arrow");
-
-    // Only change the image if the direction actually changed (prevents scroll/viewport weirdness from reshuffling)
     const shouldSwapImage = direction !== _currentDirection;
 
     if (direction === "up") {
@@ -985,13 +972,12 @@
     tipEl,
     marketIsOpen,
     direction,
-    chartType = "weekly", // weekly | yearly
+    chartType = "weekly",
   }) {
     clearBarChart(gridEl, barsEl, xLabelsEl, yLabelsEl, borderEl, tipEl);
 
     if (minEl) minEl.textContent = "—";
     if (maxEl) maxEl.textContent = "—";
-
     if (!Array.isArray(rows) || rows.length < 2) return;
 
     const pts = rows
@@ -1007,10 +993,7 @@
     if (minEl) minEl.textContent = fmtMoney(min);
     if (maxEl) maxEl.textContent = fmtMoney(max);
 
-    // ✅ Make bars LOOK tall: give the chart a meaningful "floor" below min
     let range = (max - min);
-
-    // prevent "flat" ranges from producing microscopic bars
     const minVisualRange = chartType === "weekly" ? 0.9 : 2.0;
     if (range < minVisualRange) range = minVisualRange;
 
@@ -1018,7 +1001,7 @@
     const H = 260;
     const mobile = isMobileNow();
 
-    // ✅ mobile: more aggressive floor + slightly more headroom
+    // ✅ taller-looking bars (more aggressive "floor" on mobile)
     const padBot = range * (mobile ? 0.90 : 0.55);
     const padTop = range * (mobile ? 0.12 : 0.10);
 
@@ -1026,7 +1009,10 @@
     const yMax = max + padTop;
 
     const padL = mobile ? 22 : 26;
-    const padR = mobile ? 18 : 76;
+
+    // ✅ IMPORTANT: reserve a real right gutter on mobile so y labels can live OUTSIDE the plot
+    const padR = mobile ? 72 : 76;
+
     const padT = mobile ? 12 : 16;
     const padB = mobile ? 30 : 48;
 
@@ -1041,7 +1027,7 @@
     const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
     borderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
-    // grid + y labels
+    // grid + y labels (ALWAYS outside plot, right gutter)
     const yTicks = makeTicks(yMin, yMax, mobile ? 3 : 5);
     const yLabelFmt = (range < 20) ? (n) => n.toFixed(2) : (n) => n.toFixed(0);
 
@@ -1057,33 +1043,27 @@
       gridEl.appendChild(gl);
 
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      // keep y labels inside on mobile so they don't get clipped
-      if (mobile) {
-        tx.setAttribute("x", x1 - 8);
-        tx.setAttribute("text-anchor", "end");
-      } else {
-        tx.setAttribute("x", x1 + 10);
-        tx.setAttribute("text-anchor", "start");
-      }
+      // ✅ lock labels to the right gutter INSIDE the SVG so "100" never clips
+      tx.setAttribute("x", W - 8);
+      tx.setAttribute("text-anchor", "end");
       tx.setAttribute("y", y + 6);
       tx.textContent = yLabelFmt(t);
       yLabelsEl.appendChild(tx);
     }
 
-    // Bars: touch each other, but add a tiny gap so they don't blur.
+    // Bars: touch each other, tiny gap
     const n = pts.length;
     const slotW = innerW / n;
 
-    const gap = mobile ? 2.0 : 2.6; // tiny gap
+    const gap = mobile ? 2.0 : 2.6;
     const barW = Math.max(2, slotW - gap);
-
     const barX = (i) => padL + i * slotW + (gap / 2);
 
     const yBase = y1;
 
-    // X labels: show fewer on mobile
+    // X labels: fewer on mobile
     let step = 1;
-    if (mobile) step = (chartType === "weekly") ? 2 : 2;
+    if (mobile) step = 2;
 
     const shouldShowX = (i) => (i === 0 || i === n - 1 || (i % step === 0));
 
@@ -1095,7 +1075,6 @@
       const prev = (i > 0) ? pts[i - 1].value : v;
       const isUp = v >= prev;
 
-      // if market is closed, gray out bars regardless
       const fill = (!marketIsOpen)
         ? "rgba(148,163,184,0.55)"
         : (isUp ? "rgba(34,197,94,0.85)" : "rgba(239,68,68,0.85)");
@@ -1116,7 +1095,6 @@
         const x = barX(i) + (barW / 2);
         const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
         tx.setAttribute("x", x);
-        // ✅ bring labels closer on mobile so bars can use the height
         tx.setAttribute("y", y1 + (mobile ? 20 : 30));
         tx.setAttribute("text-anchor", "middle");
         tx.textContent = formatX(pts[i], i, n);
@@ -1124,7 +1102,7 @@
       }
     }
 
-    // Tooltip / crosshair (kept simple, but works desktop + mobile finger)
+    // Tooltip / crosshair
     const svgNS = "http://www.w3.org/2000/svg";
 
     function hideTip() {
@@ -1197,18 +1175,14 @@
       if (!ctm) return 0;
       const p = pt.matrixTransform(ctm.inverse());
       const rel = Math.max(0, Math.min(innerW - 1, p.x - padL));
-      const idx = Math.floor(rel / slotW);
-      return idx;
+      return Math.floor(rel / slotW);
     }
 
     hitEl.onpointerenter = (e) => { try { hitEl.setPointerCapture(e.pointerId); } catch(_) {} };
-    hitEl.onpointermove = (e) => {
-      const idx = indexFromClientX(e.clientX);
-      showTip(idx);
-    };
-    hitEl.onpointerleave = () => hideTip();
-    hitEl.onpointerup = () => hideTip();
-    hitEl.onpointercancel = () => hideTip();
+    hitEl.onpointermove = (e) => showTip(indexFromClientX(e.clientX));
+    hitEl.onpointerleave = hideTip;
+    hitEl.onpointerup = hideTip;
+    hitEl.onpointercancel = hideTip;
 
     hideTip();
   }
@@ -1284,7 +1258,6 @@
         direction: "same",
         chartType: "yearly",
       });
-
       return;
     }
 
@@ -1431,6 +1404,7 @@
     }
   }
 
+  // ✅ Fix “scroll resize” bug
   let _lastIsMobile = isMobileNow();
 
   function rerenderChartsOnly() {
