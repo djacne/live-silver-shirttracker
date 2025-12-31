@@ -23,16 +23,11 @@
 
       --card-bg: rgba(15, 23, 42, 0.92);
       --card-border: rgba(148, 163, 184, 0.3);
-
-      --accent-up: #22c55e;      /* green */
-      --accent-down: #ef4444;    /* red */
+      --accent-up: #22c55e;
+      --accent-down: #ef4444;
       --accent-neutral: #e5e7eb;
-
       --text-main: #f9fafb;
       --text-muted: #9ca3af;
-
-      --tooltip-bg: rgba(2, 6, 23, 0.92);
-      --tooltip-border: rgba(148, 163, 184, 0.35);
     }
 
     * { box-sizing: border-box; }
@@ -67,88 +62,59 @@
       z-index: 0;
     }
 
-    /* More stars + visible on mobile */
     .bg-stars {
-      opacity: 0.35;
+      opacity: 0;
       transition: opacity 0.6s ease;
       background-image:
-        radial-gradient(circle at 20% 20%, rgba(248,250,252,0.40) 0, transparent 55%),
-        radial-gradient(circle at 80% 10%, rgba(191,219,254,0.28) 0, transparent 55%),
-        radial-gradient(circle at 50% 85%, rgba(129,140,248,0.28) 0, transparent 55%);
+        radial-gradient(circle at 20% 20%, rgba(248,250,252,0.7) 0, transparent 55%),
+        radial-gradient(circle at 80% 10%, rgba(191,219,254,0.5) 0, transparent 55%),
+        radial-gradient(circle at 50% 85%, rgba(129,140,248,0.5) 0, transparent 55%);
     }
-    body.trend-up .bg-stars { opacity: 0.85; }
 
     .bg-stars::before {
       content: "";
       position: absolute;
-      inset: -220px;
+      inset: -200px;
       background-image:
-        radial-gradient(2px 2px at 4% 12%, rgba(226,232,240,0.95) 70%, transparent 71%),
-        radial-gradient(2px 2px at 9% 48%, rgba(199,210,254,0.85) 70%, transparent 71%),
-        radial-gradient(2px 2px at 14% 78%, rgba(226,232,240,0.90) 70%, transparent 71%),
-        radial-gradient(2px 2px at 21% 30%, rgba(191,219,254,0.80) 70%, transparent 71%),
-        radial-gradient(2px 2px at 27% 62%, rgba(226,232,240,0.90) 70%, transparent 71%),
-        radial-gradient(2px 2px at 33% 18%, rgba(199,210,254,0.82) 70%, transparent 71%),
-        radial-gradient(2px 2px at 40% 44%, rgba(226,232,240,0.90) 70%, transparent 71%),
-        radial-gradient(2px 2px at 46% 86%, rgba(191,219,254,0.78) 70%, transparent 71%),
-        radial-gradient(2px 2px at 53% 24%, rgba(226,232,240,0.92) 70%, transparent 71%),
-        radial-gradient(2px 2px at 60% 70%, rgba(199,210,254,0.80) 70%, transparent 71%),
-        radial-gradient(2px 2px at 67% 36%, rgba(226,232,240,0.90) 70%, transparent 71%),
-        radial-gradient(2px 2px at 74% 58%, rgba(191,219,254,0.78) 70%, transparent 71%),
-        radial-gradient(2px 2px at 82% 16%, rgba(226,232,240,0.92) 70%, transparent 71%),
-        radial-gradient(2px 2px at 89% 40%, rgba(199,210,254,0.82) 70%, transparent 71%),
-        radial-gradient(2px 2px at 95% 82%, rgba(226,232,240,0.90) 70%, transparent 71%);
-      opacity: 0.55;
-      animation: twinkle 6s linear infinite alternate;
+        radial-gradient(2px 2px at 10% 20%, #e5e7eb 70%, transparent 71%),
+        radial-gradient(2px 2px at 30% 80%, #c4b5fd 70%, transparent 71%),
+        radial-gradient(2px 2px at 60% 40%, #bfdbfe 70%, transparent 71%),
+        radial-gradient(2px 2px at 90% 70%, #e5e7eb 70%, transparent 71%);
+      opacity: 0.7;
+      animation: twinkle 5s linear infinite alternate;
     }
 
     .bg-stars::after{
       content:"";
       position:absolute;
-      inset:-240px;
+      inset:-220px;
       background-image:
-        radial-gradient(1px 1px at 6% 8%, rgba(226,232,240,0.85) 70%, transparent 71%),
-        radial-gradient(1px 1px at 10% 26%, rgba(199,210,254,0.70) 70%, transparent 71%),
-        radial-gradient(1px 1px at 13% 54%, rgba(226,232,240,0.78) 70%, transparent 71%),
-        radial-gradient(1px 1px at 16% 82%, rgba(191,219,254,0.65) 70%, transparent 71%),
-        radial-gradient(1px 1px at 19% 38%, rgba(226,232,240,0.82) 70%, transparent 71%),
-        radial-gradient(1px 1px at 22% 12%, rgba(199,210,254,0.68) 70%, transparent 71%),
-        radial-gradient(1px 1px at 25% 70%, rgba(226,232,240,0.78) 70%, transparent 71%),
-        radial-gradient(1px 1px at 28% 48%, rgba(191,219,254,0.62) 70%, transparent 71%),
-        radial-gradient(1px 1px at 31% 20%, rgba(226,232,240,0.82) 70%, transparent 71%),
-        radial-gradient(1px 1px at 34% 86%, rgba(199,210,254,0.70) 70%, transparent 71%),
-        radial-gradient(1px 1px at 37% 58%, rgba(226,232,240,0.76) 70%, transparent 71%),
-        radial-gradient(1px 1px at 40% 32%, rgba(191,219,254,0.60) 70%, transparent 71%),
-        radial-gradient(1px 1px at 43% 10%, rgba(226,232,240,0.82) 70%, transparent 71%),
-        radial-gradient(1px 1px at 46% 76%, rgba(199,210,254,0.68) 70%, transparent 71%),
-        radial-gradient(1px 1px at 49% 44%, rgba(226,232,240,0.78) 70%, transparent 71%),
-        radial-gradient(1px 1px at 52% 90%, rgba(191,219,254,0.60) 70%, transparent 71%),
-        radial-gradient(1px 1px at 55% 24%, rgba(226,232,240,0.82) 70%, transparent 71%),
-        radial-gradient(1px 1px at 58% 64%, rgba(199,210,254,0.68) 70%, transparent 71%),
-        radial-gradient(1px 1px at 61% 38%, rgba(226,232,240,0.76) 70%, transparent 71%),
-        radial-gradient(1px 1px at 64% 16%, rgba(191,219,254,0.60) 70%, transparent 71%),
-        radial-gradient(1px 1px at 67% 80%, rgba(226,232,240,0.78) 70%, transparent 71%),
-        radial-gradient(1px 1px at 70% 52%, rgba(199,210,254,0.68) 70%, transparent 71%),
-        radial-gradient(1px 1px at 73% 28%, rgba(226,232,240,0.82) 70%, transparent 71%),
-        radial-gradient(1px 1px at 76% 88%, rgba(191,219,254,0.62) 70%, transparent 71%),
-        radial-gradient(1px 1px at 79% 60%, rgba(226,232,240,0.78) 70%, transparent 71%),
-        radial-gradient(1px 1px at 82% 34%, rgba(199,210,254,0.68) 70%, transparent 71%),
-        radial-gradient(1px 1px at 85% 12%, rgba(226,232,240,0.82) 70%, transparent 71%),
-        radial-gradient(1px 1px at 88% 72%, rgba(191,219,254,0.60) 70%, transparent 71%),
-        radial-gradient(1px 1px at 91% 46%, rgba(226,232,240,0.76) 70%, transparent 71%),
-        radial-gradient(1px 1px at 94% 20%, rgba(199,210,254,0.68) 70%, transparent 71%),
-        radial-gradient(1px 1px at 97% 84%, rgba(226,232,240,0.78) 70%, transparent 71%);
-      opacity:0.35;
-      animation: twinkle2 7.5s linear infinite alternate;
+        radial-gradient(1px 1px at 6% 10%, rgba(226,232,240,0.9) 70%, transparent 71%),
+        radial-gradient(1px 1px at 12% 58%, rgba(199,210,254,0.75) 70%, transparent 71%),
+        radial-gradient(1px 1px at 18% 82%, rgba(226,232,240,0.8) 70%, transparent 71%),
+        radial-gradient(1px 1px at 24% 28%, rgba(191,219,254,0.65) 70%, transparent 71%),
+        radial-gradient(1px 1px at 31% 66%, rgba(226,232,240,0.85) 70%, transparent 71%),
+        radial-gradient(1px 1px at 38% 14%, rgba(199,210,254,0.7) 70%, transparent 71%),
+        radial-gradient(1px 1px at 46% 44%, rgba(226,232,240,0.8) 70%, transparent 71%),
+        radial-gradient(1px 1px at 52% 88%, rgba(191,219,254,0.6) 70%, transparent 71%),
+        radial-gradient(1px 1px at 58% 22%, rgba(226,232,240,0.85) 70%, transparent 71%),
+        radial-gradient(1px 1px at 64% 72%, rgba(199,210,254,0.7) 70%, transparent 71%),
+        radial-gradient(1px 1px at 71% 36%, rgba(226,232,240,0.82) 70%, transparent 71%),
+        radial-gradient(1px 1px at 78% 60%, rgba(191,219,254,0.62) 70%, transparent 71%),
+        radial-gradient(1px 1px at 84% 18%, rgba(226,232,240,0.84) 70%, transparent 71%),
+        radial-gradient(1px 1px at 90% 48%, rgba(199,210,254,0.68) 70%, transparent 71%),
+        radial-gradient(1px 1px at 95% 86%, rgba(226,232,240,0.78) 70%, transparent 71%);
+      opacity:0.42;
+      animation: twinkle2 7s linear infinite alternate;
     }
 
     @keyframes twinkle {
-      0% { opacity: 0.35; transform: translateY(0); }
-      100% { opacity: 0.75; transform: translateY(10px); }
+      0% { opacity: 0.4; transform: translateY(0); }
+      100% { opacity: 1; transform: translateY(12px); }
     }
     @keyframes twinkle2{
-      0% { opacity:0.20; transform: translateY(0); }
-      100% { opacity:0.42; transform: translateY(8px); }
+      0% { opacity:0.22; transform: translateY(0); }
+      100% { opacity:0.52; transform: translateY(10px); }
     }
 
     .bg-fire {
@@ -213,6 +179,7 @@
       }
     }
 
+    body.trend-up .bg-stars { opacity: 1; }
     body.trend-up .coins-rain { opacity: 0.9; }
     body.trend-down .bg-fire { opacity: 1; }
     body.trend-down .bills-rain { opacity: 0.9; }
@@ -366,10 +333,7 @@
       object-fit: cover;
       object-position: center;
       display: block;
-      transition: opacity 180ms ease;
     }
-
-    .fade-out { opacity: 0.2; }
 
     .hero-info {
       display: flex;
@@ -410,7 +374,7 @@
     }
 
     .hero-subline {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--text-muted);
       margin-top: 0;
     }
@@ -418,12 +382,9 @@
     .hero-substack {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
       margin-top: 2px;
     }
-
-    .hl-high { color: var(--accent-up); font-weight: 600; }
-    .hl-low  { color: var(--accent-down); font-weight: 600; }
 
     .trend-row {
       display: flex;
@@ -497,7 +458,6 @@
       border: 1px solid rgba(148, 163, 184, 0.25);
       background: rgba(2, 6, 23, 0.25);
       padding: 10px;
-      position: relative;
     }
 
     .chart-wrap svg text {
@@ -518,23 +478,6 @@
       margin-top: 8px;
       font-size: 0.78rem;
       color: var(--text-muted);
-    }
-    .chart-meta .low { color: var(--accent-down); font-weight: 600; }
-    .chart-meta .high { color: var(--accent-up); font-weight: 600; }
-
-    /* Desktop defaults */
-    #silver7d-svg, #silver12m-svg { height: 260px; }
-
-    /* ✅ DO-IT-NOW COMBO: BIG charts on mobile (no scrolling) */
-    @media (max-width: 600px) {
-      body { padding: 12px; }
-      .card { padding: 14px; }
-      .chart-wrap { padding: 8px; } /* slightly less frame/padding so plot area grows */
-      .chart-wrap svg text { font-size: 18px; } /* bigger labels */
-
-      /* weekly bigger, yearly even bigger */
-      #silver7d-svg { height: 420px; }
-      #silver12m-svg { height: 480px; }
     }
 
     .table-card { margin-top: 18px; }
@@ -561,13 +504,6 @@
     .change.up { color: var(--accent-up); }
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition: none !important; }
-      .coins-rain, .bills-rain, .crash-rain,
-      .rockets-layer, .crash-rockets-layer,
-      .sprinkles-layer { display: none !important; }
-    }
   </style>
 </head>
 
@@ -655,8 +591,8 @@
           </div>
 
           <div class="hero-substack">
-            <div class="hero-subline">24h high: <span id="silver-24h-high" class="hl-high">—</span></div>
-            <div class="hero-subline">24h low: <span id="silver-24h-low" class="hl-low">—</span></div>
+            <div class="hero-subline" id="silver-24h-high">24h high: —</div>
+            <div class="hero-subline" id="silver-24h-low">24h low: —</div>
           </div>
         </div>
 
@@ -677,19 +613,21 @@
       <div class="section-title">Silver weekly trend</div>
 
       <div class="chart-wrap">
-        <svg id="silver7d-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 7-day trend chart" style="touch-action:none;">
+        <svg id="silver7d-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 7-day trend chart">
+          <!-- ✅ Added defs + area path for shaded fill -->
+          <defs id="silver7d-defs"></defs>
           <g id="silver7d-grid"></g>
+          <path id="silver7d-area" d="" fill="none"></path>
           <path id="silver7d-line" d="" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
           <g id="silver7d-points"></g>
           <g id="silver7d-xlabels"></g>
           <g id="silver7d-ylabels"></g>
-          <g id="silver7d-tooltip"></g>
           <path id="silver7d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
         </svg>
 
         <div class="chart-meta">
-          <div>Low: <span id="silver7d-low" class="low">—</span></div>
-          <div>High: <span id="silver7d-high" class="high">—</span></div>
+          <div>Low: <span id="silver7d-low">—</span></div>
+          <div>High: <span id="silver7d-high">—</span></div>
         </div>
       </div>
     </section>
@@ -698,31 +636,32 @@
       <div class="section-title">Silver yearly trend</div>
 
       <div class="chart-wrap">
-        <svg id="silver12m-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 12-month trend chart" style="touch-action:none;">
+        <svg id="silver12m-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 12-month trend chart">
+          <!-- ✅ Added defs + area path for shaded fill -->
+          <defs id="silver12m-defs"></defs>
           <g id="silver12m-grid"></g>
+          <path id="silver12m-area" d="" fill="none"></path>
           <path id="silver12m-line" d="" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
           <g id="silver12m-points"></g>
           <g id="silver12m-xlabels"></g>
           <g id="silver12m-ylabels"></g>
-          <g id="silver12m-tooltip"></g>
           <path id="silver12m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
         </svg>
 
         <div class="chart-meta">
-          <div>Low: <span id="silver12m-low" class="low">—</span></div>
-          <div>High: <span id="silver12m-high" class="high">—</span></div>
+          <div>Low: <span id="silver12m-low">—</span></div>
+          <div>High: <span id="silver12m-high">—</span></div>
         </div>
       </div>
     </section>
 
     <section class="card table-card">
-      <div class="section-title">Metals snapshot</div>
       <table>
         <thead>
           <tr>
             <th>Metal</th>
             <th style="text-align:right;">Price (USD/toz)</th>
-            <th style="text-align:right;">24h</th>
+            <th style="text-align:right;">Trend</th>
           </tr>
         </thead>
         <tbody id="metals-tbody"></tbody>
@@ -732,10 +671,6 @@
 
 <script>
   const BACKEND_URL = "https://api.dansretirement.com/";
-  const IMAGE_CLOSED = "/img/silver-closed.png";
-
-  const LOCAL_CACHE_KEY = "metals-last-good-v2";
-  const LOCAL_CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
   const bodyEl = document.body;
   const characterImgEl = document.getElementById("character-img");
@@ -751,53 +686,34 @@
   const silver7dLowEl = document.getElementById("silver7d-low");
   const silver7dHighEl = document.getElementById("silver7d-high");
 
+  const weeklyDefsEl = document.getElementById("silver7d-defs");
   const weeklyGridEl = document.getElementById("silver7d-grid");
+  const weeklyAreaEl = document.getElementById("silver7d-area");
   const weeklyLineEl = document.getElementById("silver7d-line");
   const weeklyPtsEl = document.getElementById("silver7d-points");
   const weeklyXLabelsEl = document.getElementById("silver7d-xlabels");
   const weeklyYLabelsEl = document.getElementById("silver7d-ylabels");
   const weeklyBorderEl = document.getElementById("silver7d-border");
-  const weeklyTooltipEl = document.getElementById("silver7d-tooltip");
-  const weeklySvgEl = document.getElementById("silver7d-svg");
 
   const silver12mLowEl = document.getElementById("silver12m-low");
   const silver12mHighEl = document.getElementById("silver12m-high");
 
+  const yearlyDefsEl = document.getElementById("silver12m-defs");
   const yearlyGridEl = document.getElementById("silver12m-grid");
+  const yearlyAreaEl = document.getElementById("silver12m-area");
   const yearlyLineEl = document.getElementById("silver12m-line");
   const yearlyPtsEl = document.getElementById("silver12m-points");
   const yearlyXLabelsEl = document.getElementById("silver12m-xlabels");
   const yearlyYLabelsEl = document.getElementById("silver12m-ylabels");
   const yearlyBorderEl = document.getElementById("silver12m-border");
-  const yearlyTooltipEl = document.getElementById("silver12m-tooltip");
-  const yearlySvgEl = document.getElementById("silver12m-svg");
+
+  const IMAGE_CLOSED = "/img/silver-closed.png";
 
   let IMAGE_LISTS = { up: [], down: [] };
 
   function pickRandom(arr) {
     if (!arr || arr.length === 0) return null;
     return arr[Math.floor(Math.random() * arr.length)];
-  }
-
-  function preloadImages(paths, limit = 6) {
-    const uniq = [...new Set((paths || []).filter(Boolean))].slice(0, limit);
-    for (const src of uniq) {
-      const img = new Image();
-      img.decoding = "async";
-      img.loading = "eager";
-      img.src = src;
-    }
-  }
-
-  function swapCharacterImage(src) {
-    if (!src) return;
-    characterImgEl.classList.add("fade-out");
-    setTimeout(() => {
-      characterImgEl.src = src;
-      const done = () => characterImgEl.classList.remove("fade-out");
-      characterImgEl.onload = done;
-      characterImgEl.onerror = done;
-    }, 120);
   }
 
   async function loadImageLists() {
@@ -845,12 +761,11 @@
     return dt.toLocaleString();
   }
 
-  function fmtSignedChange(v) {
+  function fmtChange(v) {
     if (v == null) return "—";
     const n = Number(v);
     if (!Number.isFinite(n)) return "—";
-    const sign = n > 0 ? "+" : n < 0 ? "−" : "";
-    return `${sign}${Math.abs(n).toFixed(2)}`;
+    return Math.abs(n).toFixed(2);
   }
 
   function setMarketClosedPill(market) {
@@ -875,7 +790,7 @@
       trendTextEl.textContent = "Market opens Sunday 5pm CT";
     }
 
-    swapCharacterImage(IMAGE_CLOSED);
+    characterImgEl.src = IMAGE_CLOSED;
   }
 
   function setTrendPill(direction) {
@@ -886,7 +801,7 @@
       arrowEl.textContent = "↑";
       trendTextEl.textContent = "Closer to retirement";
       setTrendMode("up");
-      swapCharacterImage(pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED);
+      characterImgEl.src = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
       return;
     }
 
@@ -895,7 +810,7 @@
       arrowEl.textContent = "↓";
       trendTextEl.textContent = "Get back to work";
       setTrendMode("down");
-      swapCharacterImage(pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED);
+      characterImgEl.src = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
       return;
     }
 
@@ -903,7 +818,7 @@
     arrowEl.textContent = "↔";
     trendTextEl.textContent = "Well this is boring";
     setTrendMode("neutral");
-    swapCharacterImage(IMAGE_CLOSED);
+    characterImgEl.src = IMAGE_CLOSED;
   }
 
   function renderMetalsTable(metals) {
@@ -939,7 +854,7 @@
 
       const spanTrend = document.createElement("span");
       const d = m?.direction || "same";
-      const changeText = fmtSignedChange(m?.change);
+      const changeText = fmtChange(m?.change);
 
       spanTrend.className = "change " + dirClass(d);
       spanTrend.textContent = `${dirSymbol(d)} ${changeText}`;
@@ -1025,205 +940,120 @@
     else lineEl.style.color = "var(--text-main)";
   }
 
-  function clearChart(gridEl, ptsEl, xLblEl, yLblEl, tooltipEl, lineEl, borderEl) {
+  function clearChart(gridEl, ptsEl, xLblEl, yLblEl, lineEl, borderEl, areaEl, defsEl) {
     gridEl.innerHTML = "";
     ptsEl.innerHTML = "";
     xLblEl.innerHTML = "";
     yLblEl.innerHTML = "";
-    tooltipEl.innerHTML = "";
     lineEl.setAttribute("d", "");
     borderEl.setAttribute("d", "");
+    if (areaEl) areaEl.setAttribute("d", "");
+    if (defsEl) defsEl.innerHTML = "";
   }
 
-  function isMobileChart() {
-    return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
-  }
+  // ✅ Create per-chart gradient for area fill, based on direction + open/closed
+  function ensureAreaGradient(defsEl, gradientId, marketIsOpen, direction) {
+    if (!defsEl) return;
+    defsEl.innerHTML = "";
 
-  function ensureTooltipNodes(tooltipEl) {
-    const svgns = "http://www.w3.org/2000/svg";
+    const svgNS = "http://www.w3.org/2000/svg";
+    const lg = document.createElementNS(svgNS, "linearGradient");
+    lg.setAttribute("id", gradientId);
+    lg.setAttribute("x1", "0");
+    lg.setAttribute("y1", "0");
+    lg.setAttribute("x2", "0");
+    lg.setAttribute("y2", "1");
 
-    const g = document.createElementNS(svgns, "g");
-    g.setAttribute("data-tooltip-root", "1");
-    g.setAttribute("opacity", "0");
-    g.style.pointerEvents = "none";
+    let top = "rgba(148,163,184,0.18)";
+    let bot = "rgba(2,6,23,0.02)";
 
-    const vline = document.createElementNS(svgns, "line");
-    vline.setAttribute("x1", "0"); vline.setAttribute("x2", "0");
-    vline.setAttribute("y1", "0"); vline.setAttribute("y2", "0");
-    vline.setAttribute("stroke", "rgba(226,232,240,0.35)");
-    vline.setAttribute("stroke-width", "2");
-    vline.setAttribute("stroke-dasharray", "4 6");
-
-    const bubble = document.createElementNS(svgns, "rect");
-    bubble.setAttribute("x", "0"); bubble.setAttribute("y", "0");
-    bubble.setAttribute("rx", "10"); bubble.setAttribute("ry", "10");
-    bubble.setAttribute("fill", "var(--tooltip-bg)");
-    bubble.setAttribute("stroke", "var(--tooltip-border)");
-    bubble.setAttribute("stroke-width", "1");
-
-    const t1 = document.createElementNS(svgns, "text");
-    t1.setAttribute("x", "0"); t1.setAttribute("y", "0");
-    t1.setAttribute("fill", "rgba(226,232,240,0.95)");
-    t1.setAttribute("font-weight", "700");
-    t1.textContent = "";
-
-    const t2 = document.createElementNS(svgns, "text");
-    t2.setAttribute("x", "0"); t2.setAttribute("y", "0");
-    t2.setAttribute("fill", "rgba(156,163,175,0.95)");
-    t2.textContent = "";
-
-    g.appendChild(vline);
-    g.appendChild(bubble);
-    g.appendChild(t1);
-    g.appendChild(t2);
-
-    tooltipEl.appendChild(g);
-
-    return { root: g, vline, bubble, t1, t2 };
-  }
-
-  function setTooltip(tooltipNodes, innerBox, x, yTop, yBottom, label, valueText) {
-    const { root, vline, bubble, t1, t2 } = tooltipNodes;
-
-    vline.setAttribute("x1", x);
-    vline.setAttribute("x2", x);
-    vline.setAttribute("y1", yTop);
-    vline.setAttribute("y2", yBottom);
-
-    const bw = innerBox.bw;
-    const bh = innerBox.bh;
-    const pad = 10;
-
-    let bx = x + 14;
-    if (bx + bw > innerBox.x1 - 6) bx = x - bw - 14;
-    bx = Math.max(innerBox.x0 + 6, Math.min(bx, innerBox.x1 - bw - 6));
-
-    let by = yTop + 8;
-    by = Math.max(innerBox.y0 + 6, Math.min(by, innerBox.y1 - bh - 6));
-
-    bubble.setAttribute("x", bx);
-    bubble.setAttribute("y", by);
-    bubble.setAttribute("width", bw);
-    bubble.setAttribute("height", bh);
-
-    t1.setAttribute("x", bx + pad);
-    t1.setAttribute("y", by + 22);
-    t1.textContent = valueText;
-
-    t2.setAttribute("x", bx + pad);
-    t2.setAttribute("y", by + 42);
-    t2.textContent = label;
-
-    root.setAttribute("opacity", "1");
-  }
-
-  function hideTooltip(tooltipNodes) {
-    if (!tooltipNodes) return;
-    tooltipNodes.root.setAttribute("opacity", "0");
-  }
-
-  function attachChartInteractivity(svgEl, tooltipEl, getState) {
-    let tooltipNodes = null;
-
-    function getSvgPoint(evt) {
-      const pt = svgEl.createSVGPoint();
-      pt.x = evt.clientX;
-      pt.y = evt.clientY;
-      const ctm = svgEl.getScreenCTM();
-      if (!ctm) return null;
-      return pt.matrixTransform(ctm.inverse());
+    if (!marketIsOpen) {
+      top = "rgba(148,163,184,0.16)";
+      bot = "rgba(2,6,23,0.02)";
+    } else if (direction === "up") {
+      top = "rgba(34,197,94,0.22)";
+      bot = "rgba(34,197,94,0.02)";
+    } else if (direction === "down") {
+      top = "rgba(239,68,68,0.24)";
+      bot = "rgba(239,68,68,0.02)";
+    } else {
+      top = "rgba(148,163,184,0.18)";
+      bot = "rgba(148,163,184,0.02)";
     }
 
-    function onMove(evt) {
-      const st = getState();
-      if (!st || !st.pts || st.pts.length < 2) return;
+    const s1 = document.createElementNS(svgNS, "stop");
+    s1.setAttribute("offset", "0%");
+    s1.setAttribute("stop-color", top);
 
-      const p = getSvgPoint(evt);
-      if (!p) return;
+    const s2 = document.createElementNS(svgNS, "stop");
+    s2.setAttribute("offset", "100%");
+    s2.setAttribute("stop-color", bot);
 
-      const x = Math.max(st.x0, Math.min(p.x, st.x1));
-
-      let bestI = 0;
-      let bestD = Infinity;
-      for (let i = 0; i < st.pts.length; i++) {
-        const dx = Math.abs(st.xFor(i) - x);
-        if (dx < bestD) { bestD = dx; bestI = i; }
-      }
-
-      const cx = st.xFor(bestI);
-
-      if (!tooltipNodes) tooltipNodes = ensureTooltipNodes(tooltipEl);
-
-      const label = st.formatX(st.pts[bestI], bestI, st.pts.length);
-      const valueText = fmtMoney(st.pts[bestI].value);
-
-      setTooltip(
-        tooltipNodes,
-        { x0: st.x0, x1: st.x1, y0: st.y0, y1: st.y1, bw: 170, bh: 56 },
-        cx,
-        st.y0,
-        st.y1,
-        label,
-        valueText
-      );
-    }
-
-    function onLeave() {
-      if (!tooltipNodes) return;
-      hideTooltip(tooltipNodes);
-    }
-
-    svgEl.addEventListener("pointermove", onMove, { passive: true });
-    svgEl.addEventListener("pointerdown", onMove, { passive: true });
-    svgEl.addEventListener("pointerleave", onLeave);
-    svgEl.addEventListener("pointerup", onLeave);
+    lg.appendChild(s1);
+    lg.appendChild(s2);
+    defsEl.appendChild(lg);
   }
-
-  const chartState = { weekly: null, yearly: null };
 
   function renderLineChart({
     rows,
     mapPoint,
     formatX,
+    minEl,
+    maxEl,
     lineEl,
+    areaEl,
+    defsEl,
     gridEl,
     ptsEl,
     xLabelsEl,
     yLabelsEl,
-    tooltipEl,
     borderEl,
     marketIsOpen,
     direction,
-    mobileHeight,     // ✅ allow different chart heights on mobile
-    desktopHeight,    // ✅ keep desktop same
+    // ✅ New: chartType controls how tight padding is
+    chartType = "weekly", // "weekly" | "yearly"
   }) {
-    clearChart(gridEl, ptsEl, xLabelsEl, yLabelsEl, tooltipEl, lineEl, borderEl);
+    clearChart(gridEl, ptsEl, xLabelsEl, yLabelsEl, lineEl, borderEl, areaEl, defsEl);
 
-    if (!Array.isArray(rows) || rows.length < 2) return null;
+    if (minEl) minEl.textContent = "—";
+    if (maxEl) maxEl.textContent = "—";
+
+    if (!Array.isArray(rows) || rows.length < 2) return;
 
     const pts = rows.map(mapPoint).filter((p) => p && p.xLabel && Number.isFinite(p.value));
-    if (pts.length < 2) return null;
+    if (pts.length < 2) return;
 
     let min = Infinity, max = -Infinity;
     for (const p of pts) {
       if (p.value < min) min = p.value;
       if (p.value > max) max = p.value;
     }
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return;
 
-    const pad = (max - min) * 0.12 || (min * 0.02) || 0.5;
+    if (minEl) minEl.textContent = fmtMoney(min);
+    if (maxEl) maxEl.textContent = fmtMoney(max);
+
+    // ✅ TIGHTER Y padding (Yahoo-like). Weekly tighter than yearly.
+    const range = (max - min);
+    const pct = chartType === "weekly" ? 0.06 : 0.08; // tightened from 0.12
+    let pad = range * pct;
+
+    // clamp pad so it doesn't get ridiculous or too tiny
+    const minPad = 0.35;
+    const maxPad = Math.max(minPad, range * 0.15);
+    pad = Math.min(maxPad, Math.max(minPad, pad || 0));
+
     const yMin = min - pad;
     const yMax = max + pad;
 
-    const mobile = isMobileChart();
-    const W = 1000;
-    const H = mobile ? (mobileHeight || 420) : (desktopHeight || 260);
+    const W = 1000, H = 260;
 
-    // ✅ reduced wasted padding + y labels INSIDE plot (right edge)
-    const padL = mobile ? 18 : 20;
-    const padR = mobile ? 20 : 20;   // keep tiny since y labels are inside now
-    const padT = mobile ? 14 : 18;
-    const padB = mobile ? 62 : 52;   // extra room for bigger x labels
+    // keep your existing paddings (not changing layout here),
+    // since you asked only shaded fill + tighten y padding.
+    const padL = 20;
+    const padR = 78;
+    const padT = 18;
+    const padB = 52;
 
     const innerW = W - padL - padR;
     const innerH = H - padT - padB;
@@ -1234,14 +1064,10 @@
       return padT + innerH * (1 - t);
     };
 
-    const svg = lineEl.ownerSVGElement;
-    if (svg) svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-
     const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
     borderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
-    // Grid + Y labels (inside)
-    const ticks = makeTicks(yMin, yMax, mobile ? 4 : 5);
+    const ticks = makeTicks(yMin, yMax, 5);
     for (const t of ticks) {
       const y = yFor(t);
 
@@ -1254,57 +1080,62 @@
       gridEl.appendChild(gl);
 
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      tx.setAttribute("x", x1 - 6);
-      tx.setAttribute("y", y + 6);
-      tx.setAttribute("text-anchor", "end");
+      tx.setAttribute("x", x1 + 10);
+      tx.setAttribute("y", y + 5);
+      tx.setAttribute("text-anchor", "start");
       tx.textContent = t.toFixed(0);
       yLabelsEl.appendChild(tx);
     }
 
-    // ✅ fewer X labels on mobile when there are many points (yearly)
-    const manyPoints = pts.length >= 10;
-    const showEvery = (mobile && manyPoints) ? 2 : 1;
-
     for (let i = 0; i < pts.length; i++) {
-      const isFirst = i === 0;
-      const isLast = i === pts.length - 1;
-
-      if (showEvery > 1 && !isFirst && !isLast && (i % showEvery !== 0)) continue;
-
       const x = xFor(i);
+
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-
-      let anchor = "middle";
-      let xAdj = x;
-      if (isFirst) { anchor = "start"; xAdj = x + 4; }
-      if (isLast) { anchor = "end"; xAdj = x - 4; }
-
-      tx.setAttribute("x", xAdj);
-      tx.setAttribute("y", y1 + (mobile ? 42 : 32));
-      tx.setAttribute("text-anchor", anchor);
+      tx.setAttribute("x", x);
+      tx.setAttribute("y", y1 + 32);
+      tx.setAttribute("text-anchor", "middle");
       tx.textContent = formatX(pts[i], i, pts.length);
       xLabelsEl.appendChild(tx);
     }
 
+    // Build line path
     let d = `M ${xFor(0).toFixed(2)} ${yFor(pts[0].value).toFixed(2)}`;
     for (let i = 1; i < pts.length; i++) {
       d += ` L ${xFor(i).toFixed(2)} ${yFor(pts[i].value).toFixed(2)}`;
     }
     lineEl.setAttribute("d", d);
 
+    // ✅ Build area path (shaded fill under line)
+    if (areaEl && defsEl) {
+      const gradientId = (chartType === "weekly") ? "silver7d-area-grad" : "silver12m-area-grad";
+      ensureAreaGradient(defsEl, gradientId, marketIsOpen, direction);
+
+      // baseline at bottom of plot
+      const baseY = y1;
+
+      let a = `M ${xFor(0).toFixed(2)} ${baseY.toFixed(2)} L ${xFor(0).toFixed(2)} ${yFor(pts[0].value).toFixed(2)}`;
+      for (let i = 1; i < pts.length; i++) {
+        a += ` L ${xFor(i).toFixed(2)} ${yFor(pts[i].value).toFixed(2)}`;
+      }
+      a += ` L ${xFor(pts.length - 1).toFixed(2)} ${baseY.toFixed(2)} Z`;
+
+      areaEl.setAttribute("d", a);
+      areaEl.setAttribute("fill", `url(#${gradientId})`);
+      areaEl.setAttribute("stroke", "none");
+      areaEl.setAttribute("opacity", "1");
+    }
+
     for (let i = 0; i < pts.length; i++) {
       const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       c.setAttribute("cx", xFor(i));
       c.setAttribute("cy", yFor(pts[i].value));
-      c.setAttribute("r", mobile ? 6 : 4.2);
+      c.setAttribute("r", 4.2);
       c.setAttribute("fill", "currentColor");
       c.setAttribute("opacity", "0.95");
       ptsEl.appendChild(c);
     }
 
     setChartColor(lineEl, marketIsOpen, direction);
-
-    return { pts, xFor, yFor, x0, y0, x1, y1, formatX };
   }
 
   function computeMinMax(rows, getVal) {
@@ -1319,28 +1150,6 @@
     return { min, max };
   }
 
-  function saveLocalCache(payload) {
-    try {
-      const wrapped = { savedAt: Date.now(), payload };
-      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(wrapped));
-    } catch {}
-  }
-
-  function loadLocalCache() {
-    try {
-      const raw = localStorage.getItem(LOCAL_CACHE_KEY);
-      if (!raw) return null;
-      const obj = JSON.parse(raw);
-      if (!obj || typeof obj !== "object") return null;
-      if (typeof obj.savedAt !== "number" || !obj.payload) return null;
-      const age = Date.now() - obj.savedAt;
-      if (age > LOCAL_CACHE_MAX_AGE_MS) return null;
-      return obj;
-    } catch {
-      return null;
-    }
-  }
-
   function updateUI(data) {
     const metals = data?.metals || {};
     const silver = metals.silver || {};
@@ -1350,8 +1159,8 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    silver24hHighEl.textContent = fmtMoney(silver.high24h);
-    silver24hLowEl.textContent  = fmtMoney(silver.low24h);
+    silver24hHighEl.textContent = `24h high: ${fmtMoney(silver.high24h)}`;
+    silver24hLowEl.textContent  = `24h low: ${fmtMoney(silver.low24h)}`;
 
     const marketIsOpen = !(market && market.isOpen === false);
 
@@ -1362,47 +1171,50 @@
     silver12mLowEl.textContent = fmtMoney(yy.min);
     silver12mHighEl.textContent = fmtMoney(yy.max);
 
-    const ww = computeMinMax(weeklyRows, (r) => r?.close);
-    silver7dLowEl.textContent = fmtMoney(ww.min);
-    silver7dHighEl.textContent = fmtMoney(ww.max);
-
     if (!marketIsOpen) {
       setHeadlinePriceColor("same", false);
       setMarketClosedPill(market);
       renderMetalsTable(metals);
 
-      chartState.weekly = renderLineChart({
+      renderLineChart({
         rows: weeklyRows,
         mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
         formatX: (p) => fmtMMDD(p.xLabel),
+        minEl: silver7dLowEl,
+        maxEl: silver7dHighEl,
         lineEl: weeklyLineEl,
+        areaEl: weeklyAreaEl,
+        defsEl: weeklyDefsEl,
         gridEl: weeklyGridEl,
         ptsEl: weeklyPtsEl,
         xLabelsEl: weeklyXLabelsEl,
         yLabelsEl: weeklyYLabelsEl,
-        tooltipEl: weeklyTooltipEl,
         borderEl: weeklyBorderEl,
         marketIsOpen: false,
         direction: "same",
-        desktopHeight: 260,
-        mobileHeight: 420,   // ✅ bigger
+        chartType: "weekly",
       });
 
-      chartState.yearly = renderLineChart({
+      renderLineChart({
         rows: yearlyRows,
         mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
-        formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
+        formatX: (p) => {
+          const raw = p?.raw;
+          return raw?.month || monthNameFromYYYYMM(p.xLabel);
+        },
+        minEl: null,
+        maxEl: null,
         lineEl: yearlyLineEl,
+        areaEl: yearlyAreaEl,
+        defsEl: yearlyDefsEl,
         gridEl: yearlyGridEl,
         ptsEl: yearlyPtsEl,
         xLabelsEl: yearlyXLabelsEl,
         yLabelsEl: yearlyYLabelsEl,
-        tooltipEl: yearlyTooltipEl,
         borderEl: yearlyBorderEl,
         marketIsOpen: false,
         direction: "same",
-        desktopHeight: 260,
-        mobileHeight: 480,   // ✅ bigger
+        chartType: "yearly",
       });
 
       return;
@@ -1412,38 +1224,45 @@
     setTrendPill(silver.direction || "same");
     renderMetalsTable(metals);
 
-    chartState.weekly = renderLineChart({
+    renderLineChart({
       rows: weeklyRows,
       mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
       formatX: (p) => fmtMMDD(p.xLabel),
+      minEl: silver7dLowEl,
+      maxEl: silver7dHighEl,
       lineEl: weeklyLineEl,
+      areaEl: weeklyAreaEl,
+      defsEl: weeklyDefsEl,
       gridEl: weeklyGridEl,
       ptsEl: weeklyPtsEl,
       xLabelsEl: weeklyXLabelsEl,
       yLabelsEl: weeklyYLabelsEl,
-      tooltipEl: weeklyTooltipEl,
       borderEl: weeklyBorderEl,
       marketIsOpen: true,
       direction: silver.direction || "same",
-      desktopHeight: 260,
-      mobileHeight: 420,   // ✅ bigger
+      chartType: "weekly",
     });
 
-    chartState.yearly = renderLineChart({
+    renderLineChart({
       rows: yearlyRows,
       mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
-      formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
+      formatX: (p) => {
+        const raw = p?.raw;
+        return raw?.month || monthNameFromYYYYMM(p.xLabel);
+      },
+      minEl: null,
+      maxEl: null,
       lineEl: yearlyLineEl,
+      areaEl: yearlyAreaEl,
+      defsEl: yearlyDefsEl,
       gridEl: yearlyGridEl,
       ptsEl: yearlyPtsEl,
       xLabelsEl: yearlyXLabelsEl,
       yLabelsEl: yearlyYLabelsEl,
-      tooltipEl: yearlyTooltipEl,
       borderEl: yearlyBorderEl,
       marketIsOpen: true,
       direction: silver.direction || "same",
-      desktopHeight: 260,
-      mobileHeight: 480,   // ✅ bigger
+      chartType: "yearly",
     });
   }
 
@@ -1458,135 +1277,90 @@
       { date: "2025-12-26", close: 73.9 },
       { date: "2025-12-29", close: 76.0 },
       { date: "2025-12-30", close: 75.4 },
-      { date: "2025-12-31", close: 72.27 },
     ];
 
     const fakeYearly = [
-      { ym: "2025-01", month: "Jan", close: 31.73 },
-      { ym: "2025-02", month: "Feb", close: 33.1 },
-      { ym: "2025-03", month: "Mar", close: 34.2 },
-      { ym: "2025-04", month: "Apr", close: 33.8 },
-      { ym: "2025-05", month: "May", close: 33.5 },
-      { ym: "2025-06", month: "Jun", close: 36.7 },
-      { ym: "2025-07", month: "Jul", close: 38.9 },
-      { ym: "2025-08", month: "Aug", close: 39.4 },
-      { ym: "2025-09", month: "Sep", close: 47.0 },
-      { ym: "2025-10", month: "Oct", close: 55.3 },
-      { ym: "2025-11", month: "Nov", close: 57.2 },
-      { ym: "2025-12", month: "Dec", close: 83.96 },
+      { ym: "2025-01", month: "Jan", close: 69.1 },
+      { ym: "2025-02", month: "Feb", close: 70.2 },
+      { ym: "2025-03", month: "Mar", close: 71.6 },
+      { ym: "2025-04", month: "Apr", close: 73.0 },
+      { ym: "2025-05", month: "May", close: 74.4 },
+      { ym: "2025-06", month: "Jun", close: 72.8 },
+      { ym: "2025-07", month: "Jul", close: 73.7 },
+      { ym: "2025-08", month: "Aug", close: 75.9 },
+      { ym: "2025-09", month: "Sep", close: 77.2 },
+      { ym: "2025-10", month: "Oct", close: 76.1 },
+      { ym: "2025-11", month: "Nov", close: 78.4 },
+      { ym: "2025-12", month: "Dec", close: 76.2 },
     ];
 
     const fake = {
       updatedAt: new Date().toISOString(),
       metals: {
         silver: { price: 76.09, direction: "same", change: -0.12, high24h: 77.88, low24h: 74.91 },
-        gold: { price: 4326.15, direction: "down", change: -4.94 },
+        gold: { price: 4343.23, direction: "same", change: 1.1 },
         platinum: { price: 2186.65, direction: "same", change: 0.0 },
-        palladium: { price: 1625.39, direction: "down", change: -2.0 },
+        palladium: { price: 1625.39, direction: "same", change: -2.0 },
       },
       weekly: { silver: fakeWeekly },
-      yearly: { silver12m: fakeYearly, low12m: 31.73, high12m: 83.96 },
+      yearly: { silver12m: fakeYearly, low12m: 69.1, high12m: 78.4 },
       market: { isOpen: true, reason: "Open", closedType: null },
     };
 
     if (mode === "up") fake.metals.silver.direction = "up";
     if (mode === "down") fake.metals.silver.direction = "down";
+
+    if (mode === "flat" || mode === "neutral") {
+      fake.metals.silver.direction = "same";
+      fake.market.isOpen = true;
+      fake.market.closedType = null;
+    }
+
     if (mode === "closed") {
       fake.market.isOpen = false;
-      fake.market.closedType = "maintenance";
       fake.market.reason = "Daily maintenance break (4–5 PM CT)";
+      fake.market.closedType = "maintenance";
     }
+
     if (mode === "weekend") {
       fake.market.isOpen = false;
-      fake.market.closedType = "weekend";
       fake.market.reason = "Weekend close";
+      fake.market.closedType = "weekend";
     }
 
     updateUI(fake);
     return true;
   }
 
-  function backendUrlWithBuster() {
-    const url = new URL(BACKEND_URL);
-    url.searchParams.set("t", Date.now());
-    return url.toString();
-  }
-
   async function refreshAllOnce() {
     try {
       trendTextEl.textContent = "Loading…";
-      const res = await fetch(backendUrlWithBuster(), { cache: "no-store" });
+      const res = await fetch(BACKEND_URL + "?t=" + Date.now(), { cache: "no-store" });
       if (!res.ok) throw new Error("Backend HTTP error " + res.status);
       const data = await res.json();
-
-      saveLocalCache(data);
       updateUI(data);
     } catch (err) {
       console.error(err);
-
-      const local = loadLocalCache();
-      if (local?.payload) {
-        updateUI(local.payload);
-
-        trendPillEl.className = "trend-pill neutral";
-        trendPillEl.querySelector(".trend-arrow").textContent = "!";
-        trendTextEl.textContent = "Using cached data";
-        return;
-      }
-
       trendPillEl.className = "trend-pill neutral";
       trendPillEl.querySelector(".trend-arrow").textContent = "!";
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
       headlinePriceEl.style.color = "var(--text-main)";
-      swapCharacterImage(IMAGE_CLOSED);
-      silver24hHighEl.textContent = "—";
-      silver24hLowEl.textContent  = "—";
-      silver7dLowEl.textContent = "—";
-      silver7dHighEl.textContent = "—";
-      silver12mLowEl.textContent = "—";
-      silver12mHighEl.textContent = "—";
+      characterImgEl.src = IMAGE_CLOSED;
+      silver24hHighEl.textContent = "24h high: —";
+      silver24hLowEl.textContent  = "24h low: —";
+
+      // clear charts if error
+      clearChart(weeklyGridEl, weeklyPtsEl, weeklyXLabelsEl, weeklyYLabelsEl, weeklyLineEl, weeklyBorderEl, weeklyAreaEl, weeklyDefsEl);
+      clearChart(yearlyGridEl, yearlyPtsEl, yearlyXLabelsEl, yearlyYLabelsEl, yearlyLineEl, yearlyBorderEl, yearlyAreaEl, yearlyDefsEl);
     }
-  }
-
-  function scheduleAutoRefresh() {
-    const MS = 30 * 60 * 1000;
-    const now = new Date();
-    const msToNext =
-      MS - ((now.getMinutes() * 60 + now.getSeconds()) * 1000 + now.getMilliseconds()) % MS;
-
-    setTimeout(() => {
-      refreshAllOnce();
-      setInterval(refreshAllOnce, MS);
-    }, msToNext);
   }
 
   (async () => {
     await loadImageLists();
-    preloadImages(IMAGE_LISTS.up, 8);
-    preloadImages(IMAGE_LISTS.down, 8);
-    preloadImages([IMAGE_CLOSED], 1);
-
-    attachChartInteractivity(weeklySvgEl, weeklyTooltipEl, () => chartState.weekly);
-    attachChartInteractivity(yearlySvgEl, yearlyTooltipEl, () => chartState.yearly);
-
-    const local = loadLocalCache();
-    if (local?.payload) updateUI(local.payload);
-
     if (!applyForcedModeIfAny()) {
-      await refreshAllOnce();
-      scheduleAutoRefresh();
+      refreshAllOnce();
     }
-
-    let lastMobile = isMobileChart();
-    window.addEventListener("resize", () => {
-      const nowMobile = isMobileChart();
-      if (nowMobile !== lastMobile) {
-        lastMobile = nowMobile;
-        const local2 = loadLocalCache();
-        if (local2?.payload) updateUI(local2.payload);
-      }
-    }, { passive: true });
   })();
 </script>
 </body>
