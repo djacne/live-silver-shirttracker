@@ -199,10 +199,7 @@
       will-change: transform, opacity;
     }
 
-    .rocket {
-      bottom: -14vh;
-      filter: drop-shadow(0 0 8px rgba(248,250,252,0.22));
-    }
+    .rocket { bottom: -14vh; filter: drop-shadow(0 0 8px rgba(248,250,252,0.22)); }
     .rocket-l { left: var(--x); animation-name: rocketFlyL; }
     @keyframes rocketFlyL {
       0%   { transform: translate3d(0, 0, 0) rotate(-35deg) scale(0.95); opacity: 0; }
@@ -211,10 +208,7 @@
       100% { transform: translate3d(120vw, -140vh, 0) rotate(-35deg) scale(1.05); opacity: 0; }
     }
 
-    .crash-rocket {
-      top: -14vh;
-      filter: drop-shadow(0 0 10px rgba(239,68,68,0.35));
-    }
+    .crash-rocket { top: -14vh; filter: drop-shadow(0 0 10px rgba(239,68,68,0.35)); }
     .crash-rocket-r { left: var(--x); animation-name: crashFlyR; }
     @keyframes crashFlyR {
       0%   { transform: translate3d(120vw, 0, 0) rotate(35deg) scale(0.95); opacity: 0; }
@@ -427,7 +421,7 @@
 
     .chart-wrap svg {
       width: 100%;
-      height: 260px;  /* desktop */
+      height: 260px;
       display: block;
       touch-action: pan-y;
       user-select: none;
@@ -458,7 +452,7 @@
 
     @media (max-width: 600px) {
       .chart-wrap { padding: 10px; }
-      .chart-wrap svg { height: 280px; }         /* more vertical for bars */
+      .chart-wrap svg { height: 260px; }
       .chart-wrap svg text { font-size: 16.5px; }
     }
 
@@ -703,7 +697,6 @@
   const IMAGE_CLOSED = "/img/silver-closed.png";
 
   let IMAGE_LISTS = { up: [], down: [] };
-
   let _currentDirection = null;
   let _currentImageSrc = null;
 
@@ -955,6 +948,7 @@
     tipEl.innerHTML = "";
   }
 
+  // ✅ SINGLE chart renderer (bars fill box on mobile, y labels outside on ALL devices, "100" never clips)
   function renderBarChart({
     rows,
     getXLabel,
@@ -971,13 +965,13 @@
     crosshairEl,
     tipEl,
     marketIsOpen,
-    direction,
-    chartType = "weekly",
+    chartType = "weekly", // weekly | yearly
   }) {
     clearBarChart(gridEl, barsEl, xLabelsEl, yLabelsEl, borderEl, tipEl);
 
     if (minEl) minEl.textContent = "—";
     if (maxEl) maxEl.textContent = "—";
+
     if (!Array.isArray(rows) || rows.length < 2) return;
 
     const pts = rows
@@ -993,28 +987,27 @@
     if (minEl) minEl.textContent = fmtMoney(min);
     if (maxEl) maxEl.textContent = fmtMoney(max);
 
-    let range = (max - min);
-    const minVisualRange = chartType === "weekly" ? 0.9 : 2.0;
-    if (range < minVisualRange) range = minVisualRange;
-
     const W = 1000;
     const H = 260;
     const mobile = isMobileNow();
 
-    // ✅ taller-looking bars (more aggressive "floor" on mobile)
-    const padBot = range * (mobile ? 0.90 : 0.55);
+    // ✅ Make bars feel tall on mobile: compress vertical range by pushing yMin down.
+    // (This is the "UTILIZE MOST OF THE BOX" behavior.)
+    let range = (max - min);
+    const minVisualRange = chartType === "weekly" ? 0.9 : 2.0;
+    if (range < minVisualRange) range = minVisualRange;
+
+    const padBot = range * (mobile ? 0.95 : 0.55);
     const padTop = range * (mobile ? 0.12 : 0.10);
 
     const yMin = min - padBot;
     const yMax = max + padTop;
 
+    // ✅ Space for y-axis labels OUTSIDE the plot box, on desktop + mobile.
     const padL = mobile ? 22 : 26;
-
-    // ✅ IMPORTANT: reserve a real right gutter on mobile so y labels can live OUTSIDE the plot
-    const padR = mobile ? 72 : 76;
-
+    const padR = mobile ? 120 : 140;  // BIG gutter so labels never clip
     const padT = mobile ? 12 : 16;
-    const padB = mobile ? 30 : 48;
+    const padB = mobile ? 32 : 48;
 
     const innerW = W - padL - padR;
     const innerH = H - padT - padB;
@@ -1027,7 +1020,7 @@
     const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
     borderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
-    // grid + y labels (ALWAYS outside plot, right gutter)
+    // Grid + Y labels
     const yTicks = makeTicks(yMin, yMax, mobile ? 3 : 5);
     const yLabelFmt = (range < 20) ? (n) => n.toFixed(2) : (n) => n.toFixed(0);
 
@@ -1043,15 +1036,15 @@
       gridEl.appendChild(gl);
 
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      // ✅ lock labels to the right gutter INSIDE the SVG so "100" never clips
-      tx.setAttribute("x", W - 8);
+      // ✅ Always in the right gutter, and grows left -> "100" can NEVER clip
+      tx.setAttribute("x", W - 6);
       tx.setAttribute("text-anchor", "end");
       tx.setAttribute("y", y + 6);
       tx.textContent = yLabelFmt(t);
       yLabelsEl.appendChild(tx);
     }
 
-    // Bars: touch each other, tiny gap
+    // Bars: nearly touching + tiny gap
     const n = pts.length;
     const slotW = innerW / n;
 
@@ -1064,7 +1057,6 @@
     // X labels: fewer on mobile
     let step = 1;
     if (mobile) step = 2;
-
     const shouldShowX = (i) => (i === 0 || i === n - 1 || (i % step === 0));
 
     for (let i = 0; i < n; i++) {
@@ -1095,7 +1087,7 @@
         const x = barX(i) + (barW / 2);
         const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
         tx.setAttribute("x", x);
-        tx.setAttribute("y", y1 + (mobile ? 20 : 30));
+        tx.setAttribute("y", y1 + (mobile ? 22 : 30));
         tx.setAttribute("text-anchor", "middle");
         tx.textContent = formatX(pts[i], i, n);
         xLabelsEl.appendChild(tx);
@@ -1204,6 +1196,7 @@
     const weeklyRows = data?.weekly?.silver || [];
     const yearlyRows = data?.yearly?.silver12m || [];
 
+    // meta hi/lo for yearly section (already computed server-side too, but keep client-safe)
     let yMin = null, yMax = null;
     for (const r of yearlyRows) {
       const v = Number(r?.close);
@@ -1235,7 +1228,6 @@
         crosshairEl: weeklyCrosshairEl,
         tipEl: weeklyTipEl,
         marketIsOpen: false,
-        direction: "same",
         chartType: "weekly",
       });
 
@@ -1255,9 +1247,9 @@
         crosshairEl: yearlyCrosshairEl,
         tipEl: yearlyTipEl,
         marketIsOpen: false,
-        direction: "same",
         chartType: "yearly",
       });
+
       return;
     }
 
@@ -1281,7 +1273,6 @@
       crosshairEl: weeklyCrosshairEl,
       tipEl: weeklyTipEl,
       marketIsOpen: true,
-      direction: silver.direction || "same",
       chartType: "weekly",
     });
 
@@ -1301,7 +1292,6 @@
       crosshairEl: yearlyCrosshairEl,
       tipEl: yearlyTipEl,
       marketIsOpen: true,
-      direction: silver.direction || "same",
       chartType: "yearly",
     });
   }
@@ -1404,7 +1394,7 @@
     }
   }
 
-  // ✅ Fix “scroll resize” bug
+  // ✅ Fix “scroll refresh” bug: no window.resize refresh; only breakpoint/orientation
   let _lastIsMobile = isMobileNow();
 
   function rerenderChartsOnly() {
