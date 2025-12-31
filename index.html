@@ -386,6 +386,9 @@
       margin-top: 2px;
     }
 
+    .val-high { color: var(--accent-up); font-weight: 700; }
+    .val-low  { color: var(--accent-down); font-weight: 700; }
+
     .trend-row {
       display: flex;
       flex-wrap: wrap;
@@ -460,10 +463,10 @@
       padding: 10px;
     }
 
-    /* ✅ SAME size for weekly & yearly, readable on desktop */
+    /* Desktop defaults */
     .chart-wrap svg {
       width: 100%;
-      height: 320px;         /* desktop chart height */
+      height: 300px; /* BIGGER desktop default */
       display: block;
       touch-action: pan-y;
       user-select: none;
@@ -480,11 +483,11 @@
       stroke-width: 1;
     }
 
-    /* ✅ BIG mobile readability (both charts same size) */
+    /* Mobile: actually big, Yahoo-readable */
     @media (max-width: 600px) {
       .chart-wrap { padding: 10px; }
-      #silver7d-svg { height: 520px; }
-      #silver12m-svg { height: 520px; }
+      #silver7d-svg { height: 720px; }
+      #silver12m-svg { height: 720px; }
       .chart-wrap svg text { font-size: 18px; }
     }
 
@@ -496,6 +499,9 @@
       font-size: 0.78rem;
       color: var(--text-muted);
     }
+
+    .chart-meta .lowv { color: var(--accent-down); font-weight: 800; }
+    .chart-meta .highv { color: var(--accent-up); font-weight: 800; }
 
     .table-card { margin-top: 18px; }
     table { width: 100%; border-collapse: collapse; }
@@ -608,8 +614,8 @@
           </div>
 
           <div class="hero-substack">
-            <div class="hero-subline" id="silver-24h-high">24h high: —</div>
-            <div class="hero-subline" id="silver-24h-low">24h low: —</div>
+            <div class="hero-subline">24h high: <span id="silver-24h-high-val" class="val-high">—</span></div>
+            <div class="hero-subline">24h low: <span id="silver-24h-low-val" class="val-low">—</span></div>
           </div>
         </div>
 
@@ -630,8 +636,8 @@
       <div class="section-title">Silver weekly trend</div>
 
       <div class="chart-wrap">
-        <!-- ✅ Desktop viewBox matches desktop height; JS reads it and draws to FULL height -->
-        <svg id="silver7d-svg" viewBox="0 0 1000 320" role="img" aria-label="Silver 7-day trend chart">
+        <!-- viewBox is dynamically set to match rendered height -->
+        <svg id="silver7d-svg" viewBox="0 0 1000 300" role="img" aria-label="Silver 7-day trend chart">
           <defs id="silver7d-defs"></defs>
           <g id="silver7d-grid"></g>
           <path id="silver7d-area" d="" fill="none"></path>
@@ -643,8 +649,8 @@
         </svg>
 
         <div class="chart-meta">
-          <div>Low: <span id="silver7d-low">—</span></div>
-          <div>High: <span id="silver7d-high">—</span></div>
+          <div>Low: <span id="silver7d-low" class="lowv">—</span></div>
+          <div>High: <span id="silver7d-high" class="highv">—</span></div>
         </div>
       </div>
     </section>
@@ -653,8 +659,8 @@
       <div class="section-title">Silver yearly trend</div>
 
       <div class="chart-wrap">
-        <!-- ✅ Same size as weekly -->
-        <svg id="silver12m-svg" viewBox="0 0 1000 320" role="img" aria-label="Silver 12-month trend chart">
+        <!-- viewBox is dynamically set to match rendered height -->
+        <svg id="silver12m-svg" viewBox="0 0 1000 300" role="img" aria-label="Silver 12-month trend chart">
           <defs id="silver12m-defs"></defs>
           <g id="silver12m-grid"></g>
           <path id="silver12m-area" d="" fill="none"></path>
@@ -666,13 +672,14 @@
         </svg>
 
         <div class="chart-meta">
-          <div>Low: <span id="silver12m-low">—</span></div>
-          <div>High: <span id="silver12m-high">—</span></div>
+          <div>Low: <span id="silver12m-low" class="lowv">—</span></div>
+          <div>High: <span id="silver12m-high" class="highv">—</span></div>
         </div>
       </div>
     </section>
 
     <section class="card table-card">
+      <div class="section-title">Metals scoreboard</div>
       <table>
         <thead>
           <tr>
@@ -697,11 +704,11 @@
   const lastUpdatedEl = document.getElementById("last-updated");
   const metalsTbodyEl = document.getElementById("metals-tbody");
 
+  const silver24hHighValEl = document.getElementById("silver-24h-high-val");
+  const silver24hLowValEl  = document.getElementById("silver-24h-low-val");
+
   const weeklySvgEl = document.getElementById("silver7d-svg");
   const yearlySvgEl = document.getElementById("silver12m-svg");
-
-  const silver24hHighEl = document.getElementById("silver-24h-high");
-  const silver24hLowEl  = document.getElementById("silver-24h-low");
 
   const silver7dLowEl = document.getElementById("silver7d-low");
   const silver7dHighEl = document.getElementById("silver7d-high");
@@ -731,16 +738,12 @@
 
   let IMAGE_LISTS = { up: [], down: [] };
 
+  // Prevent meme changing on iOS scroll-resize: only change image when direction/state changes
+  let _lastDirectionKey = null;
+  let _pickedImageSrc = null;
+
   function isMobileNow() {
     return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
-  }
-
-  function setChartViewBoxes() {
-    // ✅ Mobile gets a taller *viewBox* so the plot actually has more vertical pixels to use
-    const mobile = isMobileNow();
-    const h = mobile ? 520 : 320; // match CSS heights
-    weeklySvgEl.setAttribute("viewBox", `0 0 1000 ${h}`);
-    yearlySvgEl.setAttribute("viewBox", `0 0 1000 ${h}`);
   }
 
   function pickRandom(arr) {
@@ -822,6 +825,7 @@
       trendTextEl.textContent = "Market opens Sunday 5pm CT";
     }
 
+    _pickedImageSrc = IMAGE_CLOSED;
     characterImgEl.src = IMAGE_CLOSED;
   }
 
@@ -833,7 +837,6 @@
       arrowEl.textContent = "↑";
       trendTextEl.textContent = "Closer to retirement";
       setTrendMode("up");
-      characterImgEl.src = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
       return;
     }
 
@@ -842,7 +845,6 @@
       arrowEl.textContent = "↓";
       trendTextEl.textContent = "Get back to work";
       setTrendMode("down");
-      characterImgEl.src = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
       return;
     }
 
@@ -850,7 +852,28 @@
     arrowEl.textContent = "↔";
     trendTextEl.textContent = "Well this is boring";
     setTrendMode("neutral");
-    characterImgEl.src = IMAGE_CLOSED;
+  }
+
+  function applyCharacterImageForDirection(direction, marketIsOpen) {
+    const key = marketIsOpen ? (direction || "same") : "closed";
+    if (key === _lastDirectionKey && _pickedImageSrc) {
+      characterImgEl.src = _pickedImageSrc;
+      return;
+    }
+
+    _lastDirectionKey = key;
+
+    if (!marketIsOpen) {
+      _pickedImageSrc = IMAGE_CLOSED;
+      characterImgEl.src = IMAGE_CLOSED;
+      return;
+    }
+
+    if (direction === "up") _pickedImageSrc = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
+    else if (direction === "down") _pickedImageSrc = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
+    else _pickedImageSrc = IMAGE_CLOSED;
+
+    characterImgEl.src = _pickedImageSrc;
   }
 
   function renderMetalsTable(metals) {
@@ -1025,12 +1048,26 @@
     defsEl.appendChild(lg);
   }
 
-  function getViewBoxWH(svgEl) {
-    const vb = (svgEl?.getAttribute("viewBox") || "").trim().split(/\s+/).map(Number);
-    if (vb.length === 4 && vb.every((n) => Number.isFinite(n))) {
-      return { W: vb[2], H: vb[3] };
-    }
-    return { W: 1000, H: 320 };
+  // Dynamically set each SVG viewBox height to match its rendered height.
+  // This removes "empty vertical space" and makes the plot fill the box on both desktop + mobile.
+  function setChartViewBoxes() {
+    const setFor = (svg) => {
+      const rect = svg.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      const W = 1000;
+      const H = Math.max(260, Math.round(W * (rect.height / rect.width)));
+      svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    };
+    setFor(weeklySvgEl);
+    setFor(yearlySvgEl);
+  }
+
+  function getViewBoxWH(svg) {
+    const vb = (svg.getAttribute("viewBox") || "0 0 1000 300").trim().split(/\s+/).map(Number);
+    const W = Number.isFinite(vb[2]) ? vb[2] : 1000;
+    const H = Number.isFinite(vb[3]) ? vb[3] : 300;
+    return { W, H };
   }
 
   function renderLineChart({
@@ -1050,7 +1087,7 @@
     borderEl,
     marketIsOpen,
     direction,
-    chartType = "weekly",
+    chartType = "weekly", // "weekly" | "yearly"
   }) {
     clearChart(gridEl, ptsEl, xLabelsEl, yLabelsEl, lineEl, borderEl, areaEl, defsEl);
 
@@ -1072,25 +1109,25 @@
     if (minEl) minEl.textContent = fmtMoney(min);
     if (maxEl) maxEl.textContent = fmtMoney(max);
 
-    const mobile = isMobileNow();
-    const { W, H } = getViewBoxWH(svgEl);
-
-    // ✅ Fix top cutoff: give more headroom, especially for big spikes
+    // Tight y padding (avoid top clipping and avoid wasted space)
     const range = (max - min);
-    const pct = chartType === "weekly" ? 0.12 : 0.14;
+    const pct = chartType === "weekly" ? 0.05 : 0.06; // tighter than before
     let pad = range * pct;
-    const minPad = mobile ? 1.0 : 0.8;
-    const maxPad = Math.max(minPad, range * 0.28);
+    const minPad = 0.28;
+    const maxPad = Math.max(minPad, range * 0.10);
     pad = Math.min(maxPad, Math.max(minPad, pad || 0));
 
     const yMin = min - pad;
     const yMax = max + pad;
 
-    // ✅ Bigger plot area, labels still readable
-    const padL = mobile ? 18 : 22;
-    const padR = mobile ? 18 : 70;
-    const padT = mobile ? 18 : 16;
-    const padB = mobile ? 74 : 56;
+    const mobile = isMobileNow();
+    const { W, H } = getViewBoxWH(svgEl);
+
+    // BIG FIX: less padding so plot fills the card
+    const padL = mobile ? 16 : 22;
+    const padR = mobile ? 16 : 70;
+    const padT = mobile ? 10 : 16;
+    const padB = mobile ? 44 : 56; // was eating your whole chart
 
     const innerW = W - padL - padR;
     const innerH = H - padT - padB;
@@ -1107,7 +1144,7 @@
     const yLabelFmt = (range < 20) ? (n) => n.toFixed(1) : (n) => n.toFixed(0);
 
     // Grid + y labels
-    const ticks = makeTicks(yMin, yMax, mobile ? 5 : 5);
+    const ticks = makeTicks(yMin, yMax, mobile ? 5 : 6);
     for (const t of ticks) {
       const y = yFor(t);
 
@@ -1120,21 +1157,25 @@
       gridEl.appendChild(gl);
 
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      // y labels inside on both (looks cleaner + avoids clipping)
-      tx.setAttribute("x", x1 - (mobile ? 8 : 10));
+
+      // Put y labels inside on both (keeps chart clean and avoids cramped right gutter)
+      tx.setAttribute("x", x1 - 8);
       tx.setAttribute("text-anchor", "end");
+
       tx.setAttribute("y", y + 6);
       tx.textContent = yLabelFmt(t);
       yLabelsEl.appendChild(tx);
     }
 
-    // X label strategy
+    // X label strategy: fewer labels on cramped screens, always show first/last
     const n = pts.length;
     let step = 1;
     if (mobile) {
-      step = (chartType === "weekly") ? 1 : 2;
+      if (chartType === "weekly") step = (n <= 6) ? 1 : 2;
+      else step = 2;
     } else {
-      step = (chartType === "weekly") ? 1 : 2;
+      if (chartType === "yearly") step = 1;
+      else step = 1;
     }
 
     const shouldShowX = (i) => {
@@ -1148,7 +1189,7 @@
       const x = xFor(i);
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
       tx.setAttribute("x", x);
-      tx.setAttribute("y", y1 + (mobile ? 52 : 34));
+      tx.setAttribute("y", y1 + (mobile ? 34 : 34));
 
       if (i === 0) tx.setAttribute("text-anchor", "start");
       else if (i === n - 1) tx.setAttribute("text-anchor", "end");
@@ -1165,7 +1206,7 @@
     }
     lineEl.setAttribute("d", d);
 
-    // Area fill path
+    // Area fill
     if (areaEl && defsEl) {
       const gradientId = (chartType === "weekly") ? "silver7d-area-grad" : "silver12m-area-grad";
       ensureAreaGradient(defsEl, gradientId, marketIsOpen, direction);
@@ -1183,8 +1224,8 @@
       areaEl.setAttribute("opacity", "1");
     }
 
-    // Thicker line + larger points on mobile
-    const strokeW = mobile ? 5 : 3.2;
+    // Thicker line + larger points on mobile (readable)
+    const strokeW = mobile ? 5 : 3.5;
     lineEl.setAttribute("stroke-width", String(strokeW));
 
     const r = mobile ? 7 : 4.2;
@@ -1222,8 +1263,8 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    silver24hHighEl.textContent = `24h high: ${fmtMoney(silver.high24h)}`;
-    silver24hLowEl.textContent  = `24h low: ${fmtMoney(silver.low24h)}`;
+    silver24hHighValEl.textContent = fmtMoney(silver.high24h);
+    silver24hLowValEl.textContent  = fmtMoney(silver.low24h);
 
     const marketIsOpen = !(market && market.isOpen === false);
 
@@ -1238,6 +1279,8 @@
       setHeadlinePriceColor("same", false);
       setMarketClosedPill(market);
       renderMetalsTable(metals);
+
+      applyCharacterImageForDirection("same", false);
 
       renderLineChart({
         svgEl: weeklySvgEl,
@@ -1285,6 +1328,7 @@
     setHeadlinePriceColor(silver.direction || "same", true);
     setTrendPill(silver.direction || "same");
     renderMetalsTable(metals);
+    applyCharacterImageForDirection(silver.direction || "same", true);
 
     renderLineChart({
       svgEl: weeklySvgEl,
@@ -1390,13 +1434,14 @@
       fake.market.closedType = "weekend";
     }
 
+    setChartViewBoxes();
     updateUI(fake);
     return true;
   }
 
   async function refreshAllOnce() {
     try {
-      setChartViewBoxes(); // ✅ critical: ensures JS draws to the real viewBox height
+      setChartViewBoxes(); // IMPORTANT: make viewBox match actual box size first
       trendTextEl.textContent = "Loading…";
       const res = await fetch(BACKEND_URL + "?t=" + Date.now(), { cache: "no-store" });
       if (!res.ok) throw new Error("Backend HTTP error " + res.status);
@@ -1409,42 +1454,36 @@
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
       headlinePriceEl.style.color = "var(--text-main)";
+      _pickedImageSrc = IMAGE_CLOSED;
       characterImgEl.src = IMAGE_CLOSED;
-      silver24hHighEl.textContent = "24h high: —";
-      silver24hLowEl.textContent  = "24h low: —";
+      silver24hHighValEl.textContent = "—";
+      silver24hLowValEl.textContent  = "—";
 
       clearChart(weeklyGridEl, weeklyPtsEl, weeklyXLabelsEl, weeklyYLabelsEl, weeklyLineEl, weeklyBorderEl, weeklyAreaEl, weeklyDefsEl);
       clearChart(yearlyGridEl, yearlyPtsEl, yearlyXLabelsEl, yearlyYLabelsEl, yearlyLineEl, yearlyBorderEl, yearlyAreaEl, yearlyDefsEl);
     }
   }
 
-  // ✅ iOS fix: only re-render on WIDTH changes (scrolling changes height => ignore)
-  let _lastW = window.innerWidth;
-  let _lastRerenderAt = 0;
+  // iOS address bar scroll triggers resize; ONLY re-render when width changes.
+  let _lastWidth = window.innerWidth;
+  let _resizeTimer = null;
 
   window.addEventListener("resize", () => {
-    const now = Date.now();
-    if (now - _lastRerenderAt < 300) return;
-
     const w = window.innerWidth;
-    if (Math.abs(w - _lastW) < 2) return; // ignore scroll-induced resize
-    _lastW = w;
+    if (Math.abs(w - _lastWidth) < 2) return; // ignore height-only changes (scroll)
+    _lastWidth = w;
 
-    _lastRerenderAt = now;
-    refreshAllOnce();
-  });
-
-  window.addEventListener("orientationchange", () => {
-    _lastW = window.innerWidth;
-    refreshAllOnce();
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => refreshAllOnce(), 150);
   });
 
   (async () => {
     await loadImageLists();
-    setChartViewBoxes();
-    if (!applyForcedModeIfAny()) {
-      refreshAllOnce();
-    }
+    // set viewBoxes once layout is painted
+    requestAnimationFrame(() => {
+      setChartViewBoxes();
+      if (!applyForcedModeIfAny()) refreshAllOnce();
+    });
   })();
 </script>
 </body>
