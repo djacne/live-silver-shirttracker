@@ -590,7 +590,6 @@
             </div>
           </div>
 
-          <!-- ✅ moved under the quirk -->
           <div class="hero-substack">
             <div class="hero-subline" id="silver-24h-high">24h high: —</div>
             <div class="hero-subline" id="silver-24h-low">24h low: —</div>
@@ -610,7 +609,6 @@
       </section>
     </div>
 
-    <!-- ✅ rolling 5 “days” from snapshots (still kept as weekly section) -->
     <section class="card" style="margin-top:18px;">
       <div class="section-title">Silver weekly trend</div>
 
@@ -625,13 +623,12 @@
         </svg>
 
         <div class="chart-meta">
-          <div>7d low: <span id="silver7d-low">—</span></div>
-          <div>7d high: <span id="silver7d-high">—</span></div>
+          <div>Low: <span id="silver7d-low">—</span></div>
+          <div>High: <span id="silver7d-high">—</span></div>
         </div>
       </div>
     </section>
 
-    <!-- ✅ 12-month trend from bootstrap: monthly.silver -->
     <section class="card" style="margin-top:18px;">
       <div class="section-title">Silver yearly trend</div>
 
@@ -646,13 +643,12 @@
         </svg>
 
         <div class="chart-meta">
-          <div>12m low: <span id="silver12m-low">—</span></div>
-          <div>12m high: <span id="silver12m-high">—</span></div>
+          <div>Low: <span id="silver12m-low">—</span></div>
+          <div>High: <span id="silver12m-high">—</span></div>
         </div>
       </div>
     </section>
 
-    <!-- ✅ Metals table (removed 52W column) -->
     <section class="card table-card">
       <table>
         <thead>
@@ -701,10 +697,8 @@
   const yearlyYLabelsEl = document.getElementById("silver12m-ylabels");
   const yearlyBorderEl = document.getElementById("silver12m-border");
 
-  // Sad guy = market closed OR neutral/no-change
   const IMAGE_CLOSED = "/img/silver-closed.png";
 
-  // ---- Random image lists (loaded from /images.json) ----
   let IMAGE_LISTS = { up: [], down: [] };
 
   function pickRandom(arr) {
@@ -812,7 +806,7 @@
 
     trendPillEl.className = "trend-pill neutral";
     arrowEl.textContent = "↔";
-    trendTextEl.textContent = "This is boring";
+    trendTextEl.textContent = "Well this is boring";
     setTrendMode("neutral");
     characterImgEl.src = IMAGE_CLOSED;
   }
@@ -1073,20 +1067,18 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    // hero: high + low under quirk
     silver24hHighEl.textContent = `24h high: ${fmtMoney(silver.high24h)}`;
     silver24hLowEl.textContent  = `24h low: ${fmtMoney(silver.low24h)}`;
 
     const marketIsOpen = !(market && market.isOpen === false);
 
-    // Rolling “weekly” chart (worker: weekly.silver -> [{date, close}])
     const weeklyRows = data?.weekly?.silver || [];
 
-    // Yearly chart from worker: monthly.silver -> [{month:"YYYY-MM", close:number}]
-    const monthlyRows = data?.monthly?.silver || [];
-    const mm = computeMinMax(monthlyRows, (r) => r?.close);
-    silver12mLowEl.textContent = fmtMoney(mm.min);
-    silver12mHighEl.textContent = fmtMoney(mm.max);
+    // ✅ FIX: backend YTD is now `yearly.silver12m` (NOT `monthly.silver`)
+    const yearlyRows = data?.yearly?.silver12m || [];
+    const yy = computeMinMax(yearlyRows, (r) => r?.close);
+    silver12mLowEl.textContent = fmtMoney(yy.min);
+    silver12mHighEl.textContent = fmtMoney(yy.max);
 
     if (!marketIsOpen) {
       setHeadlinePriceColor("same", false);
@@ -1110,12 +1102,12 @@
       });
 
       renderLineChart({
-        rows: monthlyRows,
-        mapPoint: (r) => ({ xLabel: r?.month, value: Number(r?.close), raw: r }),
-        formatX: (p, i, n) => {
-          // label every month (as you asked), but keep it from overcrowding on tiny screens
-          // We keep every label; SVG will auto squeeze. If you want, we can switch to every other month.
-          return monthNameFromYYYYMM(p.xLabel);
+        rows: yearlyRows,
+        mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
+        // backend already supplies short month label in `month`
+        formatX: (p) => {
+          const raw = p?.raw;
+          return raw?.month || monthNameFromYYYYMM(p.xLabel);
         },
         minEl: null,
         maxEl: null,
@@ -1153,9 +1145,12 @@
     });
 
     renderLineChart({
-      rows: monthlyRows,
-      mapPoint: (r) => ({ xLabel: r?.month, value: Number(r?.close), raw: r }),
-      formatX: (p) => monthNameFromYYYYMM(p.xLabel),
+      rows: yearlyRows,
+      mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
+      formatX: (p) => {
+        const raw = p?.raw;
+        return raw?.month || monthNameFromYYYYMM(p.xLabel);
+      },
       minEl: null,
       maxEl: null,
       lineEl: yearlyLineEl,
@@ -1182,19 +1177,20 @@
       { date: "2025-12-30", close: 75.4 },
     ];
 
-    const fakeMonthly = [
-      { month: "2025-01", close: 69.1 },
-      { month: "2025-02", close: 70.2 },
-      { month: "2025-03", close: 71.6 },
-      { month: "2025-04", close: 73.0 },
-      { month: "2025-05", close: 74.4 },
-      { month: "2025-06", close: 72.8 },
-      { month: "2025-07", close: 73.7 },
-      { month: "2025-08", close: 75.9 },
-      { month: "2025-09", close: 77.2 },
-      { month: "2025-10", close: 76.1 },
-      { month: "2025-11", close: 78.4 },
-      { month: "2025-12", close: 76.2 },
+    // ✅ FIX: fake yearly now matches backend: `yearly.silver12m` with {ym, month, close}
+    const fakeYearly = [
+      { ym: "2025-01", month: "Jan", close: 69.1 },
+      { ym: "2025-02", month: "Feb", close: 70.2 },
+      { ym: "2025-03", month: "Mar", close: 71.6 },
+      { ym: "2025-04", month: "Apr", close: 73.0 },
+      { ym: "2025-05", month: "May", close: 74.4 },
+      { ym: "2025-06", month: "Jun", close: 72.8 },
+      { ym: "2025-07", month: "Jul", close: 73.7 },
+      { ym: "2025-08", month: "Aug", close: 75.9 },
+      { ym: "2025-09", month: "Sep", close: 77.2 },
+      { ym: "2025-10", month: "Oct", close: 76.1 },
+      { ym: "2025-11", month: "Nov", close: 78.4 },
+      { ym: "2025-12", month: "Dec", close: 76.2 },
     ];
 
     const fake = {
@@ -1206,7 +1202,7 @@
         palladium: { price: 1625.39, direction: "same", change: -2.0 },
       },
       weekly: { silver: fakeWeekly },
-      monthly: { silver: fakeMonthly },
+      yearly: { silver12m: fakeYearly, low12m: 69.1, high12m: 78.4 },
       market: { isOpen: true, reason: "Open", closedType: null },
     };
 
