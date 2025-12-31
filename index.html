@@ -376,7 +376,14 @@
     .hero-subline {
       font-size: 0.85rem;
       color: var(--text-muted);
-      margin-top: -2px;
+      margin-top: 0;
+    }
+
+    .hero-substack {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 2px;
     }
 
     .trend-row {
@@ -497,11 +504,6 @@
     .change.up { color: var(--accent-up); }
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
-
-    /* keep table readable on mobile */
-    @media (max-width: 520px) {
-      th:nth-child(3), td:nth-child(3) { display: none; } /* hide 52W High on tiny screens */
-    }
   </style>
 </head>
 
@@ -581,13 +583,17 @@
             <span class="small">/ troy ounce</span>
           </div>
 
-          <div class="hero-subline" id="silver-24h-high">24h high: —</div>
-
           <div class="trend-row">
             <div id="trend-pill" class="trend-pill neutral">
               <span class="trend-arrow">↔</span>
               <span id="trend-text">Loading…</span>
             </div>
+          </div>
+
+          <!-- ✅ moved under the quirk -->
+          <div class="hero-substack">
+            <div class="hero-subline" id="silver-24h-high">24h high: —</div>
+            <div class="hero-subline" id="silver-24h-low">24h low: —</div>
           </div>
         </div>
 
@@ -604,6 +610,7 @@
       </section>
     </div>
 
+    <!-- ✅ 7-day silver trend -->
     <section class="card" style="margin-top:18px;">
       <div class="section-title">Silver weekly trend</div>
 
@@ -624,13 +631,34 @@
       </div>
     </section>
 
+    <!-- ✅ 12-month silver trend -->
+    <section class="card" style="margin-top:18px;">
+      <div class="section-title">Silver yearly trend</div>
+
+      <div class="chart-wrap">
+        <svg id="silver12m-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 12-month trend chart">
+          <g id="silver12m-grid"></g>
+          <path id="silver12m-line" d="" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+          <g id="silver12m-points"></g>
+          <g id="silver12m-xlabels"></g>
+          <g id="silver12m-ylabels"></g>
+          <path id="silver12m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+        </svg>
+
+        <div class="chart-meta">
+          <div>12m low: <span id="silver12m-low">—</span></div>
+          <div>12m high: <span id="silver12m-high">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ✅ Metals table (removed 52W column) -->
     <section class="card table-card">
       <table>
         <thead>
           <tr>
             <th>Metal</th>
             <th style="text-align:right;">Price (USD/toz)</th>
-            <th style="text-align:right;">52W High</th>
             <th style="text-align:right;">Trend</th>
           </tr>
         </thead>
@@ -651,16 +679,27 @@
   const metalsTbodyEl = document.getElementById("metals-tbody");
 
   const silver24hHighEl = document.getElementById("silver-24h-high");
+  const silver24hLowEl  = document.getElementById("silver-24h-low");
+
   const silver7dLowEl = document.getElementById("silver7d-low");
   const silver7dHighEl = document.getElementById("silver7d-high");
 
-  const silverSvgEl = document.getElementById("silver7d-svg");
-  const silverGridEl = document.getElementById("silver7d-grid");
-  const silverLineEl = document.getElementById("silver7d-line");
-  const silverPtsEl = document.getElementById("silver7d-points");
-  const silverXLabelsEl = document.getElementById("silver7d-xlabels");
-  const silverYLabelsEl = document.getElementById("silver7d-ylabels");
-  const silverBorderEl = document.getElementById("silver7d-border");
+  const weeklyGridEl = document.getElementById("silver7d-grid");
+  const weeklyLineEl = document.getElementById("silver7d-line");
+  const weeklyPtsEl = document.getElementById("silver7d-points");
+  const weeklyXLabelsEl = document.getElementById("silver7d-xlabels");
+  const weeklyYLabelsEl = document.getElementById("silver7d-ylabels");
+  const weeklyBorderEl = document.getElementById("silver7d-border");
+
+  const silver12mLowEl = document.getElementById("silver12m-low");
+  const silver12mHighEl = document.getElementById("silver12m-high");
+
+  const yearlyGridEl = document.getElementById("silver12m-grid");
+  const yearlyLineEl = document.getElementById("silver12m-line");
+  const yearlyPtsEl = document.getElementById("silver12m-points");
+  const yearlyXLabelsEl = document.getElementById("silver12m-xlabels");
+  const yearlyYLabelsEl = document.getElementById("silver12m-ylabels");
+  const yearlyBorderEl = document.getElementById("silver12m-border");
 
   // Sad guy = market closed OR neutral/no-change
   const IMAGE_CLOSED = "/img/silver-closed.png";
@@ -725,7 +764,6 @@
     return Math.abs(n).toFixed(2);
   }
 
-  // Closed themes: daily break vs weekend close
   function setMarketClosedPill(market) {
     const arrowEl = trendPillEl.querySelector(".trend-arrow");
     trendPillEl.className = "trend-pill neutral";
@@ -807,10 +845,6 @@
       tdPrice.className = "price-cell";
       tdPrice.textContent = fmtMoney(m?.price);
 
-      const td52 = document.createElement("td");
-      td52.className = "price-cell";
-      td52.textContent = fmtMoney(m?.high52w);
-
       const tdTrend = document.createElement("td");
       tdTrend.className = "change-cell";
 
@@ -825,7 +859,6 @@
 
       tr.appendChild(tdName);
       tr.appendChild(tdPrice);
-      tr.appendChild(td52);
       tr.appendChild(tdTrend);
 
       metalsTbodyEl.appendChild(tr);
@@ -853,6 +886,14 @@
     const d = yyyy_mm_dd.slice(8, 10);
     if (!m || !d) return "—";
     return `${m}/${d}`;
+  }
+
+  function monthNameFromYYYYMM(yyyy_mm) {
+    if (!yyyy_mm || typeof yyyy_mm !== "string") return "—";
+    const m = Number(yyyy_mm.slice(5, 7));
+    const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    if (!Number.isFinite(m) || m < 1 || m > 12) return "—";
+    return names[m - 1];
   }
 
   function niceNumber(x) {
@@ -885,33 +926,45 @@
     return ticks;
   }
 
-  function setChartColor(marketIsOpen, direction) {
+  function setChartColor(lineEl, marketIsOpen, direction) {
     if (!marketIsOpen) {
-      silverLineEl.style.color = "rgba(148,163,184,0.95)";
+      lineEl.style.color = "rgba(148,163,184,0.95)";
       return;
     }
-    if (direction === "up") silverLineEl.style.color = "var(--accent-up)";
-    else if (direction === "down") silverLineEl.style.color = "var(--accent-down)";
-    else silverLineEl.style.color = "var(--text-main)";
+    if (direction === "up") lineEl.style.color = "var(--accent-up)";
+    else if (direction === "down") lineEl.style.color = "var(--accent-down)";
+    else lineEl.style.color = "var(--text-main)";
   }
 
-  function renderWeeklySilverChart(weeklyRows, marketIsOpen, direction) {
-    silverGridEl.innerHTML = "";
-    silverPtsEl.innerHTML = "";
-    silverXLabelsEl.innerHTML = "";
-    silverYLabelsEl.innerHTML = "";
-    silverLineEl.setAttribute("d", "");
-    silverBorderEl.setAttribute("d", "");
+  function clearChart(gridEl, ptsEl, xLblEl, yLblEl, lineEl, borderEl) {
+    gridEl.innerHTML = "";
+    ptsEl.innerHTML = "";
+    xLblEl.innerHTML = "";
+    yLblEl.innerHTML = "";
+    lineEl.setAttribute("d", "");
+    borderEl.setAttribute("d", "");
+  }
 
-    silver7dLowEl.textContent = "—";
-    silver7dHighEl.textContent = "—";
+  function renderLineChart({
+    rows,
+    mapPoint,
+    formatX,
+    minEl,
+    maxEl,
+    lineEl,
+    gridEl,
+    ptsEl,
+    xLabelsEl,
+    yLabelsEl,
+    borderEl,
+    marketIsOpen,
+    direction,
+  }) {
+    clearChart(gridEl, ptsEl, xLabelsEl, yLabelsEl, lineEl, borderEl);
 
-    if (!Array.isArray(weeklyRows) || weeklyRows.length < 2) return;
+    if (!Array.isArray(rows) || rows.length < 2) return;
 
-    const pts = weeklyRows
-      .map((r) => ({ date: r?.date, value: Number(r?.close) }))
-      .filter((p) => p.date && Number.isFinite(p.value));
-
+    const pts = rows.map(mapPoint).filter((p) => p && p.xLabel && Number.isFinite(p.value));
     if (pts.length < 2) return;
 
     let min = Infinity, max = -Infinity;
@@ -921,8 +974,8 @@
     }
     if (!Number.isFinite(min) || !Number.isFinite(max)) return;
 
-    silver7dLowEl.textContent = fmtMoney(min);
-    silver7dHighEl.textContent = fmtMoney(max);
+    if (minEl) minEl.textContent = fmtMoney(min);
+    if (maxEl) maxEl.textContent = fmtMoney(max);
 
     const pad = (max - min) * 0.12 || (min * 0.02) || 0.5;
     const yMin = min - pad;
@@ -944,7 +997,7 @@
     };
 
     const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
-    silverBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
+    borderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
     const ticks = makeTicks(yMin, yMax, 5);
     for (const t of ticks) {
@@ -956,14 +1009,14 @@
       gl.setAttribute("y1", y);
       gl.setAttribute("y2", y);
       gl.setAttribute("class", "gridline");
-      silverGridEl.appendChild(gl);
+      gridEl.appendChild(gl);
 
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
       tx.setAttribute("x", x1 + 10);
       tx.setAttribute("y", y + 5);
       tx.setAttribute("text-anchor", "start");
       tx.textContent = t.toFixed(0);
-      silverYLabelsEl.appendChild(tx);
+      yLabelsEl.appendChild(tx);
     }
 
     for (let i = 0; i < pts.length; i++) {
@@ -973,15 +1026,15 @@
       tx.setAttribute("x", x);
       tx.setAttribute("y", y1 + 32);
       tx.setAttribute("text-anchor", "middle");
-      tx.textContent = fmtMMDD(pts[i].date);
-      silverXLabelsEl.appendChild(tx);
+      tx.textContent = formatX(pts[i], i, pts.length);
+      xLabelsEl.appendChild(tx);
     }
 
     let d = `M ${xFor(0).toFixed(2)} ${yFor(pts[0].value).toFixed(2)}`;
     for (let i = 1; i < pts.length; i++) {
       d += ` L ${xFor(i).toFixed(2)} ${yFor(pts[i].value).toFixed(2)}`;
     }
-    silverLineEl.setAttribute("d", d);
+    lineEl.setAttribute("d", d);
 
     for (let i = 0; i < pts.length; i++) {
       const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -990,10 +1043,10 @@
       c.setAttribute("r", 4.2);
       c.setAttribute("fill", "currentColor");
       c.setAttribute("opacity", "0.95");
-      silverPtsEl.appendChild(c);
+      ptsEl.appendChild(c);
     }
 
-    setChartColor(marketIsOpen, direction);
+    setChartColor(lineEl, marketIsOpen, direction);
   }
 
   function updateUI(data) {
@@ -1005,17 +1058,60 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
+    // ✅ hero: high + low under quirk
     silver24hHighEl.textContent = `24h high: ${fmtMoney(silver.high24h)}`;
+    silver24hLowEl.textContent  = `24h low: ${fmtMoney(silver.low24h)}`;
 
     const marketIsOpen = !(market && market.isOpen === false);
+
+    // Weekly chart (from worker: weekly.silver -> [{date, close}, ...])
+    const weeklyRows = data?.weekly?.silver || [];
+
+    // Yearly chart (from worker: yearly.silver -> [{month,date,close}, ...])
+    const yearlyRows = data?.yearly?.silver || [];
+    const yearlyLow12m = data?.yearly?.low12m ?? null;
+    const yearlyHigh12m = data?.yearly?.high12m ?? null;
+
+    silver12mLowEl.textContent = fmtMoney(yearlyLow12m);
+    silver12mHighEl.textContent = fmtMoney(yearlyHigh12m);
 
     if (!marketIsOpen) {
       setHeadlinePriceColor("same", false);
       setMarketClosedPill(market);
       renderMetalsTable(metals);
 
-      // ✅ worker shape: weekly.silver
-      renderWeeklySilverChart(data?.weekly?.silver || [], false, "same");
+      renderLineChart({
+        rows: weeklyRows,
+        mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
+        formatX: (p) => fmtMMDD(p.xLabel),
+        minEl: silver7dLowEl,
+        maxEl: silver7dHighEl,
+        lineEl: weeklyLineEl,
+        gridEl: weeklyGridEl,
+        ptsEl: weeklyPtsEl,
+        xLabelsEl: weeklyXLabelsEl,
+        yLabelsEl: weeklyYLabelsEl,
+        borderEl: weeklyBorderEl,
+        marketIsOpen: false,
+        direction: "same",
+      });
+
+      renderLineChart({
+        rows: yearlyRows,
+        mapPoint: (r) => ({ xLabel: r?.month || (r?.date ? r.date.slice(0,7) : null), value: Number(r?.close), raw: r }),
+        formatX: (p) => monthNameFromYYYYMM(p.xLabel),
+        minEl: null,
+        maxEl: null,
+        lineEl: yearlyLineEl,
+        gridEl: yearlyGridEl,
+        ptsEl: yearlyPtsEl,
+        xLabelsEl: yearlyXLabelsEl,
+        yLabelsEl: yearlyYLabelsEl,
+        borderEl: yearlyBorderEl,
+        marketIsOpen: false,
+        direction: "same",
+      });
+
       return;
     }
 
@@ -1023,8 +1119,37 @@
     setTrendPill(silver.direction || "same");
     renderMetalsTable(metals);
 
-    // ✅ worker shape: weekly.silver
-    renderWeeklySilverChart(data?.weekly?.silver || [], true, silver.direction || "same");
+    renderLineChart({
+      rows: weeklyRows,
+      mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
+      formatX: (p) => fmtMMDD(p.xLabel),
+      minEl: silver7dLowEl,
+      maxEl: silver7dHighEl,
+      lineEl: weeklyLineEl,
+      gridEl: weeklyGridEl,
+      ptsEl: weeklyPtsEl,
+      xLabelsEl: weeklyXLabelsEl,
+      yLabelsEl: weeklyYLabelsEl,
+      borderEl: weeklyBorderEl,
+      marketIsOpen: true,
+      direction: silver.direction || "same",
+    });
+
+    renderLineChart({
+      rows: yearlyRows,
+      mapPoint: (r) => ({ xLabel: r?.month || (r?.date ? r.date.slice(0,7) : null), value: Number(r?.close), raw: r }),
+      formatX: (p) => monthNameFromYYYYMM(p.xLabel),
+      minEl: null,
+      maxEl: null,
+      lineEl: yearlyLineEl,
+      gridEl: yearlyGridEl,
+      ptsEl: yearlyPtsEl,
+      xLabelsEl: yearlyXLabelsEl,
+      yLabelsEl: yearlyYLabelsEl,
+      borderEl: yearlyBorderEl,
+      marketIsOpen: true,
+      direction: silver.direction || "same",
+    });
   }
 
   function applyForcedModeIfAny() {
@@ -1042,15 +1167,31 @@
       { date: "2025-12-31", close: 76.2 },
     ];
 
+    const fakeYearly = [
+      { month: "2025-01", date: "2025-01-31", close: 69.1 },
+      { month: "2025-02", date: "2025-02-28", close: 70.2 },
+      { month: "2025-03", date: "2025-03-31", close: 71.6 },
+      { month: "2025-04", date: "2025-04-30", close: 73.0 },
+      { month: "2025-05", date: "2025-05-31", close: 74.4 },
+      { month: "2025-06", date: "2025-06-30", close: 72.8 },
+      { month: "2025-07", date: "2025-07-31", close: 73.7 },
+      { month: "2025-08", date: "2025-08-31", close: 75.9 },
+      { month: "2025-09", date: "2025-09-30", close: 77.2 },
+      { month: "2025-10", date: "2025-10-31", close: 76.1 },
+      { month: "2025-11", date: "2025-11-30", close: 78.4 },
+      { month: "2025-12", date: "2025-12-31", close: 76.2 },
+    ];
+
     const fake = {
       updatedAt: new Date().toISOString(),
       metals: {
-        silver: { price: 76.09, direction: "same", change: -0.12, high24h: 77.88, high52w: 90.12 },
+        silver: { price: 76.09, direction: "same", change: -0.12, high24h: 77.88, low24h: 74.91, high52w: 90.12 },
         gold: { price: 4343.23, direction: "same", change: 1.1, high52w: 5100.0 },
         platinum: { price: 2186.65, direction: "same", change: 0.0, high52w: 2800.0 },
         palladium: { price: 1625.39, direction: "same", change: -2.0, high52w: 2400.0 },
       },
       weekly: { silver: fakeWeekly },
+      yearly: { silver: fakeYearly, low12m: 69.1, high12m: 78.4 },
       market: { isOpen: true, reason: "Open", closedType: null },
     };
 
@@ -1097,6 +1238,7 @@
       headlinePriceEl.style.color = "var(--text-main)";
       characterImgEl.src = IMAGE_CLOSED;
       silver24hHighEl.textContent = "24h high: —";
+      silver24hLowEl.textContent  = "24h low: —";
     }
   }
 
