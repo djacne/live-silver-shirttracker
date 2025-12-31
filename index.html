@@ -23,11 +23,16 @@
 
       --card-bg: rgba(15, 23, 42, 0.92);
       --card-border: rgba(148, 163, 184, 0.3);
-      --accent-up: #22c55e;
-      --accent-down: #ef4444;
+
+      --accent-up: #22c55e;      /* green */
+      --accent-down: #ef4444;    /* red */
       --accent-neutral: #e5e7eb;
+
       --text-main: #f9fafb;
       --text-muted: #9ca3af;
+
+      --tooltip-bg: rgba(2, 6, 23, 0.92);
+      --tooltip-border: rgba(148, 163, 184, 0.35);
     }
 
     * { box-sizing: border-box; }
@@ -62,59 +67,91 @@
       z-index: 0;
     }
 
+    /* ✅ More stars, and visible on mobile too (subtle by default, stronger on trend-up) */
     .bg-stars {
-      opacity: 0;
+      opacity: 0.35;
       transition: opacity 0.6s ease;
       background-image:
-        radial-gradient(circle at 20% 20%, rgba(248,250,252,0.7) 0, transparent 55%),
-        radial-gradient(circle at 80% 10%, rgba(191,219,254,0.5) 0, transparent 55%),
-        radial-gradient(circle at 50% 85%, rgba(129,140,248,0.5) 0, transparent 55%);
+        radial-gradient(circle at 20% 20%, rgba(248,250,252,0.40) 0, transparent 55%),
+        radial-gradient(circle at 80% 10%, rgba(191,219,254,0.28) 0, transparent 55%),
+        radial-gradient(circle at 50% 85%, rgba(129,140,248,0.28) 0, transparent 55%);
     }
+
+    body.trend-up .bg-stars { opacity: 0.85; }
 
     .bg-stars::before {
       content: "";
       position: absolute;
-      inset: -200px;
+      inset: -220px;
+      /* “big” stars */
       background-image:
-        radial-gradient(2px 2px at 10% 20%, #e5e7eb 70%, transparent 71%),
-        radial-gradient(2px 2px at 30% 80%, #c4b5fd 70%, transparent 71%),
-        radial-gradient(2px 2px at 60% 40%, #bfdbfe 70%, transparent 71%),
-        radial-gradient(2px 2px at 90% 70%, #e5e7eb 70%, transparent 71%);
-      opacity: 0.7;
-      animation: twinkle 5s linear infinite alternate;
+        radial-gradient(2px 2px at 4% 12%, rgba(226,232,240,0.95) 70%, transparent 71%),
+        radial-gradient(2px 2px at 9% 48%, rgba(199,210,254,0.85) 70%, transparent 71%),
+        radial-gradient(2px 2px at 14% 78%, rgba(226,232,240,0.90) 70%, transparent 71%),
+        radial-gradient(2px 2px at 21% 30%, rgba(191,219,254,0.80) 70%, transparent 71%),
+        radial-gradient(2px 2px at 27% 62%, rgba(226,232,240,0.90) 70%, transparent 71%),
+        radial-gradient(2px 2px at 33% 18%, rgba(199,210,254,0.82) 70%, transparent 71%),
+        radial-gradient(2px 2px at 40% 44%, rgba(226,232,240,0.90) 70%, transparent 71%),
+        radial-gradient(2px 2px at 46% 86%, rgba(191,219,254,0.78) 70%, transparent 71%),
+        radial-gradient(2px 2px at 53% 24%, rgba(226,232,240,0.92) 70%, transparent 71%),
+        radial-gradient(2px 2px at 60% 70%, rgba(199,210,254,0.80) 70%, transparent 71%),
+        radial-gradient(2px 2px at 67% 36%, rgba(226,232,240,0.90) 70%, transparent 71%),
+        radial-gradient(2px 2px at 74% 58%, rgba(191,219,254,0.78) 70%, transparent 71%),
+        radial-gradient(2px 2px at 82% 16%, rgba(226,232,240,0.92) 70%, transparent 71%),
+        radial-gradient(2px 2px at 89% 40%, rgba(199,210,254,0.82) 70%, transparent 71%),
+        radial-gradient(2px 2px at 95% 82%, rgba(226,232,240,0.90) 70%, transparent 71%);
+      opacity: 0.55;
+      animation: twinkle 6s linear infinite alternate;
     }
 
     .bg-stars::after{
       content:"";
       position:absolute;
-      inset:-220px;
+      inset:-240px;
+      /* “small” stars (lots) */
       background-image:
-        radial-gradient(1px 1px at 6% 10%, rgba(226,232,240,0.9) 70%, transparent 71%),
-        radial-gradient(1px 1px at 12% 58%, rgba(199,210,254,0.75) 70%, transparent 71%),
-        radial-gradient(1px 1px at 18% 82%, rgba(226,232,240,0.8) 70%, transparent 71%),
-        radial-gradient(1px 1px at 24% 28%, rgba(191,219,254,0.65) 70%, transparent 71%),
-        radial-gradient(1px 1px at 31% 66%, rgba(226,232,240,0.85) 70%, transparent 71%),
-        radial-gradient(1px 1px at 38% 14%, rgba(199,210,254,0.7) 70%, transparent 71%),
-        radial-gradient(1px 1px at 46% 44%, rgba(226,232,240,0.8) 70%, transparent 71%),
-        radial-gradient(1px 1px at 52% 88%, rgba(191,219,254,0.6) 70%, transparent 71%),
-        radial-gradient(1px 1px at 58% 22%, rgba(226,232,240,0.85) 70%, transparent 71%),
-        radial-gradient(1px 1px at 64% 72%, rgba(199,210,254,0.7) 70%, transparent 71%),
-        radial-gradient(1px 1px at 71% 36%, rgba(226,232,240,0.82) 70%, transparent 71%),
-        radial-gradient(1px 1px at 78% 60%, rgba(191,219,254,0.62) 70%, transparent 71%),
-        radial-gradient(1px 1px at 84% 18%, rgba(226,232,240,0.84) 70%, transparent 71%),
-        radial-gradient(1px 1px at 90% 48%, rgba(199,210,254,0.68) 70%, transparent 71%),
-        radial-gradient(1px 1px at 95% 86%, rgba(226,232,240,0.78) 70%, transparent 71%);
-      opacity:0.42;
-      animation: twinkle2 7s linear infinite alternate;
+        radial-gradient(1px 1px at 6% 8%, rgba(226,232,240,0.85) 70%, transparent 71%),
+        radial-gradient(1px 1px at 10% 26%, rgba(199,210,254,0.70) 70%, transparent 71%),
+        radial-gradient(1px 1px at 13% 54%, rgba(226,232,240,0.78) 70%, transparent 71%),
+        radial-gradient(1px 1px at 16% 82%, rgba(191,219,254,0.65) 70%, transparent 71%),
+        radial-gradient(1px 1px at 19% 38%, rgba(226,232,240,0.82) 70%, transparent 71%),
+        radial-gradient(1px 1px at 22% 12%, rgba(199,210,254,0.68) 70%, transparent 71%),
+        radial-gradient(1px 1px at 25% 70%, rgba(226,232,240,0.78) 70%, transparent 71%),
+        radial-gradient(1px 1px at 28% 48%, rgba(191,219,254,0.62) 70%, transparent 71%),
+        radial-gradient(1px 1px at 31% 20%, rgba(226,232,240,0.82) 70%, transparent 71%),
+        radial-gradient(1px 1px at 34% 86%, rgba(199,210,254,0.70) 70%, transparent 71%),
+        radial-gradient(1px 1px at 37% 58%, rgba(226,232,240,0.76) 70%, transparent 71%),
+        radial-gradient(1px 1px at 40% 32%, rgba(191,219,254,0.60) 70%, transparent 71%),
+        radial-gradient(1px 1px at 43% 10%, rgba(226,232,240,0.82) 70%, transparent 71%),
+        radial-gradient(1px 1px at 46% 76%, rgba(199,210,254,0.68) 70%, transparent 71%),
+        radial-gradient(1px 1px at 49% 44%, rgba(226,232,240,0.78) 70%, transparent 71%),
+        radial-gradient(1px 1px at 52% 90%, rgba(191,219,254,0.60) 70%, transparent 71%),
+        radial-gradient(1px 1px at 55% 24%, rgba(226,232,240,0.82) 70%, transparent 71%),
+        radial-gradient(1px 1px at 58% 64%, rgba(199,210,254,0.68) 70%, transparent 71%),
+        radial-gradient(1px 1px at 61% 38%, rgba(226,232,240,0.76) 70%, transparent 71%),
+        radial-gradient(1px 1px at 64% 16%, rgba(191,219,254,0.60) 70%, transparent 71%),
+        radial-gradient(1px 1px at 67% 80%, rgba(226,232,240,0.78) 70%, transparent 71%),
+        radial-gradient(1px 1px at 70% 52%, rgba(199,210,254,0.68) 70%, transparent 71%),
+        radial-gradient(1px 1px at 73% 28%, rgba(226,232,240,0.82) 70%, transparent 71%),
+        radial-gradient(1px 1px at 76% 88%, rgba(191,219,254,0.62) 70%, transparent 71%),
+        radial-gradient(1px 1px at 79% 60%, rgba(226,232,240,0.78) 70%, transparent 71%),
+        radial-gradient(1px 1px at 82% 34%, rgba(199,210,254,0.68) 70%, transparent 71%),
+        radial-gradient(1px 1px at 85% 12%, rgba(226,232,240,0.82) 70%, transparent 71%),
+        radial-gradient(1px 1px at 88% 72%, rgba(191,219,254,0.60) 70%, transparent 71%),
+        radial-gradient(1px 1px at 91% 46%, rgba(226,232,240,0.76) 70%, transparent 71%),
+        radial-gradient(1px 1px at 94% 20%, rgba(199,210,254,0.68) 70%, transparent 71%),
+        radial-gradient(1px 1px at 97% 84%, rgba(226,232,240,0.78) 70%, transparent 71%);
+      opacity:0.35;
+      animation: twinkle2 7.5s linear infinite alternate;
     }
 
     @keyframes twinkle {
-      0% { opacity: 0.4; transform: translateY(0); }
-      100% { opacity: 1; transform: translateY(12px); }
+      0% { opacity: 0.35; transform: translateY(0); }
+      100% { opacity: 0.75; transform: translateY(10px); }
     }
     @keyframes twinkle2{
-      0% { opacity:0.22; transform: translateY(0); }
-      100% { opacity:0.52; transform: translateY(10px); }
+      0% { opacity:0.20; transform: translateY(0); }
+      100% { opacity:0.42; transform: translateY(8px); }
     }
 
     .bg-fire {
@@ -179,7 +216,6 @@
       }
     }
 
-    body.trend-up .bg-stars { opacity: 1; }
     body.trend-up .coins-rain { opacity: 0.9; }
     body.trend-down .bg-fire { opacity: 1; }
     body.trend-down .bills-rain { opacity: 0.9; }
@@ -333,10 +369,10 @@
       object-fit: cover;
       object-position: center;
       display: block;
-      transition: opacity 180ms ease; /* ✅ smooth image swap */
+      transition: opacity 180ms ease;
     }
 
-    .fade-out { opacity: 0.2; } /* ✅ */
+    .fade-out { opacity: 0.2; }
 
     .hero-info {
       display: flex;
@@ -377,7 +413,7 @@
     }
 
     .hero-subline {
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       color: var(--text-muted);
       margin-top: 0;
     }
@@ -385,9 +421,12 @@
     .hero-substack {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
       margin-top: 2px;
     }
+
+    .hl-high { color: var(--accent-up); font-weight: 600; }
+    .hl-low  { color: var(--accent-down); font-weight: 600; }
 
     .trend-row {
       display: flex;
@@ -461,6 +500,7 @@
       border: 1px solid rgba(148, 163, 184, 0.25);
       background: rgba(2, 6, 23, 0.25);
       padding: 10px;
+      position: relative;
     }
 
     .chart-wrap svg text {
@@ -481,6 +521,18 @@
       margin-top: 8px;
       font-size: 0.78rem;
       color: var(--text-muted);
+    }
+    .chart-meta .low { color: var(--accent-down); font-weight: 600; }
+    .chart-meta .high { color: var(--accent-up); font-weight: 600; }
+
+    /* ✅ Make charts bigger on mobile */
+    #silver7d-svg, #silver12m-svg { height: 260px; }
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .card { padding: 14px; }
+      .chart-wrap { padding: 10px; }
+      #silver7d-svg, #silver12m-svg { height: 340px; }
+      .chart-wrap svg text { font-size: 16px; }
     }
 
     .table-card { margin-top: 18px; }
@@ -602,8 +654,8 @@
           </div>
 
           <div class="hero-substack">
-            <div class="hero-subline" id="silver-24h-high">24h high: —</div>
-            <div class="hero-subline" id="silver-24h-low">24h low: —</div>
+            <div class="hero-subline">24h high: <span id="silver-24h-high" class="hl-high">—</span></div>
+            <div class="hero-subline">24h low: <span id="silver-24h-low" class="hl-low">—</span></div>
           </div>
         </div>
 
@@ -613,16 +665,9 @@
           <div class="last-updated">
             Last updated: <span id="last-updated">—</span>
           </div>
-          <div class="last-updated">
-            Market: <span id="market-status">—</span>
-          </div>
-          <div class="last-updated">
-            Next open: <span id="next-open">—</span>
-          </div>
           <div class="hero-frequency">
             Updates every 30 minutes
           </div>
-          <div class="last-updated" id="data-source-hint" style="opacity:0.85;"></div>
         </div>
       </section>
     </div>
@@ -631,18 +676,19 @@
       <div class="section-title">Silver weekly trend</div>
 
       <div class="chart-wrap">
-        <svg id="silver7d-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 7-day trend chart">
+        <svg id="silver7d-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 7-day trend chart" style="touch-action:none;">
           <g id="silver7d-grid"></g>
           <path id="silver7d-line" d="" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
           <g id="silver7d-points"></g>
           <g id="silver7d-xlabels"></g>
           <g id="silver7d-ylabels"></g>
+          <g id="silver7d-tooltip"></g>
           <path id="silver7d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
         </svg>
 
         <div class="chart-meta">
-          <div>Low: <span id="silver7d-low">—</span></div>
-          <div>High: <span id="silver7d-high">—</span></div>
+          <div>Low: <span id="silver7d-low" class="low">—</span></div>
+          <div>High: <span id="silver7d-high" class="high">—</span></div>
         </div>
       </div>
     </section>
@@ -651,29 +697,31 @@
       <div class="section-title">Silver yearly trend</div>
 
       <div class="chart-wrap">
-        <svg id="silver12m-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 12-month trend chart">
+        <svg id="silver12m-svg" viewBox="0 0 1000 260" width="100%" height="260" role="img" aria-label="Silver 12-month trend chart" style="touch-action:none;">
           <g id="silver12m-grid"></g>
           <path id="silver12m-line" d="" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
           <g id="silver12m-points"></g>
           <g id="silver12m-xlabels"></g>
           <g id="silver12m-ylabels"></g>
+          <g id="silver12m-tooltip"></g>
           <path id="silver12m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
         </svg>
 
         <div class="chart-meta">
-          <div>Low: <span id="silver12m-low">—</span></div>
-          <div>High: <span id="silver12m-high">—</span></div>
+          <div>Low: <span id="silver12m-low" class="low">—</span></div>
+          <div>High: <span id="silver12m-high" class="high">—</span></div>
         </div>
       </div>
     </section>
 
     <section class="card table-card">
+      <div class="section-title">Metals snapshot</div>
       <table>
         <thead>
           <tr>
             <th>Metal</th>
             <th style="text-align:right;">Price (USD/toz)</th>
-            <th style="text-align:right;">Trend</th>
+            <th style="text-align:right;">24h</th>
           </tr>
         </thead>
         <tbody id="metals-tbody"></tbody>
@@ -688,8 +736,9 @@
   const BACKEND_URL = "https://api.dansretirement.com/";
   const IMAGE_CLOSED = "/img/silver-closed.png";
 
-  const LOCAL_CACHE_KEY = "metals-last-good-v2"; // ✅ localStorage fallback
-  const LOCAL_CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 hours (stale guard)
+  // Keep this — it makes failures feel “solid” instead of broken.
+  const LOCAL_CACHE_KEY = "metals-last-good-v2";
+  const LOCAL_CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
   // =========================
   // Elements
@@ -700,9 +749,6 @@
   const trendPillEl = document.getElementById("trend-pill");
   const trendTextEl = document.getElementById("trend-text");
   const lastUpdatedEl = document.getElementById("last-updated");
-  const marketStatusEl = document.getElementById("market-status");
-  const nextOpenEl = document.getElementById("next-open");
-  const dataSourceHintEl = document.getElementById("data-source-hint");
   const metalsTbodyEl = document.getElementById("metals-tbody");
 
   const silver24hHighEl = document.getElementById("silver-24h-high");
@@ -717,6 +763,8 @@
   const weeklyXLabelsEl = document.getElementById("silver7d-xlabels");
   const weeklyYLabelsEl = document.getElementById("silver7d-ylabels");
   const weeklyBorderEl = document.getElementById("silver7d-border");
+  const weeklyTooltipEl = document.getElementById("silver7d-tooltip");
+  const weeklySvgEl = document.getElementById("silver7d-svg");
 
   const silver12mLowEl = document.getElementById("silver12m-low");
   const silver12mHighEl = document.getElementById("silver12m-high");
@@ -727,6 +775,8 @@
   const yearlyXLabelsEl = document.getElementById("silver12m-xlabels");
   const yearlyYLabelsEl = document.getElementById("silver12m-ylabels");
   const yearlyBorderEl = document.getElementById("silver12m-border");
+  const yearlyTooltipEl = document.getElementById("silver12m-tooltip");
+  const yearlySvgEl = document.getElementById("silver12m-svg");
 
   let IMAGE_LISTS = { up: [], down: [] };
 
@@ -812,124 +862,6 @@
     return `${sign}${Math.abs(n).toFixed(2)}`;
   }
 
-  // =========================
-  // Market status + countdown (CT) — computed in frontend
-  // We avoid hard timezone math by scanning forward in time.
-  // =========================
-  function getChicagoPartsFromTs(ts) {
-    const dt = new Date(ts);
-    const fmt = new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/Chicago",
-      weekday: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-    const parts = fmt.formatToParts(dt);
-    const map = Object.fromEntries(parts.map((p) => [p.type, p.value]));
-    return {
-      weekday: map.weekday,
-      hour: Number(map.hour),
-      minute: Number(map.minute),
-    };
-  }
-
-  function isDuringDailyBreakCT(parts) {
-    const { weekday, hour } = parts;
-    const isMonThu = weekday === "Mon" || weekday === "Tue" || weekday === "Wed" || weekday === "Thu";
-    return isMonThu && hour === 16; // 4–5 PM CT
-  }
-
-  function isWeekendClosedCT(parts) {
-    const { weekday, hour } = parts;
-    if (weekday === "Fri") return hour >= 16;
-    if (weekday === "Sat") return true;
-    if (weekday === "Sun") return hour < 17;
-    return false;
-  }
-
-  function marketStatusCTByTs(ts) {
-    const parts = getChicagoPartsFromTs(ts);
-    if (isWeekendClosedCT(parts)) {
-      return { isOpen: false, closedType: "weekend", reason: "Weekend close", tz: "America/Chicago", ...parts };
-    }
-    if (isDuringDailyBreakCT(parts)) {
-      return { isOpen: false, closedType: "maintenance", reason: "Daily maintenance break (4–5 PM CT)", tz: "America/Chicago", ...parts };
-    }
-    return { isOpen: true, closedType: null, reason: "Open", tz: "America/Chicago", ...parts };
-  }
-
-  function findNextMarketOpenTs(nowTs = Date.now()) {
-    // Scan forward up to 4 days in 5-minute steps; cheap + robust.
-    const STEP = 5 * 60 * 1000;
-    const MAX = 4 * 24 * 60 * 60 * 1000;
-    for (let t = nowTs + STEP; t <= nowTs + MAX; t += STEP) {
-      const st = marketStatusCTByTs(t);
-      if (st.isOpen) return t;
-    }
-    return null;
-  }
-
-  function fmtDuration(ms) {
-    if (!Number.isFinite(ms) || ms <= 0) return "0m";
-    const totalSec = Math.floor(ms / 1000);
-    const days = Math.floor(totalSec / 86400);
-    const hrs = Math.floor((totalSec % 86400) / 3600);
-    const mins = Math.floor((totalSec % 3600) / 60);
-
-    if (days > 0) return `${days}d ${hrs}h ${mins}m`;
-    if (hrs > 0) return `${hrs}h ${mins}m`;
-    return `${mins}m`;
-  }
-
-  function fmtCTTime(ts) {
-    try {
-      const dt = new Date(ts);
-      return new Intl.DateTimeFormat("en-US", {
-        timeZone: "America/Chicago",
-        weekday: "short",
-        hour: "numeric",
-        minute: "2-digit",
-      }).format(dt);
-    } catch {
-      return "—";
-    }
-  }
-
-  let countdownTimer = null;
-  function startOrUpdateCountdown(market) {
-    if (!nextOpenEl) return;
-
-    if (countdownTimer) clearInterval(countdownTimer);
-
-    const marketIsOpen = !(market && market.isOpen === false);
-    if (marketIsOpen) {
-      nextOpenEl.textContent = "Now";
-      return;
-    }
-
-    const nextOpenTs = findNextMarketOpenTs(Date.now());
-    if (!nextOpenTs) {
-      nextOpenEl.textContent = "—";
-      return;
-    }
-
-    const tick = () => {
-      const ms = nextOpenTs - Date.now();
-      if (ms <= 0) {
-        nextOpenEl.textContent = "Now";
-        return;
-      }
-      nextOpenEl.textContent = `${fmtDuration(ms)} (at ${fmtCTTime(nextOpenTs)} CT)`;
-    };
-
-    tick();
-    countdownTimer = setInterval(tick, 1000);
-  }
-
-  // =========================
-  // UI theming
-  // =========================
   function setMarketClosedPill(market) {
     const arrowEl = trendPillEl.querySelector(".trend-arrow");
     trendPillEl.className = "trend-pill neutral";
@@ -1016,7 +948,7 @@
 
       const spanTrend = document.createElement("span");
       const d = m?.direction || "same";
-      const changeText = fmtSignedChange(m?.change); // ✅ signed now
+      const changeText = fmtSignedChange(m?.change);
 
       spanTrend.className = "change " + dirClass(d);
       spanTrend.textContent = `${dirSymbol(d)} ${changeText}`;
@@ -1102,14 +1034,171 @@
     else lineEl.style.color = "var(--text-main)";
   }
 
-  function clearChart(gridEl, ptsEl, xLblEl, yLblEl, lineEl, borderEl) {
+  function clearChart(gridEl, ptsEl, xLblEl, yLblEl, tooltipEl, lineEl, borderEl) {
     gridEl.innerHTML = "";
     ptsEl.innerHTML = "";
     xLblEl.innerHTML = "";
     yLblEl.innerHTML = "";
+    tooltipEl.innerHTML = "";
     lineEl.setAttribute("d", "");
     borderEl.setAttribute("d", "");
   }
+
+  function isMobileChart() {
+    return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
+  }
+
+  // ---------- Tooltip / Interactivity ----------
+  function ensureTooltipNodes(tooltipEl) {
+    // vertical line + bubble (rect + 2 lines of text)
+    const svgns = "http://www.w3.org/2000/svg";
+
+    const g = document.createElementNS(svgns, "g");
+    g.setAttribute("data-tooltip-root", "1");
+    g.setAttribute("opacity", "0");
+    g.style.pointerEvents = "none";
+
+    const vline = document.createElementNS(svgns, "line");
+    vline.setAttribute("x1", "0"); vline.setAttribute("x2", "0");
+    vline.setAttribute("y1", "0"); vline.setAttribute("y2", "0");
+    vline.setAttribute("stroke", "rgba(226,232,240,0.35)");
+    vline.setAttribute("stroke-width", "2");
+    vline.setAttribute("stroke-dasharray", "4 6");
+
+    const bubble = document.createElementNS(svgns, "rect");
+    bubble.setAttribute("x", "0"); bubble.setAttribute("y", "0");
+    bubble.setAttribute("rx", "10"); bubble.setAttribute("ry", "10");
+    bubble.setAttribute("fill", "var(--tooltip-bg)");
+    bubble.setAttribute("stroke", "var(--tooltip-border)");
+    bubble.setAttribute("stroke-width", "1");
+
+    const t1 = document.createElementNS(svgns, "text");
+    t1.setAttribute("x", "0"); t1.setAttribute("y", "0");
+    t1.setAttribute("fill", "rgba(226,232,240,0.95)");
+    t1.setAttribute("font-weight", "700");
+    t1.textContent = "";
+
+    const t2 = document.createElementNS(svgns, "text");
+    t2.setAttribute("x", "0"); t2.setAttribute("y", "0");
+    t2.setAttribute("fill", "rgba(156,163,175,0.95)");
+    t2.textContent = "";
+
+    g.appendChild(vline);
+    g.appendChild(bubble);
+    g.appendChild(t1);
+    g.appendChild(t2);
+
+    tooltipEl.appendChild(g);
+
+    return { root: g, vline, bubble, t1, t2 };
+  }
+
+  function setTooltip(tooltipNodes, innerBox, x, yTop, yBottom, label, valueText) {
+    const { root, vline, bubble, t1, t2 } = tooltipNodes;
+
+    vline.setAttribute("x1", x);
+    vline.setAttribute("x2", x);
+    vline.setAttribute("y1", yTop);
+    vline.setAttribute("y2", yBottom);
+
+    // bubble positioning: prefer above the point, but clamp
+    const bw = innerBox.bw;
+    const bh = innerBox.bh;
+    const pad = 10;
+
+    let bx = x + 14;
+    if (bx + bw > innerBox.x1 - 6) bx = x - bw - 14;
+    bx = Math.max(innerBox.x0 + 6, Math.min(bx, innerBox.x1 - bw - 6));
+
+    let by = yTop + 8;
+    by = Math.max(innerBox.y0 + 6, Math.min(by, innerBox.y1 - bh - 6));
+
+    bubble.setAttribute("x", bx);
+    bubble.setAttribute("y", by);
+    bubble.setAttribute("width", bw);
+    bubble.setAttribute("height", bh);
+
+    t1.setAttribute("x", bx + pad);
+    t1.setAttribute("y", by + 22);
+    t1.textContent = valueText;
+
+    t2.setAttribute("x", bx + pad);
+    t2.setAttribute("y", by + 42);
+    t2.textContent = label;
+
+    root.setAttribute("opacity", "1");
+  }
+
+  function hideTooltip(tooltipNodes) {
+    if (!tooltipNodes) return;
+    tooltipNodes.root.setAttribute("opacity", "0");
+  }
+
+  function attachChartInteractivity(svgEl, tooltipEl, getState) {
+    let tooltipNodes = null;
+
+    function getSvgPoint(evt) {
+      const pt = svgEl.createSVGPoint();
+      pt.x = evt.clientX;
+      pt.y = evt.clientY;
+      const ctm = svgEl.getScreenCTM();
+      if (!ctm) return null;
+      return pt.matrixTransform(ctm.inverse());
+    }
+
+    function onMove(evt) {
+      const st = getState();
+      if (!st || !st.pts || st.pts.length < 2) return;
+
+      const p = getSvgPoint(evt);
+      if (!p) return;
+
+      // clamp inside plot
+      const x = Math.max(st.x0, Math.min(p.x, st.x1));
+
+      // nearest index
+      let bestI = 0;
+      let bestD = Infinity;
+      for (let i = 0; i < st.pts.length; i++) {
+        const dx = Math.abs(st.xFor(i) - x);
+        if (dx < bestD) { bestD = dx; bestI = i; }
+      }
+
+      const cx = st.xFor(bestI);
+      const cy = st.yFor(st.pts[bestI].value);
+
+      if (!tooltipNodes) tooltipNodes = ensureTooltipNodes(tooltipEl);
+
+      const label = st.formatX(st.pts[bestI], bestI, st.pts.length);
+      const valueText = fmtMoney(st.pts[bestI].value);
+
+      setTooltip(
+        tooltipNodes,
+        { x0: st.x0, x1: st.x1, y0: st.y0, y1: st.y1, bw: 170, bh: 56 },
+        cx,
+        st.y0,
+        st.y1,
+        label,
+        valueText
+      );
+    }
+
+    function onLeave() {
+      if (!tooltipNodes) return;
+      hideTooltip(tooltipNodes);
+    }
+
+    svgEl.addEventListener("pointermove", onMove, { passive: true });
+    svgEl.addEventListener("pointerdown", onMove, { passive: true }); // mobile “touch”
+    svgEl.addEventListener("pointerleave", onLeave);
+    svgEl.addEventListener("pointerup", onLeave);
+  }
+
+  // Keep chart state objects so hover/touch can read them
+  const chartState = {
+    weekly: null,
+    yearly: null,
+  };
 
   function renderLineChart({
     rows,
@@ -1122,26 +1211,27 @@
     ptsEl,
     xLabelsEl,
     yLabelsEl,
+    tooltipEl,
     borderEl,
     marketIsOpen,
     direction,
   }) {
-    clearChart(gridEl, ptsEl, xLabelsEl, yLabelsEl, lineEl, borderEl);
+    clearChart(gridEl, ptsEl, xLabelsEl, yLabelsEl, tooltipEl, lineEl, borderEl);
 
     if (minEl) minEl.textContent = "—";
     if (maxEl) maxEl.textContent = "—";
 
-    if (!Array.isArray(rows) || rows.length < 2) return;
+    if (!Array.isArray(rows) || rows.length < 2) return null;
 
     const pts = rows.map(mapPoint).filter((p) => p && p.xLabel && Number.isFinite(p.value));
-    if (pts.length < 2) return;
+    if (pts.length < 2) return null;
 
     let min = Infinity, max = -Infinity;
     for (const p of pts) {
       if (p.value < min) min = p.value;
       if (p.value > max) max = p.value;
     }
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
 
     if (minEl) minEl.textContent = fmtMoney(min);
     if (maxEl) maxEl.textContent = fmtMoney(max);
@@ -1150,11 +1240,15 @@
     const yMin = min - pad;
     const yMax = max + pad;
 
-    const W = 1000, H = 260;
-    const padL = 20;
-    const padR = 78;
-    const padT = 18;
-    const padB = 52;
+    // ✅ bigger plot on mobile + less wasted padding
+    const mobile = isMobileChart();
+    const W = 1000;
+    const H = mobile ? 340 : 260;
+
+    const padL = mobile ? 18 : 20;
+    const padR = mobile ? 64 : 68;  // enough for y labels but less than before
+    const padT = mobile ? 16 : 18;
+    const padB = mobile ? 46 : 52;
 
     const innerW = W - padL - padR;
     const innerH = H - padT - padB;
@@ -1165,9 +1259,14 @@
       return padT + innerH * (1 - t);
     };
 
+    // Update the svg viewBox height so the drawing and visible area match
+    const svg = lineEl.ownerSVGElement;
+    if (svg) svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
     const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
     borderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
+    // Grid + Y labels (✅ put Y labels INSIDE chart at right edge to avoid smashing into last X label)
     const ticks = makeTicks(yMin, yMax, 5);
     for (const t of ticks) {
       const y = yFor(t);
@@ -1181,41 +1280,50 @@
       gridEl.appendChild(gl);
 
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      tx.setAttribute("x", x1 + 10);
+      tx.setAttribute("x", x1 - 6);
       tx.setAttribute("y", y + 5);
-      tx.setAttribute("text-anchor", "start");
+      tx.setAttribute("text-anchor", "end");
       tx.textContent = t.toFixed(0);
       yLabelsEl.appendChild(tx);
     }
 
+    // X labels (✅ nudge first/last labels inward so they never collide)
     for (let i = 0; i < pts.length; i++) {
       const x = xFor(i);
-
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      tx.setAttribute("x", x);
+      let anchor = "middle";
+      let xAdj = x;
+      if (i === 0) { anchor = "start"; xAdj = x + 4; }
+      if (i === pts.length - 1) { anchor = "end"; xAdj = x - 4; }
+
+      tx.setAttribute("x", xAdj);
       tx.setAttribute("y", y1 + 32);
-      tx.setAttribute("text-anchor", "middle");
+      tx.setAttribute("text-anchor", anchor);
       tx.textContent = formatX(pts[i], i, pts.length);
       xLabelsEl.appendChild(tx);
     }
 
+    // Line path
     let d = `M ${xFor(0).toFixed(2)} ${yFor(pts[0].value).toFixed(2)}`;
     for (let i = 1; i < pts.length; i++) {
       d += ` L ${xFor(i).toFixed(2)} ${yFor(pts[i].value).toFixed(2)}`;
     }
     lineEl.setAttribute("d", d);
 
+    // Points
     for (let i = 0; i < pts.length; i++) {
       const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       c.setAttribute("cx", xFor(i));
       c.setAttribute("cy", yFor(pts[i].value));
-      c.setAttribute("r", 4.2);
+      c.setAttribute("r", mobile ? 5.2 : 4.2);
       c.setAttribute("fill", "currentColor");
       c.setAttribute("opacity", "0.95");
       ptsEl.appendChild(c);
     }
 
     setChartColor(lineEl, marketIsOpen, direction);
+
+    return { pts, xFor, yFor, x0, y0, x1, y1, formatX };
   }
 
   function computeMinMax(rows, getVal) {
@@ -1248,7 +1356,7 @@
       if (!obj || typeof obj !== "object") return null;
       if (typeof obj.savedAt !== "number" || !obj.payload) return null;
       const age = Date.now() - obj.savedAt;
-      if (age > LOCAL_CACHE_MAX_AGE_MS) return null; // stale guard
+      if (age > LOCAL_CACHE_MAX_AGE_MS) return null;
       return obj;
     } catch {
       return null;
@@ -1256,23 +1364,9 @@
   }
 
   // =========================
-  // Market status text
-  // =========================
-  function setMarketStatusText(market) {
-    if (!marketStatusEl) return;
-    if (!market || market.isOpen !== false) {
-      marketStatusEl.textContent = "Open";
-      return;
-    }
-    const ct = (market.closedType || "").toLowerCase();
-    if (ct === "maintenance") marketStatusEl.textContent = "Daily break (4–5 PM CT)";
-    else marketStatusEl.textContent = "Weekend close";
-  }
-
-  // =========================
   // Main UI update
   // =========================
-  function updateUI(data, opts = {}) {
+  function updateUI(data) {
     const metals = data?.metals || {};
     const silver = metals.silver || {};
     const updatedAt = data?.updatedAt || null;
@@ -1281,49 +1375,48 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    silver24hHighEl.textContent = `24h high: ${fmtMoney(silver.high24h)}`;
-    silver24hLowEl.textContent  = `24h low: ${fmtMoney(silver.low24h)}`;
+    // ✅ colored 24h high/low
+    silver24hHighEl.textContent = fmtMoney(silver.high24h);
+    silver24hLowEl.textContent  = fmtMoney(silver.low24h);
 
     const marketIsOpen = !(market && market.isOpen === false);
 
-    setMarketStatusText(market);
-    startOrUpdateCountdown(market);
-
-    if (dataSourceHintEl) {
-      dataSourceHintEl.textContent =
-        opts.sourceHint ? opts.sourceHint : "";
-    }
-
     const weeklyRows = data?.weekly?.silver || [];
-
-    // backend YTD is `yearly.silver12m`
     const yearlyRows = data?.yearly?.silver12m || [];
+
+    // Year min/max text (already colored via CSS class)
     const yy = computeMinMax(yearlyRows, (r) => r?.close);
     silver12mLowEl.textContent = fmtMoney(yy.min);
     silver12mHighEl.textContent = fmtMoney(yy.max);
+
+    // Weekly min/max text (already colored via CSS class)
+    const ww = computeMinMax(weeklyRows, (r) => r?.close);
+    silver7dLowEl.textContent = fmtMoney(ww.min);
+    silver7dHighEl.textContent = fmtMoney(ww.max);
 
     if (!marketIsOpen) {
       setHeadlinePriceColor("same", false);
       setMarketClosedPill(market);
       renderMetalsTable(metals);
 
-      renderLineChart({
+      chartState.weekly = renderLineChart({
         rows: weeklyRows,
         mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
         formatX: (p) => fmtMMDD(p.xLabel),
-        minEl: silver7dLowEl,
-        maxEl: silver7dHighEl,
+        minEl: null,
+        maxEl: null,
         lineEl: weeklyLineEl,
         gridEl: weeklyGridEl,
         ptsEl: weeklyPtsEl,
         xLabelsEl: weeklyXLabelsEl,
         yLabelsEl: weeklyYLabelsEl,
+        tooltipEl: weeklyTooltipEl,
         borderEl: weeklyBorderEl,
         marketIsOpen: false,
         direction: "same",
       });
 
-      renderLineChart({
+      chartState.yearly = renderLineChart({
         rows: yearlyRows,
         mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
         formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
@@ -1334,6 +1427,7 @@
         ptsEl: yearlyPtsEl,
         xLabelsEl: yearlyXLabelsEl,
         yLabelsEl: yearlyYLabelsEl,
+        tooltipEl: yearlyTooltipEl,
         borderEl: yearlyBorderEl,
         marketIsOpen: false,
         direction: "same",
@@ -1346,23 +1440,24 @@
     setTrendPill(silver.direction || "same");
     renderMetalsTable(metals);
 
-    renderLineChart({
+    chartState.weekly = renderLineChart({
       rows: weeklyRows,
       mapPoint: (r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }),
       formatX: (p) => fmtMMDD(p.xLabel),
-      minEl: silver7dLowEl,
-      maxEl: silver7dHighEl,
+      minEl: null,
+      maxEl: null,
       lineEl: weeklyLineEl,
       gridEl: weeklyGridEl,
       ptsEl: weeklyPtsEl,
       xLabelsEl: weeklyXLabelsEl,
       yLabelsEl: weeklyYLabelsEl,
+      tooltipEl: weeklyTooltipEl,
       borderEl: weeklyBorderEl,
       marketIsOpen: true,
       direction: silver.direction || "same",
     });
 
-    renderLineChart({
+    chartState.yearly = renderLineChart({
       rows: yearlyRows,
       mapPoint: (r) => ({ xLabel: r?.ym, value: Number(r?.close), raw: r }),
       formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
@@ -1373,6 +1468,7 @@
       ptsEl: yearlyPtsEl,
       xLabelsEl: yearlyXLabelsEl,
       yLabelsEl: yearlyYLabelsEl,
+      tooltipEl: yearlyTooltipEl,
       borderEl: yearlyBorderEl,
       marketIsOpen: true,
       direction: silver.direction || "same",
@@ -1380,7 +1476,7 @@
   }
 
   // =========================
-  // Forced mode (your debug feature) — unchanged except sourceHint
+  // Forced mode (kept)
   // =========================
   function applyForcedModeIfAny() {
     const params = new URLSearchParams(window.location.search);
@@ -1393,58 +1489,51 @@
       { date: "2025-12-26", close: 73.9 },
       { date: "2025-12-29", close: 76.0 },
       { date: "2025-12-30", close: 75.4 },
+      { date: "2025-12-31", close: 72.27 },
     ];
 
     const fakeYearly = [
-      { ym: "2025-01", month: "Jan", close: 69.1 },
-      { ym: "2025-02", month: "Feb", close: 70.2 },
-      { ym: "2025-03", month: "Mar", close: 71.6 },
-      { ym: "2025-04", month: "Apr", close: 73.0 },
-      { ym: "2025-05", month: "May", close: 74.4 },
-      { ym: "2025-06", month: "Jun", close: 72.8 },
-      { ym: "2025-07", month: "Jul", close: 73.7 },
-      { ym: "2025-08", month: "Aug", close: 75.9 },
-      { ym: "2025-09", month: "Sep", close: 77.2 },
-      { ym: "2025-10", month: "Oct", close: 76.1 },
-      { ym: "2025-11", month: "Nov", close: 78.4 },
-      { ym: "2025-12", month: "Dec", close: 76.2 },
+      { ym: "2025-01", month: "Jan", close: 31.73 },
+      { ym: "2025-02", month: "Feb", close: 33.1 },
+      { ym: "2025-03", month: "Mar", close: 34.2 },
+      { ym: "2025-04", month: "Apr", close: 33.8 },
+      { ym: "2025-05", month: "May", close: 33.5 },
+      { ym: "2025-06", month: "Jun", close: 36.7 },
+      { ym: "2025-07", month: "Jul", close: 38.9 },
+      { ym: "2025-08", month: "Aug", close: 39.4 },
+      { ym: "2025-09", month: "Sep", close: 47.0 },
+      { ym: "2025-10", month: "Oct", close: 55.3 },
+      { ym: "2025-11", month: "Nov", close: 57.2 },
+      { ym: "2025-12", month: "Dec", close: 83.96 },
     ];
 
     const fake = {
       updatedAt: new Date().toISOString(),
       metals: {
         silver: { price: 76.09, direction: "same", change: -0.12, high24h: 77.88, low24h: 74.91 },
-        gold: { price: 4343.23, direction: "same", change: 1.1 },
+        gold: { price: 4326.15, direction: "down", change: -4.94 },
         platinum: { price: 2186.65, direction: "same", change: 0.0 },
-        palladium: { price: 1625.39, direction: "same", change: -2.0 },
+        palladium: { price: 1625.39, direction: "down", change: -2.0 },
       },
       weekly: { silver: fakeWeekly },
-      yearly: { silver12m: fakeYearly, low12m: 69.1, high12m: 78.4 },
+      yearly: { silver12m: fakeYearly, low12m: 31.73, high12m: 83.96 },
       market: { isOpen: true, reason: "Open", closedType: null },
     };
 
     if (mode === "up") fake.metals.silver.direction = "up";
     if (mode === "down") fake.metals.silver.direction = "down";
-
-    if (mode === "flat" || mode === "neutral") {
-      fake.metals.silver.direction = "same";
-      fake.market.isOpen = true;
-      fake.market.closedType = null;
-    }
-
     if (mode === "closed") {
       fake.market.isOpen = false;
-      fake.market.reason = "Daily maintenance break (4–5 PM CT)";
       fake.market.closedType = "maintenance";
+      fake.market.reason = "Daily maintenance break (4–5 PM CT)";
     }
-
     if (mode === "weekend") {
       fake.market.isOpen = false;
-      fake.market.reason = "Weekend close";
       fake.market.closedType = "weekend";
+      fake.market.reason = "Weekend close";
     }
 
-    updateUI(fake, { sourceHint: "Forced mode preview" });
+    updateUI(fake);
     return true;
   }
 
@@ -1464,38 +1553,33 @@
       if (!res.ok) throw new Error("Backend HTTP error " + res.status);
       const data = await res.json();
 
-      // Save last known good payload locally
       saveLocalCache(data);
-
-      updateUI(data, { sourceHint: (data?.source ? `Source: ${data.source}` : "") });
+      updateUI(data);
     } catch (err) {
       console.error(err);
 
-      // Try localStorage fallback (instant “still shows something” behavior)
       const local = loadLocalCache();
       if (local?.payload) {
-        const ageMin = Math.floor((Date.now() - local.savedAt) / 60000);
-        updateUI(local.payload, { sourceHint: `Offline fallback (saved ${ageMin}m ago)` });
+        updateUI(local.payload);
 
-        // Make pill show error but keep UI populated
         trendPillEl.className = "trend-pill neutral";
         trendPillEl.querySelector(".trend-arrow").textContent = "!";
         trendTextEl.textContent = "Using cached data";
         return;
       }
 
-      // Hard failure (no local cache)
       trendPillEl.className = "trend-pill neutral";
       trendPillEl.querySelector(".trend-arrow").textContent = "!";
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
       headlinePriceEl.style.color = "var(--text-main)";
       swapCharacterImage(IMAGE_CLOSED);
-      silver24hHighEl.textContent = "24h high: —";
-      silver24hLowEl.textContent  = "24h low: —";
-      if (marketStatusEl) marketStatusEl.textContent = "—";
-      if (nextOpenEl) nextOpenEl.textContent = "—";
-      if (dataSourceHintEl) dataSourceHintEl.textContent = "";
+      silver24hHighEl.textContent = "—";
+      silver24hLowEl.textContent  = "—";
+      silver7dLowEl.textContent = "—";
+      silver7dHighEl.textContent = "—";
+      silver12mLowEl.textContent = "—";
+      silver12mHighEl.textContent = "—";
     }
   }
 
@@ -1520,17 +1604,30 @@
     preloadImages(IMAGE_LISTS.down, 8);
     preloadImages([IMAGE_CLOSED], 1);
 
-    // If we have local cache, render it immediately for “instant load”
+    // Attach hover/touch tooltip once
+    attachChartInteractivity(weeklySvgEl, weeklyTooltipEl, () => chartState.weekly);
+    attachChartInteractivity(yearlySvgEl, yearlyTooltipEl, () => chartState.yearly);
+
+    // If local cache exists, render instantly
     const local = loadLocalCache();
-    if (local?.payload) {
-      const ageMin = Math.floor((Date.now() - local.savedAt) / 60000);
-      updateUI(local.payload, { sourceHint: `Instant load (saved ${ageMin}m ago)` });
-    }
+    if (local?.payload) updateUI(local.payload);
 
     if (!applyForcedModeIfAny()) {
       await refreshAllOnce();
       scheduleAutoRefresh();
     }
+
+    // Re-render charts cleanly if device rotates / resizes across breakpoint
+    let lastMobile = isMobileChart();
+    window.addEventListener("resize", () => {
+      const nowMobile = isMobileChart();
+      if (nowMobile !== lastMobile) {
+        lastMobile = nowMobile;
+        // force a redraw using local cache if available (or keep whatever is displayed)
+        const local2 = loadLocalCache();
+        if (local2?.payload) updateUI(local2.payload);
+      }
+    }, { passive: true });
   })();
 </script>
 </body>
