@@ -610,7 +610,7 @@
       </section>
     </div>
 
-    <!-- ✅ 7-day silver trend -->
+    <!-- ✅ rolling 5 “days” from snapshots (still kept as weekly section) -->
     <section class="card" style="margin-top:18px;">
       <div class="section-title">Silver weekly trend</div>
 
@@ -631,7 +631,7 @@
       </div>
     </section>
 
-    <!-- ✅ 12-month silver trend -->
+    <!-- ✅ 12-month trend from bootstrap: monthly.silver -->
     <section class="card" style="margin-top:18px;">
       <div class="section-title">Silver yearly trend</div>
 
@@ -962,6 +962,9 @@
   }) {
     clearChart(gridEl, ptsEl, xLabelsEl, yLabelsEl, lineEl, borderEl);
 
+    if (minEl) minEl.textContent = "—";
+    if (maxEl) maxEl.textContent = "—";
+
     if (!Array.isArray(rows) || rows.length < 2) return;
 
     const pts = rows.map(mapPoint).filter((p) => p && p.xLabel && Number.isFinite(p.value));
@@ -1049,6 +1052,18 @@
     setChartColor(lineEl, marketIsOpen, direction);
   }
 
+  function computeMinMax(rows, getVal) {
+    if (!Array.isArray(rows) || rows.length === 0) return { min: null, max: null };
+    let min = null, max = null;
+    for (const r of rows) {
+      const v = Number(getVal(r));
+      if (!Number.isFinite(v)) continue;
+      if (min == null || v < min) min = v;
+      if (max == null || v > max) max = v;
+    }
+    return { min, max };
+  }
+
   function updateUI(data) {
     const metals = data?.metals || {};
     const silver = metals.silver || {};
@@ -1058,22 +1073,20 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    // ✅ hero: high + low under quirk
+    // hero: high + low under quirk
     silver24hHighEl.textContent = `24h high: ${fmtMoney(silver.high24h)}`;
     silver24hLowEl.textContent  = `24h low: ${fmtMoney(silver.low24h)}`;
 
     const marketIsOpen = !(market && market.isOpen === false);
 
-    // Weekly chart (from worker: weekly.silver -> [{date, close}, ...])
+    // Rolling “weekly” chart (worker: weekly.silver -> [{date, close}])
     const weeklyRows = data?.weekly?.silver || [];
 
-    // Yearly chart (from worker: yearly.silver -> [{month,date,close}, ...])
-    const yearlyRows = data?.yearly?.silver || [];
-    const yearlyLow12m = data?.yearly?.low12m ?? null;
-    const yearlyHigh12m = data?.yearly?.high12m ?? null;
-
-    silver12mLowEl.textContent = fmtMoney(yearlyLow12m);
-    silver12mHighEl.textContent = fmtMoney(yearlyHigh12m);
+    // Yearly chart from worker: monthly.silver -> [{month:"YYYY-MM", close:number}]
+    const monthlyRows = data?.monthly?.silver || [];
+    const mm = computeMinMax(monthlyRows, (r) => r?.close);
+    silver12mLowEl.textContent = fmtMoney(mm.min);
+    silver12mHighEl.textContent = fmtMoney(mm.max);
 
     if (!marketIsOpen) {
       setHeadlinePriceColor("same", false);
@@ -1097,9 +1110,13 @@
       });
 
       renderLineChart({
-        rows: yearlyRows,
-        mapPoint: (r) => ({ xLabel: r?.month || (r?.date ? r.date.slice(0,7) : null), value: Number(r?.close), raw: r }),
-        formatX: (p) => monthNameFromYYYYMM(p.xLabel),
+        rows: monthlyRows,
+        mapPoint: (r) => ({ xLabel: r?.month, value: Number(r?.close), raw: r }),
+        formatX: (p, i, n) => {
+          // label every month (as you asked), but keep it from overcrowding on tiny screens
+          // We keep every label; SVG will auto squeeze. If you want, we can switch to every other month.
+          return monthNameFromYYYYMM(p.xLabel);
+        },
         minEl: null,
         maxEl: null,
         lineEl: yearlyLineEl,
@@ -1136,8 +1153,8 @@
     });
 
     renderLineChart({
-      rows: yearlyRows,
-      mapPoint: (r) => ({ xLabel: r?.month || (r?.date ? r.date.slice(0,7) : null), value: Number(r?.close), raw: r }),
+      rows: monthlyRows,
+      mapPoint: (r) => ({ xLabel: r?.month, value: Number(r?.close), raw: r }),
       formatX: (p) => monthNameFromYYYYMM(p.xLabel),
       minEl: null,
       maxEl: null,
@@ -1161,37 +1178,35 @@
       { date: "2025-12-23", close: 74.2 },
       { date: "2025-12-24", close: 75.1 },
       { date: "2025-12-26", close: 73.9 },
-      { date: "2025-12-27", close: 74.8 },
       { date: "2025-12-29", close: 76.0 },
       { date: "2025-12-30", close: 75.4 },
-      { date: "2025-12-31", close: 76.2 },
     ];
 
-    const fakeYearly = [
-      { month: "2025-01", date: "2025-01-31", close: 69.1 },
-      { month: "2025-02", date: "2025-02-28", close: 70.2 },
-      { month: "2025-03", date: "2025-03-31", close: 71.6 },
-      { month: "2025-04", date: "2025-04-30", close: 73.0 },
-      { month: "2025-05", date: "2025-05-31", close: 74.4 },
-      { month: "2025-06", date: "2025-06-30", close: 72.8 },
-      { month: "2025-07", date: "2025-07-31", close: 73.7 },
-      { month: "2025-08", date: "2025-08-31", close: 75.9 },
-      { month: "2025-09", date: "2025-09-30", close: 77.2 },
-      { month: "2025-10", date: "2025-10-31", close: 76.1 },
-      { month: "2025-11", date: "2025-11-30", close: 78.4 },
-      { month: "2025-12", date: "2025-12-31", close: 76.2 },
+    const fakeMonthly = [
+      { month: "2025-01", close: 69.1 },
+      { month: "2025-02", close: 70.2 },
+      { month: "2025-03", close: 71.6 },
+      { month: "2025-04", close: 73.0 },
+      { month: "2025-05", close: 74.4 },
+      { month: "2025-06", close: 72.8 },
+      { month: "2025-07", close: 73.7 },
+      { month: "2025-08", close: 75.9 },
+      { month: "2025-09", close: 77.2 },
+      { month: "2025-10", close: 76.1 },
+      { month: "2025-11", close: 78.4 },
+      { month: "2025-12", close: 76.2 },
     ];
 
     const fake = {
       updatedAt: new Date().toISOString(),
       metals: {
-        silver: { price: 76.09, direction: "same", change: -0.12, high24h: 77.88, low24h: 74.91, high52w: 90.12 },
-        gold: { price: 4343.23, direction: "same", change: 1.1, high52w: 5100.0 },
-        platinum: { price: 2186.65, direction: "same", change: 0.0, high52w: 2800.0 },
-        palladium: { price: 1625.39, direction: "same", change: -2.0, high52w: 2400.0 },
+        silver: { price: 76.09, direction: "same", change: -0.12, high24h: 77.88, low24h: 74.91 },
+        gold: { price: 4343.23, direction: "same", change: 1.1 },
+        platinum: { price: 2186.65, direction: "same", change: 0.0 },
+        palladium: { price: 1625.39, direction: "same", change: -2.0 },
       },
       weekly: { silver: fakeWeekly },
-      yearly: { silver: fakeYearly, low12m: 69.1, high12m: 78.4 },
+      monthly: { silver: fakeMonthly },
       market: { isOpen: true, reason: "Open", closedType: null },
     };
 
@@ -1204,14 +1219,12 @@
       fake.market.closedType = null;
     }
 
-    // ?mode=closed -> maintenance
     if (mode === "closed") {
       fake.market.isOpen = false;
       fake.market.reason = "Daily maintenance break (4–5 PM CT)";
       fake.market.closedType = "maintenance";
     }
 
-    // ?mode=weekend -> weekend close
     if (mode === "weekend") {
       fake.market.isOpen = false;
       fake.market.reason = "Weekend close";
