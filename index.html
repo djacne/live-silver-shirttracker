@@ -515,16 +515,9 @@
     }
 
     @media (max-width: 600px) {
-      .hero-center {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
       .hero-stack { gap: 14px; }
-      .hero-divider { margin: 2px 0; }
       .hero-divider.soft { margin: 8px 0; }
-      .hero-meta { margin-top: 2px; }
-      .last-updated { margin-top: 2px; }
+      .hero-meta { margin-top: 6px; }
     }
 
     .chart-meta {
@@ -582,6 +575,55 @@
     .change.up { color: var(--accent-up); }
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
+
+    /* =========================================================
+       ADDED (1/2/3): pro, aligned 24h Trend format + mobile wrap
+       ========================================================= */
+
+    /* Pro alignment + consistent numerals */
+    .change-cell { text-align: right; vertical-align: middle; }
+    .price-cell { text-align: right; }
+    .price-cell, .metal-trend { font-variant-numeric: tabular-nums; }
+
+    /* New trend layout: "$0.00  ↔0.00%" */
+    .metal-trend{
+      display: inline-flex;
+      align-items: baseline;
+      gap: 10px;
+      justify-content: flex-end;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      font-weight: 800;
+      white-space: nowrap; /* desktop: keep one line */
+    }
+
+    .metal-trend .mt-money { min-width: 70px; text-align: right; }
+    .metal-trend .mt-pct   { min-width: 62px; text-align: right; }
+
+    .metal-trend.up   { color: var(--accent-up); }
+    .metal-trend.down { color: var(--accent-down); }
+    .metal-trend.neutral { color: rgba(226,232,240,0.88); }
+
+    /* Mobile: prevent cramming by stacking money + pct */
+    @media (max-width: 600px) {
+      th, td { font-size: 0.92rem; }
+
+      .metal-trend{
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+        white-space: normal;
+        line-height: 1.05;
+      }
+
+      .metal-trend .mt-money,
+      .metal-trend .mt-pct{
+        min-width: 0;
+      }
+
+      .metal-trend .mt-money{ font-size: 0.92rem; }
+      .metal-trend .mt-pct{ font-size: 0.86rem; opacity: 0.95; }
+    }
   </style>
 </head>
 
@@ -1282,12 +1324,6 @@
     function renderMetalsTable(metals) {
       metalsTbodyEl.innerHTML = "";
 
-      function dirSymbol(d) {
-        if (d === "up") return "▲";
-        if (d === "down") return "▼";
-        return "↔";
-      }
-
       function dirClass(d) {
         if (d === "up") return "up";
         if (d === "down") return "down";
@@ -1299,17 +1335,24 @@
         return Number.isFinite(n) ? n : null;
       }
 
-      function format24h(m) {
+      /* ADDED (1): formatted parts for "$0.00 ↔0.00%" and arrow up/down */
+      function format24hParts(m) {
         const price = safeNumber(m?.price);
         const chg = safeNumber(m?.change);
-        if (price == null || chg == null) return "—";
+        if (price == null || chg == null) return null;
 
         const base = price - chg;
         const pct = (base && Math.abs(base) > 0.000001) ? (chg / base) * 100 : null;
 
-        const dollar = `${chg > 0 ? "+" : (chg < 0 ? "−" : "")}$${Math.abs(chg).toFixed(2)}`;
-        const pctText = (pct == null || !Number.isFinite(pct)) ? "" : ` (${pct > 0 ? "+" : (pct < 0 ? "−" : "")}${Math.abs(pct).toFixed(2)}%)`;
-        return `${dollar}${pctText}`;
+        const cls = chg > 0 ? "up" : (chg < 0 ? "down" : "neutral");
+        const arrow = chg > 0 ? "↑" : (chg < 0 ? "↓" : "↔");
+
+        const money = `${chg > 0 ? "+" : (chg < 0 ? "−" : "")}$${Math.abs(chg).toFixed(2)}`;
+        const pctText = (pct == null || !Number.isFinite(pct))
+          ? "—"
+          : `${arrow}${Math.abs(pct).toFixed(2)}%`;
+
+        return { cls, money, pctText };
       }
 
       function addRow(key, label) {
@@ -1328,10 +1371,22 @@
         const tdTrend = document.createElement("td");
         tdTrend.className = "change-cell";
 
+        /* REPLACED: old "▲ $0.00 (+0.00%)" with "$0.00 ↔0.00%" parts */
+        const parts = format24hParts(m);
+
         const spanTrend = document.createElement("span");
-        const d = m?.direction || "same";
-        spanTrend.className = "change " + dirClass(d);
-        spanTrend.textContent = `${dirSymbol(d)} ${format24h(m)}`;
+        spanTrend.className = "metal-trend " + (parts ? parts.cls : "neutral");
+
+        const moneySpan = document.createElement("span");
+        moneySpan.className = "mt-money";
+        moneySpan.textContent = parts ? parts.money : "—";
+
+        const pctSpan = document.createElement("span");
+        pctSpan.className = "mt-pct";
+        pctSpan.textContent = parts ? parts.pctText : "—";
+
+        spanTrend.appendChild(moneySpan);
+        spanTrend.appendChild(pctSpan);
 
         tdTrend.appendChild(spanTrend);
 
