@@ -417,7 +417,6 @@
       font-variant-numeric: tabular-nums lining-nums;
     }
 
-    /* Match "Spot Metals" table header styling */
     .summary-head {
       display: grid;
       grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
@@ -468,7 +467,6 @@
     .summary-num.hi { color: var(--hi); }
     .summary-num.lo { color: var(--lo); }
 
-    /* Range uses the same 2-line hierarchy as the metals 24h cell */
     .summary-range {
       display: inline-flex;
       flex-direction: column;
@@ -1116,17 +1114,6 @@
       return "neutral";
     }
 
-    function sliceLastNFinite(rows, n) {
-      if (!Array.isArray(rows) || rows.length === 0) return [];
-      const out = [];
-      for (let i = rows.length - 1; i >= 0 && out.length < n; i--) {
-        const v = safeFinite(rows[i]?.close);
-        if (v == null) continue;
-        out.push(rows[i]);
-      }
-      return out.reverse();
-    }
-
     function setRangeMoneyAndPct(el, hi, lo, dirCls) {
       if (!el) return;
 
@@ -1152,8 +1139,10 @@
       `;
     }
 
+    // ✅ UPDATED: 1M now uses true trailing 30D hi/lo from backend
     function renderSilverSummary(data) {
       const silver = data?.metals?.silver || {};
+
       const dayHi = safeFinite(silver?.high24h);
       const dayLo = safeFinite(silver?.low24h);
 
@@ -1168,9 +1157,10 @@
       const weekDir = dirClassFromFirstLast(w.first, w.last);
       const yearDir = dirClassFromFirstLast(y.first, y.last);
 
-      const oneMRows = sliceLastNFinite(yearlyRows, 2);
-      const m = computeMinMaxFromRows(oneMRows);
-      const monthDir = dirClassFromFirstLast(m.first, m.last);
+      const mHi = safeFinite(silver?.high30d);
+      const mLo = safeFinite(silver?.low30d);
+      const mChg = safeFinite(silver?.change30d);
+      const monthDir = (mChg == null) ? "neutral" : (mChg > 0 ? "up" : (mChg < 0 ? "down" : "neutral"));
 
       setText(sumDayHiEl, dayHi == null ? "—" : fmtMoney(dayHi));
       setText(sumDayLoEl, dayLo == null ? "—" : fmtMoney(dayLo));
@@ -1180,9 +1170,9 @@
       setText(sumWeekLoEl, w.lo == null ? "—" : fmtMoney(w.lo));
       setRangeMoneyAndPct(sumWeekRangeEl, w.hi, w.lo, weekDir);
 
-      setText(sum1mHiEl, m.hi == null ? "—" : fmtMoney(m.hi));
-      setText(sum1mLoEl, m.lo == null ? "—" : fmtMoney(m.lo));
-      setRangeMoneyAndPct(sum1mRangeEl, m.hi, m.lo, monthDir);
+      setText(sum1mHiEl, mHi == null ? "—" : fmtMoney(mHi));
+      setText(sum1mLoEl, mLo == null ? "—" : fmtMoney(mLo));
+      setRangeMoneyAndPct(sum1mRangeEl, mHi, mLo, monthDir);
 
       setText(sum12mHiEl, y.hi == null ? "—" : fmtMoney(y.hi));
       setText(sum12mLoEl, y.lo == null ? "—" : fmtMoney(y.lo));
