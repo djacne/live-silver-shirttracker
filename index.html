@@ -798,9 +798,10 @@
     return `${Math.abs(n).toFixed(2)}%`;
   }
 
+  // ✅ CHANGED: uses backend snapshot delta for SILVER ONLY
   function renderSinceLastUpdateFromAPI(silver) {
-    const delta = Number(silver?.tickChange);
-    const pct = Number(silver?.tickPct);
+    const delta = Number(silver?.deltaSinceLast);
+    const pct = Number(silver?.pctSinceLast);
 
     if (!Number.isFinite(delta) || !Number.isFinite(pct)) {
       sinceRowEl.className = "since-row flat";
@@ -1284,7 +1285,18 @@
     const fake = {
       updatedAt: new Date().toISOString(),
       metals: {
-        silver: { price: 72.27, direction: "down", change: -4.12, high24h: 83.96, low24h: 72.27, tickChange: -0.64, tickPct: -0.89 },
+        silver: {
+          price: 72.27,
+          direction: "down",
+          change: -4.12,
+          high24h: 83.96,
+          low24h: 72.27,
+          tickChange: -0.64,
+          tickPct: -0.89,
+          // NEW (so forced mode still renders the since-row)
+          deltaSinceLast: -0.64,
+          pctSinceLast: -0.89
+        },
         gold: { price: 4326.15, direction: "down", change: -4.94, tickChange: -12.3, tickPct: -0.28 },
         platinum: { price: 1012.40, direction: "same", change: 0.0, tickChange: 0.0, tickPct: 0.0 },
         palladium: { price: 967.35, direction: "same", change: 0.0, tickChange: 0.0, tickPct: 0.0 }
@@ -1301,8 +1313,8 @@
       fake.metals.silver.direction = "same";
       fake.market.isOpen = true;
       fake.market.closedType = null;
-      fake.metals.silver.tickChange = 0;
-      fake.metals.silver.tickPct = 0;
+      fake.metals.silver.deltaSinceLast = 0;
+      fake.metals.silver.pctSinceLast = 0;
     }
 
     if (mode === "closed") {
