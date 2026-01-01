@@ -723,7 +723,7 @@
   const yearlyCrosshairEl = document.getElementById("silver12m-crosshair");
   const yearlyTipEl = document.getElementById("silver12m-tip");
 
-  const IMAGE_CLOSED = "/img/silver-closed.png";
+  const IMAGE_FLAT = "/img/flat-1.png";
 
   let IMAGE_LISTS = { up: [], down: [] };
   let _currentDirection = null;
@@ -887,7 +887,7 @@
     setTrendMode("neutral");
 
     _currentDirection = "neutral";
-    _currentImageSrc = IMAGE_CLOSED;
+    _currentImageSrc = IMAGE_FLAT;
     characterImgEl.src = _currentImageSrc;
   }
 
