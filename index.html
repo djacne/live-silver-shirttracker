@@ -326,7 +326,6 @@
       gap: 10px;
     }
 
-    /* QUIETER: badge is still prominent, but not “shouting” */
     .quirk-badge {
       display: inline-flex;
       align-items: center;
@@ -337,7 +336,7 @@
       background: var(--badge-bg);
       color: var(--badge-text);
       font-size: 0.88rem;
-      font-weight: 700; /* was 800 */
+      font-weight: 700;
       letter-spacing: 0.01em;
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
@@ -359,33 +358,32 @@
     }
     .headline-price {
       font-size: clamp(2.25rem, 4.1vw, 2.95rem);
-      font-weight: 800; /* keep headline loud */
+      font-weight: 800;
       letter-spacing: 0.01em;
       color: var(--text-main);
     }
     @media (max-width: 600px) { .headline-price { font-size: clamp(2.05rem, 5.2vw, 2.45rem); } }
     .headline-unit {
       font-size: 0.95rem;
-      font-weight: 600; /* quieter */
+      font-weight: 600;
       color: rgba(148,163,184,0.92);
       letter-spacing: 0.01em;
     }
 
-    /* QUIETER: since-row is informational, not headline */
     .since-row {
       display: inline-flex;
       align-items: center;
       gap: 10px;
       white-space: nowrap;
       font-size: 0.96rem;
-      font-weight: 600; /* was 800 */
+      font-weight: 600;
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
     }
     .since-row .money, .since-row .pctcombo {
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
-      font-weight: 600; /* was 800 */
+      font-weight: 600;
       white-space: nowrap;
     }
     .since-row.up { color: var(--accent-up); }
@@ -400,7 +398,6 @@
     }
     .hero-divider.soft { opacity: 0.35; margin: 4px 0; }
 
-    /* QUIETER: section titles should guide, not headline */
     .section-title {
       font-size: 0.90rem;
       text-transform: uppercase;
@@ -408,10 +405,9 @@
       color: rgba(156,163,175,0.92);
       margin: 0 0 10px 0;
       text-align: center;
-      font-weight: 600; /* was default heavier in places */
+      font-weight: 600;
     }
 
-    /* === LOCKED: Silver Summary tile (separate card) === */
     .summary-wrap {
       width: 100%;
       max-width: 520px;
@@ -421,7 +417,6 @@
       font-variant-numeric: tabular-nums lining-nums;
     }
 
-    /* QUIETER header */
     .summary-head {
       display: grid;
       grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
@@ -431,12 +426,10 @@
       text-transform: uppercase;
       letter-spacing: 0.10em;
       font-size: 0.72rem;
-      font-weight: 600; /* was 800 */
+      font-weight: 600;
       white-space: nowrap;
     }
 
-    /* FIX reflecting “solid lines across”:
-       make rows real elements (not display:contents) so borders span full width */
     .summary-grid {
       display: flex;
       flex-direction: column;
@@ -449,7 +442,7 @@
       gap: 10px;
     }
     .summary-row + .summary-row {
-      border-top: 1px solid rgba(148,163,184,0.12); /* single full-width line */
+      border-top: 1px solid rgba(148,163,184,0.12);
     }
 
     .summary-cell {
@@ -461,22 +454,28 @@
 
     .summary-label {
       color: rgba(226,232,240,0.90);
-      font-weight: 600; /* was 800 */
+      font-weight: 600;
       letter-spacing: 0.01em;
     }
 
-    /* values: quieter */
     .summary-num {
       text-align: right;
-      font-weight: 600; /* was 800 */
+      font-weight: 600;
       color: rgba(248,250,252,0.96);
     }
     .summary-num.hi { color: var(--hi); }
     .summary-num.lo { color: var(--lo); }
 
-    /* RANGE: percent-only + NEUTRAL (no arrows, no green/red) */
-    .summary-range { text-align: right; font-weight: 600; color: rgba(226,232,240,0.86); }
-    .range-pct { font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; }
+    .summary-range {
+      text-align: right;
+      font-weight: 600;
+      color: rgba(226,232,240,0.86);
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+    }
+    .summary-range.up { color: var(--accent-up); }
+    .summary-range.down { color: var(--accent-down); }
+    .summary-range.neutral { color: rgba(226,232,240,0.88); }
 
     .chart-wrap {
       width: 100%;
@@ -590,7 +589,7 @@
 
     th {
       color: var(--text-muted);
-      font-weight: 600; /* was 700 */
+      font-weight: 600;
       font-size: 0.85rem;
       letter-spacing: 0.03em;
       text-transform: uppercase;
@@ -606,7 +605,6 @@
     }
     .change-cell { text-align: right; }
 
-    /* QUIETER: 24h trend should read as data */
     .metal-trend{
       display: inline-flex;
       align-items: baseline;
@@ -614,7 +612,7 @@
       justify-content: flex-end;
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
-      font-weight: 600; /* was 800 */
+      font-weight: 600;
       white-space: nowrap;
     }
     .metal-trend .mt-money { min-width: 70px; text-align: right; }
@@ -639,7 +637,6 @@
       .metal-trend .mt-pct{ font-size: 0.86rem; opacity: 0.95; }
     }
 
-    /* LOCKED: global footer */
     .page-footer {
       margin: 16px 0 8px;
       text-align: center;
@@ -721,7 +718,6 @@
       </section>
 
       <div class="hero-right">
-        <!-- Tile 1: Spot price -->
         <section class="card hero-info" aria-label="Silver spot price">
           <div class="section-title" style="margin-bottom:6px;">Silver spot price</div>
 
@@ -729,7 +725,7 @@
             <div class="hero-stack">
               <div class="headline-row" aria-label="Silver spot price">
                 <span id="headline-price" class="headline-price">—</span>
-                <span class="headline-unit">/ troy ounce</span>
+                <span class="headline-unit">/ toz</span>
               </div>
 
               <div id="since-row" class="since-row flat" aria-label="Silver change since last update">
@@ -744,7 +740,6 @@
           </div>
         </section>
 
-        <!-- Tile 2: Summary -->
         <section class="card" aria-label="Silver summary">
           <div class="section-title" style="margin-bottom:6px;">Silver summary</div>
 
@@ -761,21 +756,28 @@
                 <div class="summary-cell summary-label" role="cell">1D</div>
                 <div class="summary-cell summary-num hi" id="sum-day-hi" role="cell">—</div>
                 <div class="summary-cell summary-num lo" id="sum-day-lo" role="cell">—</div>
-                <div class="summary-cell summary-range" id="sum-day-range" role="cell">—</div>
+                <div class="summary-cell summary-range neutral" id="sum-day-range" role="cell">—</div>
               </div>
 
               <div class="summary-row" role="row">
                 <div class="summary-cell summary-label" role="cell">7D</div>
                 <div class="summary-cell summary-num hi" id="sum-week-hi" role="cell">—</div>
                 <div class="summary-cell summary-num lo" id="sum-week-lo" role="cell">—</div>
-                <div class="summary-cell summary-range" id="sum-week-range" role="cell">—</div>
+                <div class="summary-cell summary-range neutral" id="sum-week-range" role="cell">—</div>
+              </div>
+
+              <div class="summary-row" role="row">
+                <div class="summary-cell summary-label" role="cell">1M</div>
+                <div class="summary-cell summary-num hi" id="sum-1m-hi" role="cell">—</div>
+                <div class="summary-cell summary-num lo" id="sum-1m-lo" role="cell">—</div>
+                <div class="summary-cell summary-range neutral" id="sum-1m-range" role="cell">—</div>
               </div>
 
               <div class="summary-row" role="row">
                 <div class="summary-cell summary-label" role="cell">1Y</div>
                 <div class="summary-cell summary-num hi" id="sum-12m-hi" role="cell">—</div>
                 <div class="summary-cell summary-num lo" id="sum-12m-lo" role="cell">—</div>
-                <div class="summary-cell summary-range" id="sum-12m-range" role="cell">—</div>
+                <div class="summary-cell summary-range neutral" id="sum-12m-range" role="cell">—</div>
               </div>
             </div>
           </div>
@@ -872,6 +874,9 @@
     const sumWeekHiEl = document.getElementById("sum-week-hi");
     const sumWeekLoEl = document.getElementById("sum-week-lo");
     const sumWeekRangeEl = document.getElementById("sum-week-range");
+    const sum1mHiEl = document.getElementById("sum-1m-hi");
+    const sum1mLoEl = document.getElementById("sum-1m-lo");
+    const sum1mRangeEl = document.getElementById("sum-1m-range");
     const sum12mHiEl = document.getElementById("sum-12m-hi");
     const sum12mLoEl = document.getElementById("sum-12m-lo");
     const sum12mRangeEl = document.getElementById("sum-12m-range");
@@ -1093,16 +1098,38 @@
       return { hi, lo, first, last };
     }
 
-    /* Option A: Range is % only and neutral (no arrows, no up/down coloring) */
-    function setRangePctCell(el, hi, lo) {
+    function setRangePctArrowCell(el, hi, lo, dirCls) {
       if (!el) return;
+      el.classList.remove("up", "down", "neutral");
+      el.classList.add(dirCls || "neutral");
+
       if (!Number.isFinite(hi) || !Number.isFinite(lo) || hi < lo || lo === 0) {
         el.textContent = "—";
         return;
       }
       const pct = ((hi - lo) / lo) * 100;
       if (!Number.isFinite(pct)) { el.textContent = "—"; return; }
-      el.innerHTML = `<span class="range-pct">${pct.toFixed(2)}%</span>`;
+
+      const arrow = (dirCls === "up") ? "↑" : (dirCls === "down" ? "↓" : "↔");
+      el.textContent = `${arrow}${pct.toFixed(2)}%`;
+    }
+
+    function dirClassFromFirstLast(first, last) {
+      if (!Number.isFinite(first) || !Number.isFinite(last)) return "neutral";
+      if (last > first) return "up";
+      if (last < first) return "down";
+      return "neutral";
+    }
+
+    function sliceLastNFinite(rows, n) {
+      if (!Array.isArray(rows) || rows.length === 0) return [];
+      const out = [];
+      for (let i = rows.length - 1; i >= 0 && out.length < n; i--) {
+        const v = safeFinite(rows[i]?.close);
+        if (v == null) continue;
+        out.push(rows[i]);
+      }
+      return out.reverse();
     }
 
     function renderSilverSummary(data) {
@@ -1116,17 +1143,30 @@
       const w = computeMinMaxFromRows(weeklyRows);
       const y = computeMinMaxFromRows(yearlyRows);
 
+      const dayChg = safeFinite(silver?.change);
+      const dayDir = (dayChg == null) ? "neutral" : (dayChg > 0 ? "up" : (dayChg < 0 ? "down" : "neutral"));
+      const weekDir = dirClassFromFirstLast(w.first, w.last);
+      const yearDir = dirClassFromFirstLast(y.first, y.last);
+
+      const oneMRows = sliceLastNFinite(yearlyRows, 2);
+      const m = computeMinMaxFromRows(oneMRows);
+      const monthDir = dirClassFromFirstLast(m.first, m.last);
+
       setText(sumDayHiEl, dayHi == null ? "—" : fmtMoney(dayHi));
       setText(sumDayLoEl, dayLo == null ? "—" : fmtMoney(dayLo));
-      setRangePctCell(sumDayRangeEl, dayHi, dayLo);
+      setRangePctArrowCell(sumDayRangeEl, dayHi, dayLo, dayDir);
 
       setText(sumWeekHiEl, w.hi == null ? "—" : fmtMoney(w.hi));
       setText(sumWeekLoEl, w.lo == null ? "—" : fmtMoney(w.lo));
-      setRangePctCell(sumWeekRangeEl, w.hi, w.lo);
+      setRangePctArrowCell(sumWeekRangeEl, w.hi, w.lo, weekDir);
+
+      setText(sum1mHiEl, m.hi == null ? "—" : fmtMoney(m.hi));
+      setText(sum1mLoEl, m.lo == null ? "—" : fmtMoney(m.lo));
+      setRangePctArrowCell(sum1mRangeEl, m.hi, m.lo, monthDir);
 
       setText(sum12mHiEl, y.hi == null ? "—" : fmtMoney(y.hi));
       setText(sum12mLoEl, y.lo == null ? "—" : fmtMoney(y.lo));
-      setRangePctCell(sum12mRangeEl, y.hi, y.lo);
+      setRangePctArrowCell(sum12mRangeEl, y.hi, y.lo, yearDir);
     }
 
     function fmtMMDD(yyyy_mm_dd) {
@@ -1184,7 +1224,7 @@
     function getChartPads(mobile, kind) {
       if (mobile) {
         if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
-        if (kind === "yearly") return { padL: 10, padR: 56, padT: 8,  padB: 18 };
+        if (kind === "yearly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
         return { padL: 10, padR: 56, padT: 8,  padB: 34 };
       }
       return { padL: 20, padR: 52, padT: 12, padB: 36 };
@@ -1595,8 +1635,9 @@
       yearlyAreaEl.setAttribute("d", dArea);
       yearlyAreaEl.setAttribute("fill", `url(#${gid})`);
 
+      const labelY = y1 + (mobile ? 26 : 30);
+
       if (!mobile) {
-        const labelY = y1 + 30;
         for (let i = 0; i < n; i++) {
           const x = xForIdx(i);
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -1606,6 +1647,26 @@
           else { tx.setAttribute("x", x); tx.setAttribute("text-anchor", "middle"); }
 
           tx.setAttribute("y", labelY);
+          tx.textContent = pts[i].month || monthNameFromYYYYMM(pts[i].xLabel);
+          yearlyXLabelsEl.appendChild(tx);
+        }
+      } else {
+        const idxs = new Set([0, n - 1]);
+        for (let i = 0; i < n; i++) {
+          if (i % 3 === 0) idxs.add(i);
+        }
+        const ordered = Array.from(idxs).sort((a,b)=>a-b);
+
+        for (const i of ordered) {
+          const x = xForIdx(i);
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+
+          if (i === 0) { tx.setAttribute("x", x0); tx.setAttribute("text-anchor", "start"); }
+          else if (i === n - 1) { tx.setAttribute("x", x1); tx.setAttribute("text-anchor", "end"); }
+          else { tx.setAttribute("x", x); tx.setAttribute("text-anchor", "middle"); }
+
+          tx.setAttribute("y", labelY);
+          tx.setAttribute("opacity", "0.92");
           tx.textContent = pts[i].month || monthNameFromYYYYMM(pts[i].xLabel);
           yearlyXLabelsEl.appendChild(tx);
         }
@@ -1978,6 +2039,7 @@
 
         setText(sumDayHiEl, "—"); setText(sumDayLoEl, "—"); setText(sumDayRangeEl, "—");
         setText(sumWeekHiEl, "—"); setText(sumWeekLoEl, "—"); setText(sumWeekRangeEl, "—");
+        setText(sum1mHiEl, "—"); setText(sum1mLoEl, "—"); setText(sum1mRangeEl, "—");
         setText(sum12mHiEl, "—"); setText(sum12mLoEl, "—"); setText(sum12mRangeEl, "—");
 
         clearWeeklyChart();
