@@ -488,7 +488,6 @@
     /* Yearly Yahoo-ish line styling */
     .chart-wrap svg .yline { fill: none; stroke-width: 2.8; opacity: 0.98; }
     .chart-wrap svg .yarea { opacity: 0.90; }
-    /* NEW: subtle "haze" underfill so low months still have some presence */
     .chart-wrap svg .yarea-haze { opacity: 0.55; }
 
     /* Current price (Yahoo-ish) */
@@ -510,31 +509,34 @@
       font-size: 15px;
     }
 
+    /* ===== MOBILE: BIGGER CHARTS + BIGGER TEXT, FEWER LABELS ===== */
     @media (max-width: 600px) {
       .chart-wrap { padding: 10px; }
-      .chart-wrap svg { height: 260px; }
-      .chart-wrap svg text { font-size: 18px; }
+
+      /* make charts feel "tall" on phones */
+      .chart-wrap svg { height: 380px; }
+
+      /* axis/tooltip text bigger */
+      .chart-wrap svg text { font-size: 19px; }
+
+      /* keep current price tag readable */
+      .chart-wrap svg .price-tag-text { font-size: 19px; }
+
       .quirk-badge { font-size: 0.92rem; padding: 8px 12px; }
       .hl-row { font-size: 0.96rem; }
       .since-row { font-size: 0.96rem; }
     }
+    /* ===== END MOBILE CHART BOOST ===== */
 
     /* ===== MOBILE HERO SPACING FIX (NO HEIGHT INCREASE) ===== */
     @media (max-width: 600px) {
-      /* tighten the overall stack so we can "spend" pixels on the bottom spacing */
-      .hero-stack { gap: 10px; }               /* was effectively larger from your second block */
-      .hero-divider.soft { margin: 6px 0; }    /* a touch more breathing room around soft lines */
-      .headline-row { margin-top: 0px; }       /* reclaim a couple px */
-      .since-row { margin-top: -2px; }         /* reclaim a couple px (keeps it from feeling tall) */
+      .hero-stack { gap: 10px; }
+      .hero-divider.soft { margin: 6px 0; }
+      .headline-row { margin-top: 0px; }
+      .since-row { margin-top: -2px; }
 
-      /* create a clean buffer between "Last 24h" and the hard divider below it */
       .hl-row { margin-bottom: 6px; }
-
-      /* THIS is the divider you said Last 24h was sitting on — add spacing here,
-         and we compensate above (so the card height stays the same). */
       .hero-divider:not(.soft) { margin: 6px 0; }
-
-      /* stop "Last updated" from feeling glued to the divider */
       .hero-meta { padding-top: 4px; gap: 4px; margin-top: 0; }
     }
     /* ===== END MOBILE HERO SPACING FIX ===== */
@@ -588,7 +590,6 @@
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
 
-    /* pro, aligned 24h Trend format + mobile wrap */
     .change-cell { text-align: right; vertical-align: middle; }
     .price-cell { text-align: right; }
     .price-cell, .metal-trend { font-variant-numeric: tabular-nums; }
@@ -740,7 +741,6 @@
       <div class="chart-wrap">
         <svg id="silver7d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 7-day trend chart">
           <g id="silver7d-grid"></g>
-          <!-- kept element for compatibility; JS will ALWAYS leave it hidden -->
           <line id="silver7d-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
           <g id="silver7d-bars"></g>
           <line id="silver7d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
@@ -766,13 +766,11 @@
           <defs id="silver12m-defs"></defs>
           <g id="silver12m-grid"></g>
 
-          <!-- NEW: haze layer under the main area -->
           <path id="silver12m-haze" class="yarea-haze" d=""></path>
 
           <path id="silver12m-area" class="yarea" d=""></path>
           <path id="silver12m-line" class="yline" d=""></path>
 
-          <!-- Yahoo-ish current price -->
           <line id="silver12m-curline" class="curline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
           <g id="silver12m-curtag" opacity="0"></g>
 
@@ -1072,7 +1070,9 @@
     // Mobile-only: reclaim vertical plot area + keep desktop identical
     function getChartPads(mobile) {
       if (mobile) {
-        return { padL: 14, padR: 40, padT: 6, padB: 24 };
+        // reduced padB because we show fewer x labels; reduced padT to "grow" plot;
+        // padR sized for bigger y-axis labels.
+        return { padL: 12, padR: 56, padT: 6, padB: 18 };
       }
       return { padL: 20, padR: 52, padT: 10, padB: 34 };
     }
@@ -1176,7 +1176,7 @@
       const n = pts.length;
       const slotW = innerW / n;
 
-      const gap = mobile ? 1.4 : 2.8;
+      const gap = mobile ? 1.2 : 2.8;
       const barW = Math.max(2, slotW - gap);
       const barX = (i) => x0 + i * slotW + (gap / 2);
 
@@ -1206,8 +1206,8 @@
         r.setAttribute("y", yTop);
         r.setAttribute("width", barW);
         r.setAttribute("height", h);
-        r.setAttribute("rx", mobile ? 3.5 : 3.0);
-        r.setAttribute("ry", mobile ? 3.5 : 3.0);
+        r.setAttribute("rx", mobile ? 4.5 : 3.0);
+        r.setAttribute("ry", mobile ? 4.5 : 3.0);
         r.setAttribute("fill", fill);
         weeklyBarsEl.appendChild(r);
 
@@ -1217,8 +1217,8 @@
         s.setAttribute("y", yTop);
         s.setAttribute("width", barW);
         s.setAttribute("height", h);
-        s.setAttribute("rx", mobile ? 3.5 : 3.0);
-        s.setAttribute("ry", mobile ? 3.5 : 3.0);
+        s.setAttribute("rx", mobile ? 4.5 : 3.0);
+        s.setAttribute("ry", mobile ? 4.5 : 3.0);
         s.setAttribute("fill", "none");
         weeklyBarsEl.appendChild(s);
 
@@ -1234,7 +1234,8 @@
       firstLbl.textContent = fmtMMDD(pts[0].xLabel);
       weeklyXLabelsEl.appendChild(firstLbl);
 
-      const midEvery = mobile ? 2 : 1;
+      // MOBILE: fewer x labels so they can be BIG
+      const midEvery = mobile ? 3 : 1;
       for (let i = 1; i < n - 1; i++) {
         if (i % midEvery !== 0) continue;
         const xMid = barX(i) + (barW / 2);
@@ -1253,9 +1254,7 @@
       lastLbl.textContent = fmtMMDD(pts[n - 1].xLabel);
       weeklyXLabelsEl.appendChild(lastLbl);
 
-      function clearHover() {
-        for (const b of bars) b.classList.remove("hover");
-      }
+      function clearHover() { for (const b of bars) b.classList.remove("hover"); }
 
       function hideTip() {
         weeklyCrosshairEl.style.opacity = "0";
@@ -1344,7 +1343,7 @@
       hideTip();
     }
 
-    // YEARLY: line + shaded area + haze underfill + current price dotted line + tag INSIDE plot (never collides with y-axis)
+    // YEARLY: line + shaded area + haze underfill + current price dotted line + tag INSIDE plot
     function renderYearlyLine({ rows, marketIsOpen, currentPrice, currentDir }) {
       clearYearlyChart();
 
@@ -1486,6 +1485,7 @@
       yearlyAreaEl.setAttribute("d", dArea);
       yearlyAreaEl.setAttribute("fill", `url(#${gid})`);
 
+      // MOBILE: at most ~6 month labels
       const showEvery = mobile ? 2 : 1;
       for (let i = 0; i < n; i++) {
         if (i !== 0 && i !== n - 1 && (i % showEvery !== 0)) continue;
@@ -1507,7 +1507,6 @@
         let curColor = "rgba(148,163,184,0.92)";
         if (currentDir === "up") curColor = "rgba(34,197,94,0.95)";
         else if (currentDir === "down") curColor = "rgba(239,68,68,0.95)";
-
         if (!marketIsOpen) curColor = "rgba(148,163,184,0.70)";
 
         yearlyCurLineEl.setAttribute("x1", x0);
