@@ -299,19 +299,38 @@
     }
 
     .headline-price {
-      font-size: clamp(2.2rem, 3.8vw, 2.8rem);
-      font-weight: 700;
       display: flex;
-      align-items: baseline;
-      gap: 8px;
+      align-items: center;
       justify-content: center;
       margin-bottom: 4px;
     }
 
-    .headline-price span.small {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      font-weight: 500;
+    .price-pill {
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.55);
+      background: rgba(148,163,184,0.12);
+      color: rgba(226,232,240,0.92);
+      white-space: nowrap;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+    }
+
+    .price-value {
+      font-size: clamp(2.2rem, 3.8vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      line-height: 1;
+    }
+
+    .price-unit {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: rgba(148,163,184,0.88);
+      letter-spacing: 0.01em;
     }
 
     .since-update {
@@ -489,6 +508,8 @@
       .chart-wrap { padding: 10px; }
       .chart-wrap svg { height: 260px; }
       .chart-wrap svg text { font-size: 16.5px; }
+      .price-pill { padding: 10px 14px; }
+      .price-unit { font-size: 0.92rem; }
     }
 
     .chart-meta {
@@ -611,8 +632,10 @@
 
         <div class="hero-main">
           <div class="headline-price">
-            <span id="headline-price">—</span>
-            <span class="small">/ troy ounce</span>
+            <span class="price-pill" aria-label="Silver spot price per troy ounce">
+              <span id="headline-price" class="price-value">—</span>
+              <span class="price-unit">/ troy ounce</span>
+            </span>
           </div>
 
           <div class="hero-substack" style="margin-top:6px;">
