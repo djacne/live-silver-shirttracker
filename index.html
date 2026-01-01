@@ -700,6 +700,9 @@
   let _currentDirection = null;
   let _currentImageSrc = null;
 
+  // ✅ Store last data without monkey-patching updateUI
+  window.__LAST_DATA__ = null;
+
   function isMobileNow() {
     return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
   }
@@ -948,7 +951,7 @@
     tipEl.innerHTML = "";
   }
 
-  // ✅ SINGLE chart renderer (bars fill box on mobile, y labels outside on ALL devices, "100" never clips)
+  // ✅ SINGLE chart renderer (y labels outside ALWAYS; “100” can’t clip; bars fill box on mobile)
   function renderBarChart({
     rows,
     getXLabel,
@@ -991,8 +994,6 @@
     const H = 260;
     const mobile = isMobileNow();
 
-    // ✅ Make bars feel tall on mobile: compress vertical range by pushing yMin down.
-    // (This is the "UTILIZE MOST OF THE BOX" behavior.)
     let range = (max - min);
     const minVisualRange = chartType === "weekly" ? 0.9 : 2.0;
     if (range < minVisualRange) range = minVisualRange;
@@ -1003,9 +1004,9 @@
     const yMin = min - padBot;
     const yMax = max + padTop;
 
-    // ✅ Space for y-axis labels OUTSIDE the plot box, on desktop + mobile.
+    // ✅ y-label gutter (right) so labels are always OUTSIDE the plot and never clipped
     const padL = mobile ? 22 : 26;
-    const padR = mobile ? 120 : 140;  // BIG gutter so labels never clip
+    const padR = mobile ? 120 : 140;
     const padT = mobile ? 12 : 16;
     const padB = mobile ? 32 : 48;
 
@@ -1020,7 +1021,6 @@
     const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
     borderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
-    // Grid + Y labels
     const yTicks = makeTicks(yMin, yMax, mobile ? 3 : 5);
     const yLabelFmt = (range < 20) ? (n) => n.toFixed(2) : (n) => n.toFixed(0);
 
@@ -1036,7 +1036,6 @@
       gridEl.appendChild(gl);
 
       const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      // ✅ Always in the right gutter, and grows left -> "100" can NEVER clip
       tx.setAttribute("x", W - 6);
       tx.setAttribute("text-anchor", "end");
       tx.setAttribute("y", y + 6);
@@ -1044,7 +1043,6 @@
       yLabelsEl.appendChild(tx);
     }
 
-    // Bars: nearly touching + tiny gap
     const n = pts.length;
     const slotW = innerW / n;
 
@@ -1054,7 +1052,6 @@
 
     const yBase = y1;
 
-    // X labels: fewer on mobile
     let step = 1;
     if (mobile) step = 2;
     const shouldShowX = (i) => (i === 0 || i === n - 1 || (i % step === 0));
@@ -1094,7 +1091,6 @@
       }
     }
 
-    // Tooltip / crosshair
     const svgNS = "http://www.w3.org/2000/svg";
 
     function hideTip() {
@@ -1179,84 +1175,15 @@
     hideTip();
   }
 
-  function updateUI(data) {
-    const metals = data?.metals || {};
-    const silver = metals.silver || {};
-    const updatedAt = data?.updatedAt || null;
+  // ✅ Charts-only renderer (used on breakpoint/orientation change)
+  function renderChartsFromData(data) {
     const market = data?.market || null;
-
-    lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
-    headlinePriceEl.textContent = fmtMoney(silver.price);
-
-    silver24hHighEl.innerHTML = `24h high: <span class="hi">${fmtMoney(silver.high24h)}</span>`;
-    silver24hLowEl.innerHTML  = `24h low: <span class="lo">${fmtMoney(silver.low24h)}</span>`;
-
     const marketIsOpen = !(market && market.isOpen === false);
 
     const weeklyRows = data?.weekly?.silver || [];
     const yearlyRows = data?.yearly?.silver12m || [];
 
-    // meta hi/lo for yearly section (already computed server-side too, but keep client-safe)
-    let yMin = null, yMax = null;
-    for (const r of yearlyRows) {
-      const v = Number(r?.close);
-      if (!Number.isFinite(v)) continue;
-      if (yMin == null || v < yMin) yMin = v;
-      if (yMax == null || v > yMax) yMax = v;
-    }
-    silver12mLowEl.textContent = fmtMoney(yMin);
-    silver12mHighEl.textContent = fmtMoney(yMax);
-
-    if (!marketIsOpen) {
-      setHeadlinePriceColor("same", false);
-      setMarketClosedPill(market);
-      renderMetalsTable(metals);
-
-      renderBarChart({
-        rows: weeklyRows,
-        getXLabel: (r) => r?.date,
-        getValue: (r) => r?.close,
-        formatX: (p) => fmtMMDD(p.xLabel),
-        minEl: silver7dLowEl,
-        maxEl: silver7dHighEl,
-        gridEl: weeklyGridEl,
-        barsEl: weeklyBarsEl,
-        xLabelsEl: weeklyXLabelsEl,
-        yLabelsEl: weeklyYLabelsEl,
-        borderEl: weeklyBorderEl,
-        hitEl: weeklyHitEl,
-        crosshairEl: weeklyCrosshairEl,
-        tipEl: weeklyTipEl,
-        marketIsOpen: false,
-        chartType: "weekly",
-      });
-
-      renderBarChart({
-        rows: yearlyRows,
-        getXLabel: (r) => r?.ym,
-        getValue: (r) => r?.close,
-        formatX: (p) => (p?.raw?.month || monthNameFromYYYYMM(p.xLabel)),
-        minEl: null,
-        maxEl: null,
-        gridEl: yearlyGridEl,
-        barsEl: yearlyBarsEl,
-        xLabelsEl: yearlyXLabelsEl,
-        yLabelsEl: yearlyYLabelsEl,
-        borderEl: yearlyBorderEl,
-        hitEl: yearlyHitEl,
-        crosshairEl: yearlyCrosshairEl,
-        tipEl: yearlyTipEl,
-        marketIsOpen: false,
-        chartType: "yearly",
-      });
-
-      return;
-    }
-
-    setHeadlinePriceColor(silver.direction || "same", true);
-    setTrendPill(silver.direction || "same");
-    renderMetalsTable(metals);
-
+    // weekly min/max
     renderBarChart({
       rows: weeklyRows,
       getXLabel: (r) => r?.date,
@@ -1272,9 +1199,20 @@
       hitEl: weeklyHitEl,
       crosshairEl: weeklyCrosshairEl,
       tipEl: weeklyTipEl,
-      marketIsOpen: true,
+      marketIsOpen,
       chartType: "weekly",
     });
+
+    // yearly meta low/high
+    let yMin = null, yMax = null;
+    for (const r of yearlyRows) {
+      const v = Number(r?.close);
+      if (!Number.isFinite(v)) continue;
+      if (yMin == null || v < yMin) yMin = v;
+      if (yMax == null || v > yMax) yMax = v;
+    }
+    silver12mLowEl.textContent = fmtMoney(yMin);
+    silver12mHighEl.textContent = fmtMoney(yMax);
 
     renderBarChart({
       rows: yearlyRows,
@@ -1291,9 +1229,37 @@
       hitEl: yearlyHitEl,
       crosshairEl: yearlyCrosshairEl,
       tipEl: yearlyTipEl,
-      marketIsOpen: true,
+      marketIsOpen,
       chartType: "yearly",
     });
+  }
+
+  function updateUI(data) {
+    const metals = data?.metals || {};
+    const silver = metals.silver || {};
+    const updatedAt = data?.updatedAt || null;
+    const market = data?.market || null;
+
+    lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
+    headlinePriceEl.textContent = fmtMoney(silver.price);
+
+    silver24hHighEl.innerHTML = `24h high: <span class="hi">${fmtMoney(silver.high24h)}</span>`;
+    silver24hLowEl.innerHTML  = `24h low: <span class="lo">${fmtMoney(silver.low24h)}</span>`;
+
+    const marketIsOpen = !(market && market.isOpen === false);
+
+    if (!marketIsOpen) {
+      setHeadlinePriceColor("same", false);
+      setMarketClosedPill(market);
+      renderMetalsTable(metals);
+      renderChartsFromData(data);
+      return;
+    }
+
+    setHeadlinePriceColor(silver.direction || "same", true);
+    setTrendPill(silver.direction || "same");
+    renderMetalsTable(metals);
+    renderChartsFromData(data);
   }
 
   function applyForcedModeIfAny() {
@@ -1308,10 +1274,10 @@
       { date: "2025-12-29", close: 76.0 },
       { date: "2025-12-30", close: 75.4 },
       { date: "2025-12-31", close: 72.27 },
+      { date: "2026-01-01", close: 73.10 },
     ];
 
     const fakeYearly = [
-      { ym: "2025-01", month: "Jan", close: 31.73 },
       { ym: "2025-02", month: "Feb", close: 33.10 },
       { ym: "2025-03", month: "Mar", close: 34.50 },
       { ym: "2025-04", month: "Apr", close: 33.90 },
@@ -1323,6 +1289,7 @@
       { ym: "2025-10", month: "Oct", close: 55.10 },
       { ym: "2025-11", month: "Nov", close: 58.30 },
       { ym: "2025-12", month: "Dec", close: 83.96 },
+      { ym: "2026-01", month: "Jan", close: 79.20 },
     ];
 
     const fake = {
@@ -1359,6 +1326,7 @@
       fake.market.closedType = "weekend";
     }
 
+    window.__LAST_DATA__ = fake;
     updateUI(fake);
     return true;
   }
@@ -1369,6 +1337,8 @@
       const res = await fetch(BACKEND_URL + "?t=" + Date.now(), { cache: "no-store" });
       if (!res.ok) throw new Error("Backend HTTP error " + res.status);
       const data = await res.json();
+
+      window.__LAST_DATA__ = data;
       updateUI(data);
     } catch (err) {
       console.error(err);
@@ -1394,11 +1364,13 @@
     }
   }
 
-  // ✅ Fix “scroll refresh” bug: no window.resize refresh; only breakpoint/orientation
+  // ✅ Fix “scroll refresh” bug properly:
+  // - no window.resize rerender
+  // - only breakpoint changes + orientation changes rerender CHARTS ONLY
   let _lastIsMobile = isMobileNow();
 
   function rerenderChartsOnly() {
-    if (window.__LAST_DATA__) updateUI(window.__LAST_DATA__);
+    if (window.__LAST_DATA__) renderChartsFromData(window.__LAST_DATA__);
   }
 
   const mq = window.matchMedia("(max-width: 600px)");
@@ -1418,13 +1390,6 @@
 
   (async () => {
     await loadImageLists();
-
-    const originalUpdateUI = updateUI;
-    updateUI = function(data){
-      window.__LAST_DATA__ = data;
-      return originalUpdateUI(data);
-    };
-
     if (!applyForcedModeIfAny()) {
       refreshAllOnce();
     }
