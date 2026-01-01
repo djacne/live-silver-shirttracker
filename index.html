@@ -514,6 +514,36 @@
     .change.up { color: var(--accent-up); }
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
+
+    /* =========================
+   HERO spacing cleanup
+   (paste near end of <style>)
+   ========================= */
+
+/* Keep price + delta tight as a single unit */
+.headline-price { margin-bottom: 4px; }
+
+/* The $ change (%), give it a little air before the quirk pill */
+.since-update { margin-top: 4px; margin-bottom: 14px; }
+
+/* The quirky pill gets breathing room above + below */
+.trend-row { margin: 18px 0; }
+
+/* Separate the 24h high/low block from the quirk pill, but keep high/low tight */
+.hero-substack { margin-top: 10px; gap: 6px; }
+
+/* Make those lines easier to read and feel less “crammed” */
+.hero-subline { line-height: 1.35; }
+
+/* Slightly calmer tone for the 24h lines (more professional) */
+.hero-subline { color: rgba(148,163,184,0.88); }
+
+/* Keep the colored hi/lo strong */
+.hero-subline .hi,
+.hero-subline .lo { color: inherit; }
+.hero-subline .hi { color: var(--hi) !important; font-weight: 700; }
+.hero-subline .lo { color: var(--lo) !important; font-weight: 700; }
+
   </style>
 </head>
 
