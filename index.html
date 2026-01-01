@@ -32,6 +32,8 @@
 
       --hi: #22c55e;
       --lo: #ef4444;
+
+      --flat: rgba(148,163,184,0.95);
     }
 
     * { box-sizing: border-box; }
@@ -300,20 +302,6 @@
       text-align: center;
     }
 
-    .hero-topline {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--text-muted);
-    }
-
-    .hero-main {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: center;
-    }
-
     .headline-price {
       font-size: clamp(2.2rem, 3.8vw, 2.8rem);
       font-weight: 700;
@@ -328,6 +316,30 @@
       color: var(--text-muted);
       font-weight: 500;
     }
+
+    /* NEW: since-last-update line under price */
+    .since-update {
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+    }
+    .since-update .label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+    }
+    .since-update .value {
+      font-feature-settings: "tnum" 1, "lnum" 1;
+    }
+    .since-update .value.up { color: var(--accent-up); }
+    .since-update .value.down { color: var(--accent-down); }
+    .since-update .value.flat { color: var(--flat); }
 
     .hero-subline {
       font-size: 0.9rem;
@@ -469,6 +481,7 @@
     .chart-meta .lo { color: var(--lo); }
 
     .table-card { margin-top: 18px; }
+
     table { width: 100%; border-collapse: collapse; }
     thead { border-bottom: 1px solid rgba(148, 163, 184, 0.4); }
 
@@ -486,11 +499,18 @@
       text-transform: uppercase;
     }
 
-    .metal-name { font-weight: 700; }
-    .price-cell { text-align: right; font-feature-settings: "tnum" 1, "lnum" 1; font-weight: 700; }
+    /* ✅ Make the table feel less “bold everywhere” */
+    td { font-weight: 500; color: rgba(226,232,240,0.92); }
+    .metal-name { font-weight: 600; }
+    .price-cell { text-align: right; font-feature-settings: "tnum" 1, "lnum" 1; font-weight: 600; }
     .change-cell { text-align: right; }
 
-    .change { font-feature-settings: "tnum" 1, "lnum" 1; font-size: 0.9rem; font-weight: 800; }
+    .change {
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-size: 0.9rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
     .change.up { color: var(--accent-up); }
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
@@ -565,7 +585,8 @@
       </section>
 
       <section class="card hero-info">
-        <div class="hero-topline">Silver spot price</div>
+        <!-- ✅ Make this title match the other section titles -->
+        <div class="section-title" style="margin-bottom:6px;">Silver spot price</div>
 
         <div class="hero-main">
           <div class="headline-price">
@@ -573,7 +594,13 @@
             <span class="small">/ troy ounce</span>
           </div>
 
-          <div class="trend-row">
+          <!-- ✅ NEW: since last update $ + % -->
+          <div class="since-update" aria-label="Silver change since last update">
+            <span class="label">Since last update</span>
+            <span id="since-update-value" class="value flat">—</span>
+          </div>
+
+          <div class="trend-row" style="margin-top:2px;">
             <div id="trend-pill" class="trend-pill neutral">
               <span class="trend-arrow">↔</span>
               <span id="trend-text">Loading…</span>
@@ -648,7 +675,8 @@
           <tr>
             <th>Metal</th>
             <th style="text-align:right;">Price (USD/toz)</th>
-            <th style="text-align:right;">Trend</th>
+            <!-- ✅ Rename + make it explicitly 24h -->
+            <th style="text-align:right;">24h Trend</th>
           </tr>
         </thead>
         <tbody id="metals-tbody"></tbody>
@@ -666,6 +694,8 @@
   const trendTextEl = document.getElementById("trend-text");
   const lastUpdatedEl = document.getElementById("last-updated");
   const metalsTbodyEl = document.getElementById("metals-tbody");
+
+  const sinceUpdateEl = document.getElementById("since-update-value");
 
   const silver24hHighEl = document.getElementById("silver-24h-high");
   const silver24hLowEl  = document.getElementById("silver-24h-low");
@@ -700,8 +730,31 @@
   let _currentDirection = null;
   let _currentImageSrc = null;
 
-  // ✅ Store last data without monkey-patching updateUI
   window.__LAST_DATA__ = null;
+
+  // === Local “since last update” tracking (client-side) ===
+  // This uses the previously seen price from localStorage, so it always reflects the last refresh interval.
+  const LS_SILVER_LAST = "silver_last_seen_v1";
+  function readLastSeen() {
+    try {
+      const raw = localStorage.getItem(LS_SILVER_LAST);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj) return null;
+      const price = Number(obj.price);
+      const at = Number(obj.at);
+      if (!Number.isFinite(price) || price <= 0) return null;
+      if (!Number.isFinite(at) || at <= 0) return null;
+      return { price, at };
+    } catch {
+      return null;
+    }
+  }
+  function writeLastSeen(price) {
+    try {
+      localStorage.setItem(LS_SILVER_LAST, JSON.stringify({ price: Number(price), at: Date.now() }));
+    } catch {}
+  }
 
   function isMobileNow() {
     return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
@@ -750,18 +803,25 @@
     return `$${n.toFixed(2)}`;
   }
 
+  function fmtSignedMoney(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "—";
+    const sign = n > 0 ? "+" : (n < 0 ? "−" : "");
+    return `${sign}$${Math.abs(n).toFixed(2)}`;
+  }
+
+  function fmtPct(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "—";
+    const sign = n > 0 ? "+" : (n < 0 ? "−" : "");
+    return `${sign}${Math.abs(n).toFixed(2)}%`;
+  }
+
   function fmtUpdatedAt(updatedAt) {
     if (!updatedAt) return "—";
     const dt = new Date(updatedAt);
     if (Number.isNaN(dt.getTime())) return "—";
     return dt.toLocaleString();
-  }
-
-  function fmtChange(v) {
-    if (v == null) return "—";
-    const n = Number(v);
-    if (!Number.isFinite(n)) return "—";
-    return Math.abs(n).toFixed(2);
   }
 
   function setMarketClosedPill(market) {
@@ -833,59 +893,6 @@
     characterImgEl.src = _currentImageSrc;
   }
 
-  function renderMetalsTable(metals) {
-    metalsTbodyEl.innerHTML = "";
-
-    function dirSymbol(d) {
-      if (d === "up") return "▲";
-      if (d === "down") return "▼";
-      return "↔";
-    }
-
-    function dirClass(d) {
-      if (d === "up") return "up";
-      if (d === "down") return "down";
-      return "neutral";
-    }
-
-    function addRow(key, label) {
-      const m = metals?.[key] || null;
-
-      const tr = document.createElement("tr");
-
-      const tdName = document.createElement("td");
-      tdName.className = "metal-name";
-      tdName.textContent = label;
-
-      const tdPrice = document.createElement("td");
-      tdPrice.className = "price-cell";
-      tdPrice.textContent = fmtMoney(m?.price);
-
-      const tdTrend = document.createElement("td");
-      tdTrend.className = "change-cell";
-
-      const spanTrend = document.createElement("span");
-      const d = m?.direction || "same";
-      const changeText = fmtChange(m?.change);
-
-      spanTrend.className = "change " + dirClass(d);
-      spanTrend.textContent = `${dirSymbol(d)} ${changeText}`;
-
-      tdTrend.appendChild(spanTrend);
-
-      tr.appendChild(tdName);
-      tr.appendChild(tdPrice);
-      tr.appendChild(tdTrend);
-
-      metalsTbodyEl.appendChild(tr);
-    }
-
-    addRow("gold", "Gold");
-    addRow("silver", "Silver");
-    addRow("platinum", "Platinum");
-    addRow("palladium", "Palladium");
-  }
-
   function setHeadlinePriceColor(direction, marketIsOpen) {
     if (!marketIsOpen) {
       headlinePriceEl.style.color = "var(--text-main)";
@@ -894,6 +901,35 @@
     if (direction === "up") headlinePriceEl.style.color = "var(--accent-up)";
     else if (direction === "down") headlinePriceEl.style.color = "var(--accent-down)";
     else headlinePriceEl.style.color = "var(--text-main)";
+  }
+
+  // ✅ NEW: “since last update” formatter + color
+  function renderSinceLastUpdate(curPrice) {
+    const cur = Number(curPrice);
+    if (!Number.isFinite(cur) || cur <= 0) {
+      sinceUpdateEl.className = "value flat";
+      sinceUpdateEl.textContent = "—";
+      return;
+    }
+
+    const prev = readLastSeen();
+    if (!prev || !Number.isFinite(prev.price) || prev.price <= 0) {
+      sinceUpdateEl.className = "value flat";
+      sinceUpdateEl.textContent = "—";
+      writeLastSeen(cur);
+      return;
+    }
+
+    const delta = cur - prev.price;
+    const pct = (delta / prev.price) * 100;
+
+    const cls = delta > 0 ? "up" : (delta < 0 ? "down" : "flat");
+    sinceUpdateEl.className = "value " + cls;
+
+    const text = `${fmtSignedMoney(delta)} (${fmtPct(pct)})`;
+    sinceUpdateEl.textContent = text;
+
+    writeLastSeen(cur);
   }
 
   function fmtMMDD(yyyy_mm_dd) {
@@ -951,7 +987,7 @@
     tipEl.innerHTML = "";
   }
 
-  // ✅ SINGLE chart renderer (y labels outside ALWAYS; “100” can’t clip; bars fill box on mobile)
+  // y labels outside ALWAYS; “100” can’t clip; bars fill box on mobile
   function renderBarChart({
     rows,
     getXLabel,
@@ -968,7 +1004,7 @@
     crosshairEl,
     tipEl,
     marketIsOpen,
-    chartType = "weekly", // weekly | yearly
+    chartType = "weekly",
   }) {
     clearBarChart(gridEl, barsEl, xLabelsEl, yLabelsEl, borderEl, tipEl);
 
@@ -1004,7 +1040,6 @@
     const yMin = min - padBot;
     const yMax = max + padTop;
 
-    // ✅ y-label gutter (right) so labels are always OUTSIDE the plot and never clipped
     const padL = mobile ? 22 : 26;
     const padR = mobile ? 120 : 140;
     const padT = mobile ? 12 : 16;
@@ -1175,7 +1210,6 @@
     hideTip();
   }
 
-  // ✅ Charts-only renderer (used on breakpoint/orientation change)
   function renderChartsFromData(data) {
     const market = data?.market || null;
     const marketIsOpen = !(market && market.isOpen === false);
@@ -1183,7 +1217,6 @@
     const weeklyRows = data?.weekly?.silver || [];
     const yearlyRows = data?.yearly?.silver12m || [];
 
-    // weekly min/max
     renderBarChart({
       rows: weeklyRows,
       getXLabel: (r) => r?.date,
@@ -1203,7 +1236,6 @@
       chartType: "weekly",
     });
 
-    // yearly meta low/high
     let yMin = null, yMax = null;
     for (const r of yearlyRows) {
       const v = Number(r?.close);
@@ -1234,6 +1266,79 @@
     });
   }
 
+  // ✅ 24h trend in table: show $ change + percent
+  function renderMetalsTable(metals) {
+    metalsTbodyEl.innerHTML = "";
+
+    function dirSymbol(d) {
+      if (d === "up") return "▲";
+      if (d === "down") return "▼";
+      return "↔";
+    }
+
+    function dirClass(d) {
+      if (d === "up") return "up";
+      if (d === "down") return "down";
+      return "neutral";
+    }
+
+    function safeNumber(x) {
+      const n = Number(x);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function format24h(m) {
+      const price = safeNumber(m?.price);
+      const chg = safeNumber(m?.change);
+
+      if (price == null || chg == null) return "—";
+
+      // base estimate = yesterday price
+      const base = price - chg;
+      const pct = (base && Math.abs(base) > 0.000001) ? (chg / base) * 100 : null;
+
+      const dollar = fmtSignedMoney(chg);
+      const pctText = (pct == null || !Number.isFinite(pct)) ? "" : ` (${fmtPct(pct)})`;
+      return `${dollar}${pctText}`;
+    }
+
+    function addRow(key, label) {
+      const m = metals?.[key] || null;
+
+      const tr = document.createElement("tr");
+
+      const tdName = document.createElement("td");
+      tdName.className = "metal-name";
+      tdName.textContent = label;
+
+      const tdPrice = document.createElement("td");
+      tdPrice.className = "price-cell";
+      tdPrice.textContent = fmtMoney(m?.price);
+
+      const tdTrend = document.createElement("td");
+      tdTrend.className = "change-cell";
+
+      const spanTrend = document.createElement("span");
+      const d = m?.direction || "same";
+
+      spanTrend.className = "change " + dirClass(d);
+      spanTrend.textContent = `${dirSymbol(d)} ${format24h(m)}`;
+
+      tdTrend.appendChild(spanTrend);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdPrice);
+      tr.appendChild(tdTrend);
+
+      metalsTbodyEl.appendChild(tr);
+    }
+
+    addRow("gold", "Gold");
+    addRow("silver", "Silver");
+    addRow("platinum", "Platinum");
+    addRow("palladium", "Palladium");
+  }
+
   function updateUI(data) {
     const metals = data?.metals || {};
     const silver = metals.silver || {};
@@ -1242,6 +1347,9 @@
 
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
+
+    // ✅ Since-last-update (client-side)
+    renderSinceLastUpdate(silver.price);
 
     silver24hHighEl.innerHTML = `24h high: <span class="hi">${fmtMoney(silver.high24h)}</span>`;
     silver24hLowEl.innerHTML  = `24h low: <span class="lo">${fmtMoney(silver.low24h)}</span>`;
@@ -1349,6 +1457,9 @@
       headlinePriceEl.style.color = "var(--text-main)";
       characterImgEl.src = IMAGE_CLOSED;
 
+      sinceUpdateEl.className = "value flat";
+      sinceUpdateEl.textContent = "—";
+
       silver24hHighEl.innerHTML = "24h high: —";
       silver24hLowEl.innerHTML  = "24h low: —";
 
@@ -1364,9 +1475,7 @@
     }
   }
 
-  // ✅ Fix “scroll refresh” bug properly:
-  // - no window.resize rerender
-  // - only breakpoint changes + orientation changes rerender CHARTS ONLY
+  // Breakpoint/orientation changes rerender charts only
   let _lastIsMobile = isMobileNow();
 
   function rerenderChartsOnly() {
