@@ -1350,7 +1350,7 @@
     const hi = fmtMoney(silver.high24h);
     const lo = fmtMoney(silver.low24h);
     if (silver24hHLEl) {
-      silver24hHLEl.innerHTML = `24h: High <span class="hi">${hi}</span> • Low <span class="lo">${lo}</span>`;
+      silver24hHLEl.innerHTML =  `Last 24h: <span class="hi">${hi}</span> • <span class="lo">${lo}</span>`;
     }
 
     const marketIsOpen = !(market && market.isOpen === false);
