@@ -321,7 +321,7 @@
       align-items: center;
       justify-content: center;
       padding: 7px 12px;
-      border-radius: 999px;
+      border-radius: 12px;
       border: 1px solid var(--badge-border);
       background: var(--badge-bg);
       color: var(--badge-text);
@@ -329,6 +329,7 @@
       font-weight: 800;
       letter-spacing: 0.01em;
       font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
       white-space: nowrap;
       backdrop-filter: blur(8px);
     }
@@ -355,6 +356,7 @@
       justify-content: center;
       gap: 10px;
       font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
       margin-top: 2px;
     }
 
@@ -381,6 +383,7 @@
       font-weight: 700;
       letter-spacing: 0.01em;
       font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
     }
 
     .since-row {
@@ -388,11 +391,17 @@
       align-items: center;
       gap: 10px;
       white-space: nowrap;
+      font-size: 0.96rem;
+      font-weight: 700;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
     }
 
     .since-row .money,
     .since-row .pctcombo {
       font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      font-weight: 700;
       white-space: nowrap;
     }
 
@@ -404,10 +413,12 @@
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      font-size: 0.95rem;
+      font-size: 0.96rem;
       font-weight: 700;
       color: rgba(226,232,240,0.88);
       white-space: nowrap;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
     }
 
     .hl-row .label {
@@ -418,8 +429,8 @@
       font-size: 0.78rem;
     }
 
-    .hl-row .hi { color: var(--hi); font-weight: 800; }
-    .hl-row .lo { color: var(--lo); font-weight: 800; }
+    .hl-row .hi { color: var(--hi); font-weight: 700; }
+    .hl-row .lo { color: var(--lo); font-weight: 700; }
 
     .hero-divider {
       height: 1px;
@@ -470,6 +481,8 @@
       fill: rgba(170,180,195,0.98);
       font-size: 15px;
       font-weight: 600;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
     }
 
     .chart-wrap svg .gridline {
@@ -493,7 +506,8 @@
       .chart-wrap svg { height: 260px; }
       .chart-wrap svg text { font-size: 16.5px; }
       .quirk-badge { font-size: 0.92rem; padding: 8px 12px; }
-      .hl-row { font-size: 1.0rem; }
+      .hl-row { font-size: 0.96rem; }
+      .since-row { font-size: 0.96rem; }
     }
 
     .chart-meta {
@@ -504,6 +518,8 @@
       font-size: 0.9rem;
       color: var(--text-muted);
       font-weight: 600;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
     }
     .chart-meta .hi { color: var(--hi); }
     .chart-meta .lo { color: var(--lo); }
@@ -529,11 +545,12 @@
 
     td { font-weight: 500; color: rgba(226,232,240,0.92); }
     .metal-name { font-weight: 600; }
-    .price-cell { text-align: right; font-feature-settings: "tnum" 1, "lnum" 1; font-weight: 600; }
+    .price-cell { text-align: right; font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; font-weight: 600; }
     .change-cell { text-align: right; }
 
     .change {
       font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
       font-size: 0.9rem;
       font-weight: 700;
       white-space: nowrap;
