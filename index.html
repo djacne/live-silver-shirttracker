@@ -513,14 +513,11 @@
     @media (max-width: 600px) {
       .chart-wrap { padding: 10px; }
 
-      /* make charts feel "tall" on phones */
-      .chart-wrap svg { height: 380px; }
+      /* IMPORTANT: visual height + JS viewBox height now match (see JS) */
+      .chart-wrap svg { height: 330px; }
 
-      /* axis/tooltip text bigger */
-      .chart-wrap svg text { font-size: 19px; }
-
-      /* keep current price tag readable */
-      .chart-wrap svg .price-tag-text { font-size: 19px; }
+      .chart-wrap svg text { font-size: 18px; }
+      .chart-wrap svg .price-tag-text { font-size: 18px; }
 
       .quirk-badge { font-size: 0.92rem; padding: 8px 12px; }
       .hl-row { font-size: 0.96rem; }
@@ -866,6 +863,15 @@
       return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
     }
 
+    // IMPORTANT: one source of truth for chart render height (matches CSS mobile 330px)
+    function chartH(mobile) { return mobile ? 330 : 290; }
+
+    function syncSvgHeight(svgEl, H) {
+      // Make the SVG's *drawing space* match the visual height.
+      // This is what fixes "tall tile but smooshed chart".
+      svgEl.setAttribute("viewBox", `0 0 1000 ${H}`);
+    }
+
     function pickRandom(arr) {
       if (!arr || arr.length === 0) return null;
       return arr[Math.floor(Math.random() * arr.length)];
@@ -932,7 +938,7 @@
 
       if (isMaintenance) {
         bodyEl.classList.add("market-maintenance");
-        trendTextEl.textContent = "Daily break — resumes at 5pm CT";
+        trendTextEl.textContent = "Daily break — Resumes at 5pm CT";
       } else {
         bodyEl.classList.add("market-weekend");
         trendTextEl.textContent = "Market opens Sunday 5pm CT";
@@ -1070,8 +1076,6 @@
     // Mobile-only: reclaim vertical plot area + keep desktop identical
     function getChartPads(mobile) {
       if (mobile) {
-        // reduced padB because we show fewer x labels; reduced padT to "grow" plot;
-        // padR sized for bigger y-axis labels.
         return { padL: 12, padR: 56, padT: 6, padB: 18 };
       }
       return { padL: 20, padR: 52, padT: 10, padB: 34 };
@@ -1124,8 +1128,16 @@
       silver7dHighEl.textContent = fmtMoney(max);
 
       const W = 1000;
-      const H = 290;
       const mobile = isMobileNow();
+      const H = chartH(mobile);
+
+      // CRITICAL FIX: update the SVG drawing space to match mobile height
+      const weeklySvg = weeklyHitEl.ownerSVGElement;
+      syncSvgHeight(weeklySvg, H);
+
+      // and keep interactive layers aligned with the new height
+      weeklyCrosshairEl.setAttribute("y2", String(H));
+      weeklyHitEl.setAttribute("height", String(H));
 
       const { padL, padR, padT, padB } = getChartPads(mobile);
 
@@ -1234,7 +1246,6 @@
       firstLbl.textContent = fmtMMDD(pts[0].xLabel);
       weeklyXLabelsEl.appendChild(firstLbl);
 
-      // MOBILE: fewer x labels so they can be BIG
       const midEvery = mobile ? 3 : 1;
       for (let i = 1; i < n - 1; i++) {
         if (i % midEvery !== 0) continue;
@@ -1365,8 +1376,14 @@
       silver12mHighEl.textContent = fmtMoney(max);
 
       const W = 1000;
-      const H = 290;
       const mobile = isMobileNow();
+      const H = chartH(mobile);
+
+      const yearlySvg = yearlyHitEl.ownerSVGElement;
+      syncSvgHeight(yearlySvg, H);
+
+      yearlyCrosshairEl.setAttribute("y2", String(H));
+      yearlyHitEl.setAttribute("height", String(H));
 
       const { padL, padR, padT, padB } = getChartPads(mobile);
 
@@ -1485,7 +1502,6 @@
       yearlyAreaEl.setAttribute("d", dArea);
       yearlyAreaEl.setAttribute("fill", `url(#${gid})`);
 
-      // MOBILE: at most ~6 month labels
       const showEvery = mobile ? 2 : 1;
       for (let i = 0; i < n; i++) {
         if (i !== 0 && i !== n - 1 && (i % showEvery !== 0)) continue;
