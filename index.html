@@ -295,6 +295,13 @@
       display: block;
     }
 
+    .hero-right {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: stretch;
+    }
+
     .hero-info {
       display: flex;
       flex-direction: column;
@@ -303,15 +310,14 @@
       align-items: stretch;
       text-align: center;
     }
-    @media (min-width: 801px) {
-      .hero-center {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 12px;
-      }
+
+    .hero-center {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
     }
+
     .hero-stack {
       display: flex;
       flex-direction: column;
@@ -369,14 +375,14 @@
       gap: 10px;
       white-space: nowrap;
       font-size: 0.96rem;
-      font-weight: 700;
+      font-weight: 800;
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
     }
     .since-row .money, .since-row .pctcombo {
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
-      font-weight: 700;
+      font-weight: 800;
       white-space: nowrap;
     }
     .since-row.up { color: var(--accent-up); }
@@ -391,16 +397,6 @@
     }
     .hero-divider.soft { opacity: 0.35; margin: 4px 0; }
 
-    .hero-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      align-items: center;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-    .last-updated { font-size: 0.85rem; color: var(--text-muted); text-align: center; }
-
     .section-title {
       font-size: 0.92rem;
       text-transform: uppercase;
@@ -410,18 +406,18 @@
       text-align: center;
     }
 
-    /* === NEW: Silver Summary (locked, no jitter) === */
+    /* === LOCKED: Silver Summary tile (separate card) === */
     .summary-wrap {
       width: 100%;
       max-width: 520px;
-      margin: 6px auto 0;
+      margin: 4px auto 0;
       text-align: left;
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
     }
     .summary-head {
       display: grid;
-      grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.35fr);
+      grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
       gap: 10px;
       padding: 6px 0 8px;
       color: rgba(148,163,184,0.90);
@@ -433,14 +429,12 @@
     }
     .summary-grid {
       display: grid;
-      grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.35fr);
+      grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
       gap: 10px;
       border-top: 1px solid rgba(148,163,184,0.22);
       border-bottom: 1px solid rgba(148,163,184,0.22);
     }
-    .summary-row {
-      display: contents; /* keeps strict columns */
-    }
+    .summary-row { display: contents; }
     .summary-cell {
       padding: 10px 0;
       white-space: nowrap;
@@ -448,7 +442,7 @@
       text-overflow: ellipsis;
     }
     .summary-row + .summary-row .summary-cell {
-      border-top: 1px solid rgba(148,163,184,0.12); /* hairline separators */
+      border-top: 1px solid rgba(148,163,184,0.12);
     }
     .summary-label {
       color: rgba(226,232,240,0.90);
@@ -462,28 +456,13 @@
     }
     .summary-num.hi { color: var(--hi); }
     .summary-num.lo { color: var(--lo); }
-    .summary-range {
-      text-align: right;
-      font-weight: 800;
-      color: rgba(248,250,252,0.96);
-    }
-    .summary-range .pct {
-      margin-left: 6px;
-      font-weight: 800;
-      color: rgba(148,163,184,0.92); /* percent muted */
-    }
-    .summary-foot {
-      margin-top: 8px;
-      text-align: center;
-      font-size: 0.82rem;
-      color: rgba(148,163,184,0.92);
-      line-height: 1.25;
-    }
-    .summary-foot strong {
-      color: rgba(226,232,240,0.92);
-      font-weight: 800;
-      letter-spacing: 0.01em;
-    }
+
+    /* Range is percent-only, styled like +/- */
+    .summary-range { text-align: right; font-weight: 900; }
+    .range-pct { font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; }
+    .range-pct.up { color: var(--accent-up); }
+    .range-pct.down { color: var(--accent-down); }
+    .range-pct.flat { color: rgba(226,232,240,0.88); }
 
     .chart-wrap {
       width: 100%;
@@ -572,10 +551,9 @@
       .quirk-badge { font-size: 0.92rem; padding: 8px 12px; }
       .since-row { font-size: 0.96rem; }
 
-      /* NEW: Summary sizing tweaks */
       .summary-wrap { max-width: 100%; }
       .summary-head, .summary-grid {
-        grid-template-columns: 66px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
+        grid-template-columns: 66px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
         gap: 8px;
       }
       .summary-head { font-size: 0.72rem; }
@@ -588,7 +566,6 @@
       .headline-row { margin-top: 0px; }
       .since-row { margin-top: -2px; }
       .hero-divider:not(.soft) { margin: 6px 0; }
-      .hero-meta { padding-top: 4px; gap: 4px; margin-top: 0; }
     }
 
     .chart-meta { display:none; }
@@ -648,6 +625,18 @@
       .metal-trend .mt-money{ font-size: 0.92rem; }
       .metal-trend .mt-pct{ font-size: 0.86rem; opacity: 0.95; }
     }
+
+    /* LOCKED: global footer */
+    .page-footer {
+      margin: 16px 0 8px;
+      text-align: center;
+      color: rgba(148,163,184,0.92);
+      font-size: 0.86rem;
+      line-height: 1.35;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+    }
+    .page-footer .muted { color: rgba(148,163,184,0.88); }
   </style>
 </head>
 
@@ -718,36 +707,36 @@
         </div>
       </section>
 
-      <section class="card hero-info">
-        <div class="section-title" style="margin-bottom:6px;">Silver spot price</div>
+      <!-- LOCKED: right column is now two equal-style tiles -->
+      <div class="hero-right">
+        <!-- Tile 1: Spot price (ends after quirk) -->
+        <section class="card hero-info" aria-label="Silver spot price">
+          <div class="section-title" style="margin-bottom:6px;">Silver spot price</div>
 
-        <div class="hero-center">
-          <div class="hero-stack">
-            <div id="trend-pill" class="quirk-badge flat"><span id="trend-text">Loading…</span></div>
+          <div class="hero-center">
+            <div class="hero-stack">
+              <div class="headline-row" aria-label="Silver spot price">
+                <span id="headline-price" class="headline-price">—</span>
+                <span class="headline-unit">/ troy ounce</span>
+              </div>
 
-            <div class="hero-divider soft"></div>
+              <div id="since-row" class="since-row flat" aria-label="Silver change since last update">
+                <span id="since-update-money" class="money">—</span>
+                <span id="since-update-pctcombo" class="pctcombo">—</span>
+              </div>
 
-            <div class="headline-row" aria-label="Silver spot price">
-              <span id="headline-price" class="headline-price">—</span>
-              <span class="headline-unit">/ troy ounce</span>
-            </div>
+              <div class="hero-divider soft"></div>
 
-            <div id="since-row" class="since-row flat" aria-label="Silver change since last update">
-              <span id="since-update-money" class="money">—</span>
-              <span id="since-update-pctcombo" class="pctcombo">—</span>
-            </div>
-          </div>
-
-          <div class="hero-divider"></div>
-
-          <div class="hero-meta">
-            <div class="last-updated">
-              Last updated: <span id="last-updated">—</span>
+              <div id="trend-pill" class="quirk-badge flat"><span id="trend-text">Loading…</span></div>
             </div>
           </div>
+        </section>
 
-          <!-- NEW: Locked Silver Summary (no jitter) -->
-          <div class="summary-wrap" aria-label="Silver summary">
+        <!-- Tile 2: Summary -->
+        <section class="card" aria-label="Silver summary">
+          <div class="section-title" style="margin-bottom:6px;">Silver summary</div>
+
+          <div class="summary-wrap">
             <div class="summary-head" aria-hidden="true">
               <div></div>
               <div style="text-align:right;">High</div>
@@ -777,14 +766,10 @@
                 <div class="summary-cell summary-range" id="sum-12m-range" role="cell">—</div>
               </div>
             </div>
-
-            <div class="summary-foot" aria-hidden="true">
-              <strong>Range</strong> is High − Low <span style="opacity:.9;">(percent is vs Low)</span>
-            </div>
           </div>
-          <!-- /NEW -->
-        </div>
-      </section>
+        </section>
+      </div>
+      <!-- /LOCKED -->
     </div>
 
     <section class="card" style="margin-top:18px;">
@@ -848,6 +833,12 @@
         <tbody id="metals-tbody"></tbody>
       </table>
     </section>
+
+    <!-- LOCKED: bottom-of-page update info -->
+    <footer class="page-footer" aria-label="Update timing">
+      <div>Last updated: <span id="last-updated">—</span></div>
+      <div class="muted">Updates every 30 minutes during market hours</div>
+    </footer>
   </div>
 
   <script>
@@ -865,7 +856,6 @@
     const sinceMoneyEl = document.getElementById("since-update-money");
     const sincePctComboEl = document.getElementById("since-update-pctcombo");
 
-    // NEW: Summary elements
     const sumDayHiEl = document.getElementById("sum-day-hi");
     const sumDayLoEl = document.getElementById("sum-day-lo");
     const sumDayRangeEl = document.getElementById("sum-day-range");
@@ -1071,40 +1061,43 @@
       sincePctComboEl.textContent = `${arrow}${fmtPctUnsigned(pct)}`;
     }
 
-    // NEW: Summary helpers (no jitter)
     function safeFinite(x) {
       const n = Number(x);
       return Number.isFinite(n) ? n : null;
     }
     function setText(el, txt) { if (el) el.textContent = txt; }
-    function setRangeCell(el, hi, lo) {
-      if (!el) return;
-      if (!Number.isFinite(hi) || !Number.isFinite(lo) || hi < lo) {
-        el.textContent = "—";
-        return;
-      }
-      const range = hi - lo;
-      const pct = (lo !== 0) ? (range / lo) * 100 : null;
 
-      const money = `$${range.toFixed(2)}`;
-      const pctTxt = (pct == null || !Number.isFinite(pct)) ? "—" : `${pct.toFixed(2)}%`;
-
-      el.innerHTML = `${money}<span class="pct">(${pctTxt})</span>`;
-    }
     function computeMinMaxFromRows(rows) {
-      if (!Array.isArray(rows) || rows.length === 0) return { hi: null, lo: null };
+      if (!Array.isArray(rows) || rows.length === 0) return { hi: null, lo: null, first: null, last: null };
       let lo = Infinity, hi = -Infinity;
-      let any = false;
-      for (const r of rows) {
-        const v = safeFinite(r?.close);
+      let first = null, last = null;
+      for (let i = 0; i < rows.length; i++) {
+        const v = safeFinite(rows[i]?.close);
         if (v == null) continue;
-        any = true;
+        if (first == null) first = v;
+        last = v;
         if (v < lo) lo = v;
         if (v > hi) hi = v;
       }
-      if (!any) return { hi: null, lo: null };
-      return { hi, lo };
+      if (first == null || last == null) return { hi: null, lo: null, first: null, last: null };
+      return { hi, lo, first, last };
     }
+
+    function setRangePctCell(el, hi, lo, dir) {
+      if (!el) return;
+      if (!Number.isFinite(hi) || !Number.isFinite(lo) || hi < lo || lo === 0) {
+        el.textContent = "—";
+        return;
+      }
+      const pct = ((hi - lo) / lo) * 100;
+      if (!Number.isFinite(pct)) { el.textContent = "—"; return; }
+
+      const cls = (dir === "up") ? "up" : (dir === "down" ? "down" : "flat");
+      const arrow = (dir === "up") ? "↑" : (dir === "down" ? "↓" : "↔");
+
+      el.innerHTML = `<span class="range-pct ${cls}">${arrow}${pct.toFixed(2)}%</span>`;
+    }
+
     function renderSilverSummary(data) {
       const silver = data?.metals?.silver || {};
       const dayHi = safeFinite(silver?.high24h);
@@ -1116,17 +1109,23 @@
       const w = computeMinMaxFromRows(weeklyRows);
       const y = computeMinMaxFromRows(yearlyRows);
 
+      const dayChg = safeFinite(silver?.change);
+      const dayDir = (dayChg == null) ? "flat" : (dayChg > 0 ? "up" : (dayChg < 0 ? "down" : "flat"));
+
+      const weekDir = (w.first == null || w.last == null) ? "flat" : (w.last > w.first ? "up" : (w.last < w.first ? "down" : "flat"));
+      const yearDir = (y.first == null || y.last == null) ? "flat" : (y.last > y.first ? "up" : (y.last < y.first ? "down" : "flat"));
+
       setText(sumDayHiEl, dayHi == null ? "—" : fmtMoney(dayHi));
       setText(sumDayLoEl, dayLo == null ? "—" : fmtMoney(dayLo));
-      setRangeCell(sumDayRangeEl, dayHi, dayLo);
+      setRangePctCell(sumDayRangeEl, dayHi, dayLo, dayDir);
 
       setText(sumWeekHiEl, w.hi == null ? "—" : fmtMoney(w.hi));
       setText(sumWeekLoEl, w.lo == null ? "—" : fmtMoney(w.lo));
-      setRangeCell(sumWeekRangeEl, w.hi, w.lo);
+      setRangePctCell(sumWeekRangeEl, w.hi, w.lo, weekDir);
 
       setText(sum12mHiEl, y.hi == null ? "—" : fmtMoney(y.hi));
       setText(sum12mLoEl, y.lo == null ? "—" : fmtMoney(y.lo));
-      setRangeCell(sum12mRangeEl, y.hi, y.lo);
+      setRangePctCell(sum12mRangeEl, y.hi, y.lo, yearDir);
     }
 
     function fmtMMDD(yyyy_mm_dd) {
@@ -1181,7 +1180,6 @@
       return ticks;
     }
 
-    // OPTION A (locked) + mobile label spacing fix + yearly months removed on mobile
     function getChartPads(mobile, kind) {
       if (mobile) {
         if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
@@ -1868,8 +1866,6 @@
       headlinePriceEl.textContent = fmtMoney(silver.price);
 
       renderSinceLastUpdateFromAPI(silver);
-
-      // NEW: always refresh summary from current dataset
       renderSilverSummary(data);
 
       const marketIsOpen = !(market && market.isOpen === false);
@@ -1950,6 +1946,7 @@
         fake.market.closedType = null;
         fake.metals.silver.deltaSinceLast = 0;
         fake.metals.silver.pctSinceLast = 0;
+        fake.metals.silver.change = 0;
       }
 
       if (mode === "closed") {
@@ -1989,7 +1986,6 @@
         sinceMoneyEl.textContent = "—";
         sincePctComboEl.textContent = "—";
 
-        // NEW: clear summary on error
         setText(sumDayHiEl, "—"); setText(sumDayLoEl, "—"); setText(sumDayRangeEl, "—");
         setText(sumWeekHiEl, "—"); setText(sumWeekLoEl, "—"); setText(sumWeekRangeEl, "—");
         setText(sum12mHiEl, "—"); setText(sum12mLoEl, "—"); setText(sum12mRangeEl, "—");
