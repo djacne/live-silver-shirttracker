@@ -510,6 +510,15 @@
     .change.up { color: var(--accent-up); }
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
+
+    .hl-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      white-space: nowrap;
+    }
   </style>
 </head>
 
@@ -601,8 +610,7 @@
           </div>
 
           <div class="hero-substack">
-            <div class="hero-subline" id="silver-24h-high">24h high: —</div>
-            <div class="hero-subline" id="silver-24h-low">24h low: —</div>
+            <div class="hero-subline hl-row" id="silver-24h-hl">24h high: — &nbsp;&nbsp; 24h low: —</div>
           </div>
         </div>
 
@@ -690,8 +698,7 @@
   const sinceMoneyEl = document.getElementById("since-update-money");
   const sincePctComboEl = document.getElementById("since-update-pctcombo");
 
-  const silver24hHighEl = document.getElementById("silver-24h-high");
-  const silver24hLowEl  = document.getElementById("silver-24h-low");
+  const silver24hHLEl = document.getElementById("silver-24h-hl");
 
   const silver7dLowEl = document.getElementById("silver7d-low");
   const silver7dHighEl = document.getElementById("silver7d-high");
@@ -1340,8 +1347,9 @@
 
     renderSinceLastUpdate(silver.price);
 
-    silver24hHighEl.innerHTML = `24h high: <span class="hi">${fmtMoney(silver.high24h)}</span>`;
-    silver24hLowEl.innerHTML  = `24h low: <span class="lo">${fmtMoney(silver.low24h)}</span>`;
+    const hi = fmtMoney(silver.high24h);
+    const lo = fmtMoney(silver.low24h);
+    silver24hHLEl.innerHTML = `24h high: <span class="hi">${hi}</span> &nbsp;&nbsp; 24h low: <span class="lo">${lo}</span>`;
 
     const marketIsOpen = !(market && market.isOpen === false);
 
@@ -1448,8 +1456,7 @@
       sinceMoneyEl.textContent = "—";
       sincePctComboEl.textContent = "—";
 
-      silver24hHighEl.innerHTML = "24h high: —";
-      silver24hLowEl.innerHTML  = "24h low: —";
+      if (silver24hHLEl) silver24hHLEl.innerHTML = "24h high: — &nbsp;&nbsp; 24h low: —";
 
       weeklyGridEl.innerHTML = "";
       weeklyBarsEl.innerHTML = "";
