@@ -25,7 +25,6 @@
       --accent-up: #22c55e;
       --accent-down: #ef4444;
 
-      --accent-neutral: #e5e7eb;
       --text-main: #f9fafb;
       --text-muted: #9ca3af;
 
@@ -33,18 +32,17 @@
       --lo: #ef4444;
       --flat: rgba(148,163,184,0.95);
 
-      --pill-bg: rgba(148,163,184,0.08);
-      --pill-border: rgba(148,163,184,0.42);
-      --pill-text: rgba(226,232,240,0.92);
-      --pill-muted: rgba(148,163,184,0.86);
+      --badge-bg: rgba(148,163,184,0.10);
+      --badge-border: rgba(148,163,184,0.46);
+      --badge-text: rgba(226,232,240,0.94);
 
-      --pill-up-bg: rgba(34,197,94,0.10);
-      --pill-up-border: rgba(34,197,94,0.55);
-      --pill-up-text: rgba(187,247,208,0.98);
+      --badge-up-bg: rgba(34,197,94,0.12);
+      --badge-up-border: rgba(34,197,94,0.62);
+      --badge-up-text: rgba(187,247,208,0.98);
 
-      --pill-down-bg: rgba(239,68,68,0.10);
-      --pill-down-border: rgba(248,113,113,0.62);
-      --pill-down-text: rgba(254,202,202,0.98);
+      --badge-down-bg: rgba(239,68,68,0.12);
+      --badge-down-border: rgba(248,113,113,0.70);
+      --badge-down-text: rgba(254,202,202,0.98);
     }
 
     * { box-sizing: border-box; }
@@ -311,92 +309,117 @@
       text-align: center;
     }
 
-    .hero-main { display: flex; flex-direction: column; gap: 10px; }
+    .hero-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
 
-    .pill {
+    .quirk-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      padding: 7px 12px;
       border-radius: 999px;
-      border: 1px solid var(--pill-border);
-      background: var(--pill-bg);
-      color: var(--pill-text);
+      border: 1px solid var(--badge-border);
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 0.88rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
       font-feature-settings: "tnum" 1, "lnum" 1;
       white-space: nowrap;
       backdrop-filter: blur(8px);
     }
 
-    .pill.secondary,
-    .pill.tertiary {
-      height: 34px;
-      padding: 0 12px;
-      font-size: 0.88rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
+    .quirk-badge.up {
+      border-color: var(--badge-up-border);
+      background: var(--badge-up-bg);
+      color: var(--badge-up-text);
+    }
+    .quirk-badge.down {
+      border-color: var(--badge-down-border);
+      background: var(--badge-down-bg);
+      color: var(--badge-down-text);
+    }
+    .quirk-badge.flat {
+      border-color: rgba(148,163,184,0.46);
+      background: rgba(148,163,184,0.10);
+      color: rgba(226,232,240,0.94);
     }
 
-    .pill.tertiary {
-      border-color: rgba(148,163,184,0.36);
-      background: rgba(148,163,184,0.065);
-      color: rgba(226,232,240,0.90);
-    }
-
-    .pill.up {
-      border-color: var(--pill-up-border);
-      background: var(--pill-up-bg);
-      color: var(--pill-up-text);
-    }
-
-    .pill.down {
-      border-color: var(--pill-down-border);
-      background: var(--pill-down-bg);
-      color: var(--pill-down-text);
-    }
-
-    .pill.flat {
-      border-color: rgba(148,163,184,0.42);
-      background: rgba(148,163,184,0.075);
-      color: rgba(226,232,240,0.90);
-    }
-
-    .price-pill {
+    .headline-row {
       display: inline-flex;
       align-items: baseline;
       justify-content: center;
       gap: 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.50);
-      background: rgba(148,163,184,0.10);
-      padding: 10px 16px;
       font-feature-settings: "tnum" 1, "lnum" 1;
+      margin-top: 2px;
     }
 
-    .price-value {
-      font-size: clamp(2.05rem, 3.6vw, 2.65rem);
+    .headline-price {
+      font-size: clamp(2.25rem, 4.1vw, 2.95rem);
       font-weight: 800;
       letter-spacing: 0.01em;
       color: var(--text-main);
     }
 
-    .price-unit {
-      font-size: 0.92rem;
+    .headline-unit {
+      font-size: 0.95rem;
       font-weight: 700;
       color: rgba(148,163,184,0.92);
       letter-spacing: 0.01em;
     }
 
-    .hero-substack {
+    .meta-row {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-top: 2px;
+      gap: 6px;
       align-items: center;
+      font-size: 0.96rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      font-feature-settings: "tnum" 1, "lnum" 1;
     }
 
-    .pill .label { color: var(--pill-muted); font-weight: 800; letter-spacing: 0.02em; }
-    .pill .hi { color: var(--hi); font-weight: 800; }
-    .pill .lo { color: var(--lo); font-weight: 800; }
+    .since-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+
+    .since-row .money,
+    .since-row .pctcombo {
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      white-space: nowrap;
+    }
+
+    .since-row.up { color: var(--accent-up); }
+    .since-row.down { color: var(--accent-down); }
+    .since-row.flat { color: rgba(226,232,240,0.88); }
+
+    .hl-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: rgba(226,232,240,0.88);
+      white-space: nowrap;
+    }
+
+    .hl-row .label {
+      color: rgba(148,163,184,0.92);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    .hl-row .hi { color: var(--hi); font-weight: 800; }
+    .hl-row .lo { color: var(--lo); font-weight: 800; }
 
     .hero-divider {
       height: 1px;
@@ -469,10 +492,8 @@
       .chart-wrap { padding: 10px; }
       .chart-wrap svg { height: 260px; }
       .chart-wrap svg text { font-size: 16.5px; }
-      .pill.secondary,
-      .pill.tertiary { height: 36px; padding: 0 12px; font-size: 0.92rem; }
-      .price-pill { padding: 10px 14px; }
-      .price-unit { font-size: 0.95rem; }
+      .quirk-badge { font-size: 0.92rem; padding: 8px 12px; }
+      .hl-row { font-size: 1.0rem; }
     }
 
     .chart-meta {
@@ -593,34 +614,24 @@
       <section class="card hero-info">
         <div class="section-title" style="margin-bottom:6px;">Silver spot price</div>
 
-        <div class="hero-main">
-          <div class="hero-substack" style="margin-top:0;">
-            <span class="price-pill" aria-label="Silver spot price">
-              <span id="headline-price" class="price-value">—</span>
-              <span class="price-unit">/ troy ounce</span>
-            </span>
+        <div class="hero-stack">
+          <div id="trend-pill" class="quirk-badge flat"><span id="trend-text">Loading…</span></div>
+
+          <div class="headline-row" aria-label="Silver spot price">
+            <span id="headline-price" class="headline-price">—</span>
+            <span class="headline-unit">/ troy ounce</span>
           </div>
 
-          <div class="hero-substack" style="margin-top:0;">
-            <div id="since-pill" class="pill secondary flat" aria-label="Silver change since last update">
-              <span id="since-update-money">—</span>
-              <span id="since-update-pctcombo">—</span>
-            </div>
+          <div id="since-row" class="since-row flat" aria-label="Silver change since last update">
+            <span id="since-update-money" class="money">—</span>
+            <span id="since-update-pctcombo" class="pctcombo">—</span>
           </div>
 
-          <div class="hero-substack" style="margin-top:0;">
-            <div id="trend-pill" class="pill secondary flat">
-              <span id="trend-text">Loading…</span>
-            </div>
-          </div>
-
-          <div class="hero-substack" style="margin-top:0;">
-            <div id="silver-24h-hl" class="pill tertiary">
-              <span class="label">Last 24h:</span>
-              <span id="hl-hi" class="hi">—</span>
-              <span style="opacity:0.55;">•</span>
-              <span id="hl-lo" class="lo">—</span>
-            </div>
+          <div class="hl-row" aria-label="Silver 24h high and low">
+            <span class="label">Last 24h</span>
+            <span id="hl-hi" class="hi">—</span>
+            <span style="opacity:0.55;">•</span>
+            <span id="hl-lo" class="lo">—</span>
           </div>
         </div>
 
@@ -704,7 +715,7 @@
   const lastUpdatedEl = document.getElementById("last-updated");
   const metalsTbodyEl = document.getElementById("metals-tbody");
 
-  const sincePillEl = document.getElementById("since-pill");
+  const sinceRowEl = document.getElementById("since-row");
   const sinceMoneyEl = document.getElementById("since-update-money");
   const sincePctComboEl = document.getElementById("since-update-pctcombo");
 
@@ -828,7 +839,7 @@
   }
 
   function setMarketClosedPill(market) {
-    trendPillEl.className = "pill secondary flat";
+    trendPillEl.className = "quirk-badge flat";
     bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
     clearMarketClosedThemes();
 
@@ -855,7 +866,7 @@
     const shouldSwapImage = direction !== _currentDirection;
 
     if (direction === "up") {
-      trendPillEl.className = "pill secondary up";
+      trendPillEl.className = "quirk-badge up";
       trendTextEl.textContent = "Closer to retirement";
       setTrendMode("up");
 
@@ -868,7 +879,7 @@
     }
 
     if (direction === "down") {
-      trendPillEl.className = "pill secondary down";
+      trendPillEl.className = "quirk-badge down";
       trendTextEl.textContent = "Get back to work";
       setTrendMode("down");
 
@@ -880,7 +891,7 @@
       return;
     }
 
-    trendPillEl.className = "pill secondary flat";
+    trendPillEl.className = "quirk-badge flat";
     trendTextEl.textContent = "Flat as the earth";
     setTrendMode("neutral");
 
@@ -902,7 +913,7 @@
   function renderSinceLastUpdate(curPrice) {
     const cur = Number(curPrice);
     if (!Number.isFinite(cur) || cur <= 0) {
-      sincePillEl.className = "pill secondary flat";
+      sinceRowEl.className = "since-row flat";
       sinceMoneyEl.textContent = "—";
       sincePctComboEl.textContent = "—";
       return;
@@ -910,7 +921,7 @@
 
     const prev = readLastSeen();
     if (!prev || !Number.isFinite(prev.price) || prev.price <= 0) {
-      sincePillEl.className = "pill secondary flat";
+      sinceRowEl.className = "since-row flat";
       sinceMoneyEl.textContent = "—";
       sincePctComboEl.textContent = "—";
       writeLastSeen(cur);
@@ -925,7 +936,7 @@
     if (delta > 0) { cls = "up"; arrow = "↑"; }
     else if (delta < 0) { cls = "down"; arrow = "↓"; }
 
-    sincePillEl.className = "pill secondary " + cls;
+    sinceRowEl.className = "since-row " + cls;
     sinceMoneyEl.textContent = `${delta > 0 ? "+" : (delta < 0 ? "−" : "")}$${Math.abs(delta).toFixed(2)}`;
     sincePctComboEl.textContent = `${arrow}${fmtPctUnsigned(pct)}`;
 
@@ -1444,13 +1455,13 @@
       window.__LAST_DATA__ = data;
       updateUI(data);
     } catch {
-      trendPillEl.className = "pill secondary flat";
+      trendPillEl.className = "quirk-badge flat";
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
       headlinePriceEl.style.color = "var(--text-main)";
       characterImgEl.src = IMAGE_CLOSED;
 
-      sincePillEl.className = "pill secondary flat";
+      sinceRowEl.className = "since-row flat";
       sinceMoneyEl.textContent = "—";
       sincePctComboEl.textContent = "—";
 
