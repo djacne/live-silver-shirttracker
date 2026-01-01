@@ -316,37 +316,27 @@
       font-weight: 500;
     }
 
-.since-update {
-  font-size: 0.98rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 4px;
-  margin-bottom: 14px;
-  gap: 0; /* important: we control spacing per-piece */
-}
-
-/* keep a nice readable gap ONLY between money and arrow+percent */
-.since-update .money { margin-right: 10px; }
-
-/* arrow + percent should look like ↑0.90% (no space) */
-.since-update .arrow { margin-right: 0; }
-.since-update .pct { margin-left: 0; }
-
+    /* OPTION B: $delta + (arrow+percent stuck together) */
+    .since-update {
+      font-size: 0.98rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 4px;
+      margin-bottom: 14px;
+      gap: 10px;              /* only gap is between money and pctcombo */
+      white-space: nowrap;
+    }
 
     .since-update .money,
-    .since-update .pct {
+    .since-update .pctcombo {
       font-feature-settings: "tnum" 1, "lnum" 1;
       white-space: nowrap;
     }
 
-    .since-update .arrow {
-      font-size: 1.05rem;
-      line-height: 1;
-      opacity: 0.95;
-    }
+    .since-update .pctcombo { letter-spacing: 0; }
 
     .since-update.up { color: var(--accent-up); }
     .since-update.down { color: var(--accent-down); }
@@ -603,10 +593,10 @@
             <span class="small">/ troy ounce</span>
           </div>
 
+          <!-- OPTION B: pctcombo replaces arrow + pct -->
           <div id="since-update" class="since-update flat" aria-label="Silver change since last update">
             <span id="since-update-money" class="money">—</span>
-            <span id="since-update-arrow" class="arrow">—</span>
-            <span id="since-update-pct" class="pct">—</span>
+            <span id="since-update-pctcombo" class="pctcombo">—</span>
           </div>
 
           <div class="trend-row" style="margin-top:2px;">
@@ -704,8 +694,7 @@
 
   const sinceWrapEl = document.getElementById("since-update");
   const sinceMoneyEl = document.getElementById("since-update-money");
-  const sinceArrowEl = document.getElementById("since-update-arrow");
-  const sincePctEl = document.getElementById("since-update-pct");
+  const sincePctComboEl = document.getElementById("since-update-pctcombo");
 
   const silver24hHighEl = document.getElementById("silver-24h-high");
   const silver24hLowEl  = document.getElementById("silver-24h-low");
@@ -912,13 +901,13 @@
     else headlinePriceEl.style.color = "var(--text-main)";
   }
 
+  /* OPTION B: render arrow+percent stuck together as a single span */
   function renderSinceLastUpdate(curPrice) {
     const cur = Number(curPrice);
     if (!Number.isFinite(cur) || cur <= 0) {
       sinceWrapEl.className = "since-update flat";
       sinceMoneyEl.textContent = "—";
-      sinceArrowEl.textContent = "—";
-      sincePctEl.textContent = "—";
+      sincePctComboEl.textContent = "—";
       return;
     }
 
@@ -926,8 +915,7 @@
     if (!prev || !Number.isFinite(prev.price) || prev.price <= 0) {
       sinceWrapEl.className = "since-update flat";
       sinceMoneyEl.textContent = "—";
-      sinceArrowEl.textContent = "—";
-      sincePctEl.textContent = "—";
+      sincePctComboEl.textContent = "—";
       writeLastSeen(cur);
       return;
     }
@@ -935,15 +923,14 @@
     const delta = cur - prev.price;
     const pct = (delta / prev.price) * 100;
 
-let cls = "flat";
-let arrow = "↔";
-if (delta > 0) { cls = "up"; arrow = "↑"; }
-else if (delta < 0) { cls = "down"; arrow = "↓"; }
+    let cls = "flat";
+    let arrow = "↔";
+    if (delta > 0) { cls = "up"; arrow = "↑"; }
+    else if (delta < 0) { cls = "down"; arrow = "↓"; }
 
     sinceWrapEl.className = "since-update " + cls;
     sinceMoneyEl.textContent = fmtSignedMoney(delta);
-    sinceArrowEl.textContent = arrow;
-    sincePctEl.textContent = fmtPctUnsigned(pct);
+    sincePctComboEl.textContent = `${arrow}${fmtPctUnsigned(pct)}`; // <-- no space
 
     writeLastSeen(cur);
   }
@@ -1465,8 +1452,7 @@ else if (delta < 0) { cls = "down"; arrow = "↓"; }
 
       sinceWrapEl.className = "since-update flat";
       sinceMoneyEl.textContent = "—";
-      sinceArrowEl.textContent = "—";
-      sincePctEl.textContent = "—";
+      sincePctComboEl.textContent = "—";
 
       silver24hHighEl.innerHTML = "24h high: —";
       silver24hLowEl.innerHTML  = "24h low: —";
