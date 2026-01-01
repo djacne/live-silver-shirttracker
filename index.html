@@ -264,6 +264,8 @@
       object-position: center;
       display: block;
     }
+
+    /* ✅ CHANGED: keep title at top, allow remaining area to center on desktop */
     .hero-info {
       display: flex;
       flex-direction: column;
@@ -272,6 +274,18 @@
       align-items: stretch;
       text-align: center;
     }
+    .hero-center { }
+
+    @media (min-width: 801px) {
+      .hero-center {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 12px;
+      }
+    }
+
     .hero-stack {
       display: flex;
       flex-direction: column;
@@ -315,8 +329,8 @@
     }
     @media (max-width: 600px) {
       .headline-price {
-    font-size: clamp(2.05rem, 5.2vw, 2.45rem);
-  }
+        font-size: clamp(2.05rem, 5.2vw, 2.45rem);
+      }
     }
     .headline-unit {
       font-size: 0.95rem;
@@ -534,36 +548,39 @@
       <section class="card hero-info">
         <div class="section-title" style="margin-bottom:6px;">Silver spot price</div>
 
-        <div class="hero-stack">
-          <div id="trend-pill" class="quirk-badge flat"><span id="trend-text">Loading…</span></div>
+        <!-- ✅ CHANGED: wrap everything except title so it can center on desktop -->
+        <div class="hero-center">
+          <div class="hero-stack">
+            <div id="trend-pill" class="quirk-badge flat"><span id="trend-text">Loading…</span></div>
 
-          <div class="hero-divider soft"></div>
+            <div class="hero-divider soft"></div>
 
-          <div class="headline-row" aria-label="Silver spot price">
-            <span id="headline-price" class="headline-price">—</span>
-            <span class="headline-unit">/ troy ounce</span>
+            <div class="headline-row" aria-label="Silver spot price">
+              <span id="headline-price" class="headline-price">—</span>
+              <span class="headline-unit">/ troy ounce</span>
+            </div>
+
+            <div id="since-row" class="since-row flat" aria-label="Silver change since last update">
+              <span id="since-update-money" class="money">—</span>
+              <span id="since-update-pctcombo" class="pctcombo">—</span>
+            </div>
+
+            <div class="hero-divider soft"></div>
+
+            <div class="hl-row" aria-label="Silver 24h high and low">
+              <span class="label">Last 24h</span>
+              <span id="hl-hi" class="hi">—</span>
+              <span style="opacity:0.55;">•</span>
+              <span id="hl-lo" class="lo">—</span>
+            </div>
           </div>
 
-          <div id="since-row" class="since-row flat" aria-label="Silver change since last update">
-            <span id="since-update-money" class="money">—</span>
-            <span id="since-update-pctcombo" class="pctcombo">—</span>
-          </div>
+          <div class="hero-divider"></div>
 
-          <div class="hero-divider soft"></div>
-
-          <div class="hl-row" aria-label="Silver 24h high and low">
-            <span class="label">Last 24h</span>
-            <span id="hl-hi" class="hi">—</span>
-            <span style="opacity:0.55;">•</span>
-            <span id="hl-lo" class="lo">—</span>
-          </div>
-        </div>
-
-        <div class="hero-divider"></div>
-
-        <div class="hero-meta">
-          <div class="last-updated">
-            Last updated: <span id="last-updated">—</span>
+          <div class="hero-meta">
+            <div class="last-updated">
+              Last updated: <span id="last-updated">—</span>
+            </div>
           </div>
         </div>
       </section>
@@ -805,7 +822,7 @@
     return `${Math.abs(n).toFixed(2)}%`;
   }
 
-  // ✅ CHANGED: uses backend snapshot delta for SILVER ONLY
+  // ✅ uses backend snapshot delta for SILVER ONLY
   function renderSinceLastUpdateFromAPI(silver) {
     const delta = Number(silver?.deltaSinceLast);
     const pct = Number(silver?.pctSinceLast);
@@ -1300,7 +1317,6 @@
           low24h: 72.27,
           tickChange: -0.64,
           tickPct: -0.89,
-          // NEW (so forced mode still renders the since-row)
           deltaSinceLast: -0.64,
           pctSinceLast: -0.89
         },
