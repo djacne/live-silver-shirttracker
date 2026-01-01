@@ -515,9 +515,16 @@
     }
 
     @media (max-width: 600px) {
+      .hero-center {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
       .hero-stack { gap: 14px; }
+      .hero-divider { margin: 2px 0; }
       .hero-divider.soft { margin: 8px 0; }
-      .hero-meta { margin-top: 6px; }
+      .hero-meta { margin-top: 2px; }
+      .last-updated { margin-top: 2px; }
     }
 
     .chart-meta {
