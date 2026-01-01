@@ -475,6 +475,8 @@
       opacity: 0.9;
       pointer-events: none;
     }
+
+    /* (kept class for compatibility, but we no longer draw weekly refline at all) */
     .chart-wrap svg .refline {
       stroke: rgba(148,163,184,0.22);
       stroke-width: 1;
@@ -484,7 +486,7 @@
 
     /* Yearly Yahoo-ish line styling */
     .chart-wrap svg .yline { fill: none; stroke-width: 2.8; opacity: 0.98; }
-    .chart-wrap svg .yarea { opacity: 0.88; }
+    .chart-wrap svg .yarea { opacity: 0.90; }
 
     /* Current price (Yahoo-ish) */
     .chart-wrap svg .curline {
@@ -721,6 +723,7 @@
       <div class="chart-wrap">
         <svg id="silver7d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 7-day trend chart">
           <g id="silver7d-grid"></g>
+          <!-- kept element for compatibility; JS will ALWAYS leave it hidden -->
           <line id="silver7d-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
           <g id="silver7d-bars"></g>
           <line id="silver7d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
@@ -1051,8 +1054,8 @@
         // leave mobile tuning for later (per your plan)
         return { padL: 20, padR: 72, padT: 12, padB: 34 };
       }
-      // desktop: identical for both charts
-      return { padL: 22, padR: 58, padT: 14, padB: 40 };
+      // desktop: slightly tighter to "fill" the tile more (both charts identical)
+      return { padL: 20, padR: 52, padT: 10, padB: 34 };
     }
 
     function clearWeeklyChart() {
@@ -1062,6 +1065,8 @@
       weeklyYLabelsEl.innerHTML = "";
       weeklyBorderEl.setAttribute("d", "");
       weeklyTipEl.innerHTML = "";
+
+      // ALWAYS hide weekly refline (no dotted horizontal line on weekly)
       weeklyReflineEl.setAttribute("opacity", "0");
     }
 
@@ -1161,14 +1166,8 @@
 
       const yBase = y1;
 
-      // Weekly reference line: first day's close (subtle) — NO current-price overlay here
-      const ref = pts[0].value;
-      const refY = yFor(ref);
-      weeklyReflineEl.setAttribute("x1", x0);
-      weeklyReflineEl.setAttribute("x2", x1);
-      weeklyReflineEl.setAttribute("y1", refY);
-      weeklyReflineEl.setAttribute("y2", refY);
-      weeklyReflineEl.setAttribute("opacity", "1");
+      // IMPORTANT: no weekly horizontal dotted line at all
+      weeklyReflineEl.setAttribute("opacity", "0");
 
       const bars = [];
       for (let i = 0; i < n; i++) {
@@ -1330,7 +1329,7 @@
       hideTip();
     }
 
-    // YEARLY: line + shaded area + Yahoo-ish current price dotted line + tag INSIDE plot (never collides with y-axis)
+    // YEARLY: line + shaded area + current price dotted line + tag INSIDE plot (never collides with y-axis)
     function renderYearlyLine({ rows, marketIsOpen, currentPrice, currentDir }) {
       clearYearlyChart();
 
@@ -1405,16 +1404,17 @@
       const stepX = innerW / (n - 1);
       const xForIdx = (i) => padL + i * stepX;
 
-      // Yearly trend color: based on overall first->last (keeps the “yearly” meaning)
+      // Yearly trend color: based on overall first->last
       const upOverall = pts[n - 1].value >= pts[0].value;
 
       const lineColor = (!marketIsOpen)
         ? "rgba(148,163,184,0.85)"
         : (upOverall ? "rgba(34,197,94,0.95)" : "rgba(239,68,68,0.95)");
 
+      // Stronger fill so it "fills in" more visually
       const areaTop = (!marketIsOpen)
-        ? "rgba(148,163,184,0.18)"
-        : (upOverall ? "rgba(34,197,94,0.22)" : "rgba(239,68,68,0.22)");
+        ? "rgba(148,163,184,0.22)"
+        : (upOverall ? "rgba(34,197,94,0.28)" : "rgba(239,68,68,0.28)");
       const areaBot = "rgba(2,6,23,0.02)";
 
       const gid = "ygrad-" + (upOverall ? "up" : "down") + (marketIsOpen ? "" : "-closed");
@@ -1457,14 +1457,17 @@
 
       // --- current price overlay (Yahoo-ish) ---
       const cp = Number(currentPrice);
-      const hasCP = marketIsOpen && Number.isFinite(cp);
+      const hasCP = Number.isFinite(cp);
+
       if (hasCP) {
         const yCP = Math.max(y0 + 2, Math.min(y1 - 2, yFor(cp)));
 
-        // color reflects *current* direction (up/down/neutral), as requested
+        // color reflects *current* direction, muted if market closed
         let curColor = "rgba(148,163,184,0.92)";
         if (currentDir === "up") curColor = "rgba(34,197,94,0.95)";
         else if (currentDir === "down") curColor = "rgba(239,68,68,0.95)";
+
+        if (!marketIsOpen) curColor = "rgba(148,163,184,0.70)";
 
         yearlyCurLineEl.setAttribute("x1", x0);
         yearlyCurLineEl.setAttribute("x2", x1);
@@ -1489,18 +1492,16 @@
         g.appendChild(t);
         yearlyCurTagEl.appendChild(g);
 
-        // measure, then place
         const bb = g.getBBox();
         const padX = 10;
         const padY = 8;
         const boxW = bb.width + padX * 2;
-        const boxH = 26 + padY; // slightly fixed height for consistent “Yahoo” look
+        const boxH = 26 + padY;
 
         // keep it inside plot, inset from right edge so it never touches y-axis labels
         const insetRight = 10;
         const bx = Math.max(x0 + 6, (x1 - insetRight) - boxW);
 
-        // vertically align to the dotted line, clamp so it stays fully inside plot
         let by = yCP - (boxH / 2);
         by = Math.max(y0 + 6, Math.min(y1 - boxH - 6, by));
 
@@ -1514,7 +1515,6 @@
         r.setAttribute("ry", 10);
         r.setAttribute("stroke", curColor);
 
-        // move text into the box
         t.setAttribute("x", bx + padX);
         t.setAttribute("y", by + boxH / 2);
 
@@ -1613,7 +1613,10 @@
 
       const silver = data?.metals?.silver || {};
       const currentPrice = silver?.price;
-      const currentDir = silver?.direction || "same";
+
+      // normalize dir: API uses "same" sometimes
+      const d = (silver?.direction || "same");
+      const currentDir = (d === "same" ? "neutral" : d);
 
       renderWeeklyBars({ rows: weeklyRows, marketIsOpen });
       renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir });
