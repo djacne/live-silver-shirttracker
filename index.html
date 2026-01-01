@@ -507,7 +507,7 @@
 
     @media (max-width: 600px) {
       .chart-wrap { padding: 10px; }
-      .chart-wrap svg { height: 380px; } /* bigger + matches JS */
+      .chart-wrap svg { height: 380px; }
       .chart-wrap svg text { font-size: 18px; }
       .chart-wrap svg .price-tag-text { font-size: 18px; }
       .quirk-badge { font-size: 0.92rem; padding: 8px 12px; }
@@ -1174,6 +1174,7 @@
       const gap = mobile ? 2.0 : 2.8;
       const barW = Math.max(2, slotW - gap);
       const barX = (i) => x0 + i * slotW + (gap / 2);
+      const barCenter = (i) => barX(i) + (barW / 2);
 
       const yBase = y1;
       weeklyReflineEl.setAttribute("opacity", "0");
@@ -1219,19 +1220,19 @@
         bars.push(r);
       }
 
-      const yLabelY = y1 + (mobile ? 16 : 30);
+      const yLabelY = y1 + (mobile ? 12 : 30);
 
       const firstLbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      firstLbl.setAttribute("x", x0);
+      firstLbl.setAttribute("x", barCenter(0));
       firstLbl.setAttribute("y", yLabelY);
-      firstLbl.setAttribute("text-anchor", "start");
+      firstLbl.setAttribute("text-anchor", "middle");
       firstLbl.textContent = fmtMMDD(pts[0].xLabel);
       weeklyXLabelsEl.appendChild(firstLbl);
 
       const midEvery = mobile ? 3 : 1;
       for (let i = 1; i < n - 1; i++) {
         if (i % midEvery !== 0) continue;
-        const xMid = barX(i) + (barW / 2);
+        const xMid = barCenter(i);
         const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
         tx.setAttribute("x", xMid);
         tx.setAttribute("y", yLabelY);
@@ -1241,9 +1242,9 @@
       }
 
       const lastLbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      lastLbl.setAttribute("x", x1);
+      lastLbl.setAttribute("x", barCenter(n - 1));
       lastLbl.setAttribute("y", yLabelY);
-      lastLbl.setAttribute("text-anchor", "end");
+      lastLbl.setAttribute("text-anchor", "middle");
       lastLbl.textContent = fmtMMDD(pts[n - 1].xLabel);
       weeklyXLabelsEl.appendChild(lastLbl);
 
@@ -1263,7 +1264,7 @@
         if (bars[i]) bars[i].classList.add("hover");
 
         const v = pts[i].value;
-        const xCenter = barX(i) + (barW / 2);
+        const xCenter = barCenter(i);
 
         weeklyCrosshairEl.setAttribute("x1", xCenter);
         weeklyCrosshairEl.setAttribute("x2", xCenter);
@@ -1483,14 +1484,28 @@
       yearlyAreaEl.setAttribute("d", dArea);
       yearlyAreaEl.setAttribute("fill", `url(#${gid})`);
 
-      const showEvery = mobile ? 2 : 1;
+      const showEvery = mobile ? 3 : 1;
+      const labelY = y1 + (mobile ? 12 : 30);
+
       for (let i = 0; i < n; i++) {
+        if (mobile && i === n - 2) continue;
         if (i !== 0 && i !== n - 1 && (i % showEvery !== 0)) continue;
+
         const x = xForIdx(i);
         const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        tx.setAttribute("x", x);
-        tx.setAttribute("y", y1 + (mobile ? 16 : 30));
-        tx.setAttribute("text-anchor", "middle");
+
+        if (i === 0) {
+          tx.setAttribute("x", x0);
+          tx.setAttribute("text-anchor", "start");
+        } else if (i === n - 1) {
+          tx.setAttribute("x", x1);
+          tx.setAttribute("text-anchor", "end");
+        } else {
+          tx.setAttribute("x", x);
+          tx.setAttribute("text-anchor", "middle");
+        }
+
+        tx.setAttribute("y", labelY);
         tx.textContent = pts[i].month || monthNameFromYYYYMM(pts[i].xLabel);
         yearlyXLabelsEl.appendChild(tx);
       }
