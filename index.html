@@ -417,17 +417,19 @@
       font-variant-numeric: tabular-nums lining-nums;
     }
 
+    /* Match "Spot Metals" table header styling */
     .summary-head {
       display: grid;
       grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
       gap: 10px;
       padding: 6px 0 8px;
-      color: rgba(148,163,184,0.90);
+      color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.10em;
-      font-size: 0.72rem;
+      letter-spacing: 0.03em;
+      font-size: 0.85rem;
       font-weight: 600;
       white-space: nowrap;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
     }
 
     .summary-grid {
@@ -453,7 +455,7 @@
     }
 
     .summary-label {
-      color: rgba(226,232,240,0.90);
+      color: rgba(226,232,240,0.92);
       font-weight: 600;
       letter-spacing: 0.01em;
     }
@@ -461,12 +463,12 @@
     .summary-num {
       text-align: right;
       font-weight: 600;
-      color: rgba(248,250,252,0.96);
+      color: rgba(226,232,240,0.92);
     }
     .summary-num.hi { color: var(--hi); }
     .summary-num.lo { color: var(--lo); }
 
-    /* 🔒 Locked change: make "range" behave like metals table trend (money on line 1, arrow% on line 2) */
+    /* Range uses the same 2-line hierarchy as the metals 24h cell */
     .summary-range {
       display: inline-flex;
       flex-direction: column;
@@ -478,9 +480,11 @@
       color: rgba(226,232,240,0.86);
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
+      white-space: normal;
     }
-    .summary-range .sr-money { font-size: 0.92rem; }
-    .summary-range .sr-pct { font-size: 0.86rem; opacity: 0.95; }
+    .summary-range .mt-money { font-size: 0.92rem; }
+    .summary-range .mt-pct   { font-size: 0.86rem; opacity: 0.95; }
+
     .summary-range.up { color: var(--accent-up); }
     .summary-range.down { color: var(--accent-down); }
     .summary-range.neutral { color: rgba(226,232,240,0.88); }
@@ -573,9 +577,8 @@
       .since-row { font-size: 0.96rem; }
 
       .summary-wrap { max-width: 100%; }
-      .summary-head { grid-template-columns: 66px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+      .summary-head { grid-template-columns: 66px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; font-size: 0.80rem; }
       .summary-row  { grid-template-columns: 66px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
-      .summary-head { font-size: 0.72rem; }
       .summary-cell { padding: 11px 0; }
     }
 
@@ -613,7 +616,6 @@
     }
     .change-cell { text-align: right; }
 
-    /* 🔒 Locked change: desktop matches mobile — money line + arrow% line */
     .metal-trend{
       display: inline-flex;
       flex-direction: column;
@@ -728,7 +730,7 @@
 
       <div class="hero-right">
         <section class="card hero-info" aria-label="Silver spot price">
-          <div class="section-title" style="margin-bottom:6px;">Silver spot price</div>
+          <div class="section-title" style="margin-bottom:6px;">Silver Spot Price</div>
 
           <div class="hero-center">
             <div class="hero-stack">
@@ -749,8 +751,8 @@
           </div>
         </section>
 
-        <section class="card" aria-label="Silver summary">
-          <div class="section-title" style="margin-bottom:6px;">Silver summary</div>
+        <section class="card" aria-label="Price ranges">
+          <div class="section-title" style="margin-bottom:6px;">Price Ranges</div>
 
           <div class="summary-wrap">
             <div class="summary-head" aria-hidden="true">
@@ -795,7 +797,7 @@
     </div>
 
     <section class="card" style="margin-top:18px;">
-      <div class="section-title">Silver weekly trend</div>
+      <div class="section-title">7-Day Trend</div>
 
       <div class="chart-wrap">
         <svg id="silver7d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 7-day trend chart">
@@ -815,7 +817,7 @@
     </section>
 
     <section class="card" style="margin-top:18px;">
-      <div class="section-title">Silver yearly trend</div>
+      <div class="section-title">12-Month Trend</div>
 
       <div class="chart-wrap">
         <svg id="silver12m-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 12-month trend chart">
@@ -843,7 +845,7 @@
     </section>
 
     <section class="card table-card">
-      <div class="section-title">Metal spot prices</div>
+      <div class="section-title">Spot Metals</div>
       <table>
         <thead>
           <tr>
@@ -1125,7 +1127,6 @@
       return out.reverse();
     }
 
-    /* 🔒 Locked change: range cell shows $range on line 1, arrow% on line 2 */
     function setRangeMoneyAndPct(el, hi, lo, dirCls) {
       if (!el) return;
 
@@ -1146,8 +1147,8 @@
       const pctLine = (pct == null || !Number.isFinite(pct)) ? "—" : `${arrow}${pct.toFixed(2)}%`;
 
       el.innerHTML = `
-        <span class="sr-money">${moneyLine}</span>
-        <span class="sr-pct">${pctLine}</span>
+        <span class="mt-money">${moneyLine}</span>
+        <span class="mt-pct">${pctLine}</span>
       `;
     }
 
