@@ -383,27 +383,6 @@
     .since-row.down { color: var(--accent-down); }
     .since-row.flat { color: rgba(226,232,240,0.88); }
 
-    .hl-row {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.96rem;
-      font-weight: 700;
-      color: rgba(226,232,240,0.88);
-      white-space: nowrap;
-      font-feature-settings: "tnum" 1, "lnum" 1;
-      font-variant-numeric: tabular-nums lining-nums;
-    }
-    .hl-row .label {
-      color: rgba(148,163,184,0.92);
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      font-size: 0.78rem;
-    }
-    .hl-row .hi { color: var(--hi); font-weight: 700; }
-    .hl-row .lo { color: var(--lo); font-weight: 700; }
-
     .hero-divider {
       height: 1px;
       width: 100%;
@@ -438,6 +417,10 @@
       border: 1px solid rgba(148, 163, 184, 0.25);
       background: rgba(2, 6, 23, 0.25);
       padding: 10px;
+      display: flex;                 /* NEW: enable centering */
+      flex-direction: column;        /* NEW */
+      justify-content: center;       /* NEW: vertical centering */
+      align-items: stretch;          /* NEW */
     }
 
     .chart-wrap svg {
@@ -446,6 +429,7 @@
       display: block;
       touch-action: pan-y;
       user-select: none;
+      flex: 0 0 auto;                /* NEW: keep svg sized but centered within wrap */
     }
 
     .chart-wrap svg text {
@@ -511,7 +495,6 @@
       .chart-wrap svg text { font-size: 18px; }
       .chart-wrap svg .price-tag-text { font-size: 18px; }
       .quirk-badge { font-size: 0.92rem; padding: 8px 12px; }
-      .hl-row { font-size: 0.96rem; }
       .since-row { font-size: 0.96rem; }
     }
 
@@ -520,25 +503,12 @@
       .hero-divider.soft { margin: 6px 0; }
       .headline-row { margin-top: 0px; }
       .since-row { margin-top: -2px; }
-
-      .hl-row { margin-bottom: 6px; }
       .hero-divider:not(.soft) { margin: 6px 0; }
       .hero-meta { padding-top: 4px; gap: 4px; margin-top: 0; }
     }
 
-    .chart-meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      margin-top: 10px;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      font-weight: 600;
-      font-feature-settings: "tnum" 1, "lnum" 1;
-      font-variant-numeric: tabular-nums lining-nums;
-    }
-    .chart-meta .hi { color: var(--hi); }
-    .chart-meta .lo { color: var(--lo); }
+    /* REMOVED: chart-meta styling no longer needed (high/low removed) */
+    .chart-meta { display:none; }
 
     .table-card { margin-top: 18px; }
 
@@ -563,21 +533,6 @@
       font-weight: 600;
     }
     .change-cell { text-align: right; }
-
-    .change {
-      font-feature-settings: "tnum" 1, "lnum" 1;
-      font-variant-numeric: tabular-nums lining-nums;
-      font-size: 0.9rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .change.up { color: var(--accent-up); }
-    .change.down { color: var(--accent-down); }
-    .change.neutral { color: var(--text-muted); }
-
-    .change-cell { text-align: right; vertical-align: middle; }
-    .price-cell { text-align: right; }
-    .price-cell, .metal-trend { font-variant-numeric: tabular-nums; }
 
     .metal-trend{
       display: inline-flex;
@@ -699,14 +654,7 @@
               <span id="since-update-pctcombo" class="pctcombo">—</span>
             </div>
 
-            <div class="hero-divider soft"></div>
-
-            <div class="hl-row" aria-label="Silver 24h high and low">
-              <span class="label">Last 24h</span>
-              <span id="hl-hi" class="hi">—</span>
-              <span style="opacity:0.55;">•</span>
-              <span id="hl-lo" class="lo">—</span>
-            </div>
+            <!-- 24h High/Low REMOVED (global) -->
           </div>
 
           <div class="hero-divider"></div>
@@ -736,10 +684,8 @@
           <rect id="silver7d-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
         </svg>
 
-        <div class="chart-meta">
-          <div>Low: <span id="silver7d-low" class="lo">—</span></div>
-          <div>High: <span id="silver7d-high" class="hi">—</span></div>
-        </div>
+        <!-- Weekly tile High/Low REMOVED (global) -->
+        <div class="chart-meta" aria-hidden="true"></div>
       </div>
     </section>
 
@@ -767,10 +713,8 @@
           <rect id="silver12m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
         </svg>
 
-        <div class="chart-meta">
-          <div>Low: <span id="silver12m-low" class="lo">—</span></div>
-          <div>High: <span id="silver12m-high" class="hi">—</span></div>
-        </div>
+        <!-- Yearly tile High/Low REMOVED (global) -->
+        <div class="chart-meta" aria-hidden="true"></div>
       </div>
     </section>
 
@@ -804,11 +748,15 @@
     const sinceMoneyEl = document.getElementById("since-update-money");
     const sincePctComboEl = document.getElementById("since-update-pctcombo");
 
-    const silver24hHiEl = document.getElementById("hl-hi");
-    const silver24hLoEl = document.getElementById("hl-lo");
+    /* 24h high/low elements removed from DOM */
+    // const silver24hHiEl = document.getElementById("hl-hi");
+    // const silver24hLoEl = document.getElementById("hl-lo");
 
-    const silver7dLowEl = document.getElementById("silver7d-low");
-    const silver7dHighEl = document.getElementById("silver7d-high");
+    /* Weekly/Yearly high/low elements removed from DOM */
+    // const silver7dLowEl = document.getElementById("silver7d-low");
+    // const silver7dHighEl = document.getElementById("silver7d-high");
+    // const silver12mLowEl = document.getElementById("silver12m-low");
+    // const silver12mHighEl = document.getElementById("silver12m-high");
 
     const weeklyGridEl = document.getElementById("silver7d-grid");
     const weeklyBarsEl = document.getElementById("silver7d-bars");
@@ -819,9 +767,6 @@
     const weeklyHitEl = document.getElementById("silver7d-hit");
     const weeklyCrosshairEl = document.getElementById("silver7d-crosshair");
     const weeklyTipEl = document.getElementById("silver7d-tip");
-
-    const silver12mLowEl = document.getElementById("silver12m-low");
-    const silver12mHighEl = document.getElementById("silver12m-high");
 
     const yearlyDefsEl = document.getElementById("silver12m-defs");
     const yearlyGridEl = document.getElementById("silver12m-grid");
@@ -1060,11 +1005,14 @@
       return ticks;
     }
 
-    function getChartPads(mobile) {
+    // OPTION A (locked) + mobile label spacing fix + yearly months removed on mobile
+    function getChartPads(mobile, kind) {
       if (mobile) {
-        return { padL: 10, padR: 56, padT: 6, padB: 18 };
+        if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 }; // more bottom so dates sit off the border
+        if (kind === "yearly") return { padL: 10, padR: 56, padT: 8,  padB: 18 }; // months removed on mobile => smaller bottom
+        return { padL: 10, padR: 56, padT: 8,  padB: 34 };
       }
-      return { padL: 20, padR: 52, padT: 10, padB: 34 };
+      return { padL: 20, padR: 52, padT: 12, padB: 36 };
     }
 
     function clearWeeklyChart() {
@@ -1094,9 +1042,6 @@
 
     function renderWeeklyBars({ rows, marketIsOpen }) {
       clearWeeklyChart();
-
-      silver7dLowEl.textContent = "—";
-      silver7dHighEl.textContent = "—";
       if (!Array.isArray(rows) || rows.length < 2) return;
 
       const pts = rows
@@ -1109,9 +1054,6 @@
       for (const p of pts) { if (p.value < min) min = p.value; if (p.value > max) max = p.value; }
       if (!Number.isFinite(min) || !Number.isFinite(max)) return;
 
-      silver7dLowEl.textContent = fmtMoney(min);
-      silver7dHighEl.textContent = fmtMoney(max);
-
       const mobile = isMobileNow();
       const { W, H } = chartSize(mobile);
 
@@ -1122,7 +1064,7 @@
       weeklyHitEl.setAttribute("width", String(W));
       weeklyHitEl.setAttribute("height", String(H));
 
-      const { padL, padR, padT, padB } = getChartPads(mobile);
+      const { padL, padR, padT, padB } = getChartPads(mobile, "weekly");
 
       const innerW = W - padL - padR;
       const innerH = H - padT - padB;
@@ -1220,7 +1162,8 @@
         bars.push(r);
       }
 
-      const yLabelY = y1 + (mobile ? 12 : 30);
+      // place labels safely above tile bottom line (especially mobile)
+      const yLabelY = y1 + (mobile ? 26 : 30);
 
       const firstLbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
       firstLbl.setAttribute("x", barCenter(0));
@@ -1339,9 +1282,6 @@
 
     function renderYearlyLine({ rows, marketIsOpen, currentPrice, currentDir }) {
       clearYearlyChart();
-
-      silver12mLowEl.textContent = "—";
-      silver12mHighEl.textContent = "—";
       if (!Array.isArray(rows) || rows.length < 2) return;
 
       const pts = rows
@@ -1354,9 +1294,6 @@
       for (const p of pts) { if (p.value < min) min = p.value; if (p.value > max) max = p.value; }
       if (!Number.isFinite(min) || !Number.isFinite(max)) return;
 
-      silver12mLowEl.textContent = fmtMoney(min);
-      silver12mHighEl.textContent = fmtMoney(max);
-
       const mobile = isMobileNow();
       const { W, H } = chartSize(mobile);
 
@@ -1367,7 +1304,7 @@
       yearlyHitEl.setAttribute("width", String(W));
       yearlyHitEl.setAttribute("height", String(H));
 
-      const { padL, padR, padT, padB } = getChartPads(mobile);
+      const { padL, padR, padT, padB } = getChartPads(mobile, "yearly");
 
       const innerW = W - padL - padR;
       const innerH = H - padT - padB;
@@ -1484,30 +1421,34 @@
       yearlyAreaEl.setAttribute("d", dArea);
       yearlyAreaEl.setAttribute("fill", `url(#${gid})`);
 
-      const showEvery = mobile ? 3 : 1;
-      const labelY = y1 + (mobile ? 12 : 30);
+      // X labels:
+      // - MOBILE: remove months entirely (locked)
+      // - DESKTOP: keep months
+      if (!mobile) {
+        const showEvery = 1;
+        const labelY = y1 + 30;
 
-      for (let i = 0; i < n; i++) {
-        if (mobile && i === n - 2) continue;
-        if (i !== 0 && i !== n - 1 && (i % showEvery !== 0)) continue;
+        for (let i = 0; i < n; i++) {
+          if (i !== 0 && i !== n - 1 && (i % showEvery !== 0)) continue;
 
-        const x = xForIdx(i);
-        const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          const x = xForIdx(i);
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
 
-        if (i === 0) {
-          tx.setAttribute("x", x0);
-          tx.setAttribute("text-anchor", "start");
-        } else if (i === n - 1) {
-          tx.setAttribute("x", x1);
-          tx.setAttribute("text-anchor", "end");
-        } else {
-          tx.setAttribute("x", x);
-          tx.setAttribute("text-anchor", "middle");
+          if (i === 0) {
+            tx.setAttribute("x", x0);
+            tx.setAttribute("text-anchor", "start");
+          } else if (i === n - 1) {
+            tx.setAttribute("x", x1);
+            tx.setAttribute("text-anchor", "end");
+          } else {
+            tx.setAttribute("x", x);
+            tx.setAttribute("text-anchor", "middle");
+          }
+
+          tx.setAttribute("y", labelY);
+          tx.textContent = pts[i].month || monthNameFromYYYYMM(pts[i].xLabel);
+          yearlyXLabelsEl.appendChild(tx);
         }
-
-        tx.setAttribute("y", labelY);
-        tx.textContent = pts[i].month || monthNameFromYYYYMM(pts[i].xLabel);
-        yearlyXLabelsEl.appendChild(tx);
       }
 
       const cp = Number(currentPrice);
@@ -1756,12 +1697,6 @@
 
       renderSinceLastUpdateFromAPI(silver);
 
-      const hi = fmtMoney(silver.high24h);
-      const lo = fmtMoney(silver.low24h);
-
-      if (silver24hHiEl) silver24hHiEl.textContent = hi;
-      if (silver24hLoEl) silver24hLoEl.textContent = lo;
-
       const marketIsOpen = !(market && market.isOpen === false);
 
       if (!marketIsOpen) {
@@ -1878,9 +1813,6 @@
         sinceRowEl.className = "since-row flat";
         sinceMoneyEl.textContent = "—";
         sincePctComboEl.textContent = "—";
-
-        if (silver24hHiEl) silver24hHiEl.textContent = "—";
-        if (silver24hLoEl) silver24hLoEl.textContent = "—";
 
         clearWeeklyChart();
         clearYearlyChart();
