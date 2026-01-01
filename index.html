@@ -518,11 +518,25 @@
       .since-row { font-size: 0.96rem; }
     }
 
+    /* ===== MOBILE HERO SPACING FIX (NO HEIGHT INCREASE) ===== */
     @media (max-width: 600px) {
-      .hero-stack { gap: 14px; }
-      .hero-divider.soft { margin: 8px 0; }
-      .hero-meta { margin-top: 6px; }
+      /* tighten the overall stack so we can "spend" pixels on the bottom spacing */
+      .hero-stack { gap: 10px; }               /* was effectively larger from your second block */
+      .hero-divider.soft { margin: 6px 0; }    /* a touch more breathing room around soft lines */
+      .headline-row { margin-top: 0px; }       /* reclaim a couple px */
+      .since-row { margin-top: -2px; }         /* reclaim a couple px (keeps it from feeling tall) */
+
+      /* create a clean buffer between "Last 24h" and the hard divider below it */
+      .hl-row { margin-bottom: 6px; }
+
+      /* THIS is the divider you said Last 24h was sitting on — add spacing here,
+         and we compensate above (so the card height stays the same). */
+      .hero-divider:not(.soft) { margin: 6px 0; }
+
+      /* stop "Last updated" from feeling glued to the divider */
+      .hero-meta { padding-top: 4px; gap: 4px; margin-top: 0; }
     }
+    /* ===== END MOBILE HERO SPACING FIX ===== */
 
     .chart-meta {
       display: flex;
