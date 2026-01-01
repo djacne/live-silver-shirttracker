@@ -458,11 +458,12 @@
     }
 
     .chart-wrap svg .gridline { stroke: rgba(148,163,184,0.12); stroke-width: 1; }
-    .chart-wrap svg .bar { shape-rendering: crispEdges; }
     .chart-wrap svg .crosshair { stroke: rgba(226,232,240,0.70); stroke-width: 2; stroke-dasharray: 4 4; opacity: 0; }
     .chart-wrap svg .tipbox { opacity: 0; }
 
-    /* Yearly line styling */
+    /* Weekly + Yearly Yahoo-ish line styling */
+    .chart-wrap svg .wline { fill: none; stroke-width: 2.8; opacity: 0.98; }
+    .chart-wrap svg .warea { opacity: 0.88; }
     .chart-wrap svg .yline { fill: none; stroke-width: 2.8; opacity: 0.98; }
     .chart-wrap svg .yarea { opacity: 0.88; }
 
@@ -681,8 +682,13 @@
 
       <div class="chart-wrap">
         <svg id="silver7d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 7-day trend chart">
+          <defs id="silver7d-defs"></defs>
           <g id="silver7d-grid"></g>
-          <g id="silver7d-bars"></g>
+
+          <!-- Yahoo-ish area + line -->
+          <path id="silver7d-area" class="warea" d=""></path>
+          <path id="silver7d-line" class="wline" d=""></path>
+
           <line id="silver7d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
           <g id="silver7d-xlabels"></g>
           <g id="silver7d-ylabels"></g>
@@ -706,7 +712,7 @@
           <defs id="silver12m-defs"></defs>
           <g id="silver12m-grid"></g>
 
-          <!-- NEW: shaded area + line -->
+          <!-- shaded area + line -->
           <path id="silver12m-area" class="yarea" d=""></path>
           <path id="silver12m-line" class="yline" d=""></path>
 
@@ -761,8 +767,10 @@
     const silver7dLowEl = document.getElementById("silver7d-low");
     const silver7dHighEl = document.getElementById("silver7d-high");
 
+    const weeklyDefsEl = document.getElementById("silver7d-defs");
     const weeklyGridEl = document.getElementById("silver7d-grid");
-    const weeklyBarsEl = document.getElementById("silver7d-bars");
+    const weeklyAreaEl = document.getElementById("silver7d-area");
+    const weeklyLineEl = document.getElementById("silver7d-line");
     const weeklyXLabelsEl = document.getElementById("silver7d-xlabels");
     const weeklyYLabelsEl = document.getElementById("silver7d-ylabels");
     const weeklyBorderEl = document.getElementById("silver7d-border");
@@ -843,7 +851,7 @@
     function fmtAxisPrice(v) {
       const n = Number(v);
       if (!Number.isFinite(n)) return "—";
-      return n.toFixed(0); // compact on the right; tooltip still shows $xx.xx
+      return n.toFixed(0);
     }
 
     function fmtUpdatedAt(updatedAt) {
@@ -990,7 +998,6 @@
       const ticks = [];
       for (let v = start; v <= end + step / 2; v += step) ticks.push(v);
 
-      // cap label count if it exploded
       if (ticks.length > 7) {
         const stride = Math.ceil(ticks.length / 6);
         const compact = [];
@@ -1002,8 +1009,10 @@
     }
 
     function clearWeeklyChart() {
+      weeklyDefsEl.innerHTML = "";
       weeklyGridEl.innerHTML = "";
-      weeklyBarsEl.innerHTML = "";
+      weeklyAreaEl.setAttribute("d", "");
+      weeklyLineEl.setAttribute("d", "");
       weeklyXLabelsEl.innerHTML = "";
       weeklyYLabelsEl.innerHTML = "";
       weeklyBorderEl.setAttribute("d", "");
@@ -1021,8 +1030,8 @@
       yearlyTipEl.innerHTML = "";
     }
 
-    // WEEKLY: bars that FILL the tile (tight padding + tight y-range headroom)
-    function renderWeeklyBars({ rows, marketIsOpen }) {
+    // WEEKLY: Yahoo-ish area + line, fills tile more on desktop (tighter padR)
+    function renderWeeklyLine({ rows, marketIsOpen }) {
       clearWeeklyChart();
 
       silver7dLowEl.textContent = "—";
@@ -1046,9 +1055,9 @@
       const H = 290;
       const mobile = isMobileNow();
 
-      // tighter right gutter so plot uses more of the tile
+      // Desktop-focused: reduce padR so plot extends further right, but keep y-labels safe at x=W-6
       const padL = mobile ? 20 : 24;
-      const padR = mobile ? 70 : 80;
+      const padR = mobile ? 72 : 62;
       const padT = mobile ? 12 : 14;
       const padB = mobile ? 34 : 40;
 
@@ -1058,12 +1067,11 @@
       const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
       weeklyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
-      // headroom padding (small), instead of huge padBot that crushed the bars
       let range = max - min;
-      const minVisualRange = 0.9; // keeps the chart from getting "flat" if prices barely move
+      const minVisualRange = 0.9;
       if (range < minVisualRange) range = minVisualRange;
 
-      const head = range * 0.08; // small, symmetric
+      const head = range * 0.10;
       const yMinData = min - head;
       const yMaxData = max + head;
 
@@ -1098,50 +1106,56 @@
       }
 
       const n = pts.length;
-      const slotW = innerW / n;
+      const stepX = innerW / (n - 1);
+      const xForIdx = (i) => padL + i * stepX;
 
-      const gap = mobile ? 2.0 : 2.6;
-      const barW = Math.max(2, slotW - gap);
-      const barX = (i) => padL + i * slotW + (gap / 2);
+      const upOverall = pts[n - 1].value >= pts[0].value;
+      const lineColor = (!marketIsOpen)
+        ? "rgba(148,163,184,0.85)"
+        : (upOverall ? "rgba(34,197,94,0.95)" : "rgba(239,68,68,0.95)");
+
+      const areaTop = (!marketIsOpen)
+        ? "rgba(148,163,184,0.18)"
+        : (upOverall ? "rgba(34,197,94,0.22)" : "rgba(239,68,68,0.22)");
+      const areaBot = "rgba(2,6,23,0.02)";
+
+      const gid = "wgrad-" + (upOverall ? "up" : "down") + (marketIsOpen ? "" : "-closed");
+      weeklyDefsEl.innerHTML = `
+        <linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="${areaTop}"></stop>
+          <stop offset="100%" stop-color="${areaBot}"></stop>
+        </linearGradient>
+      `;
+
+      let dLine = "";
+      for (let i = 0; i < n; i++) {
+        const x = xForIdx(i);
+        const y = yFor(pts[i].value);
+        dLine += (i === 0) ? `M ${x} ${y}` : ` L ${x} ${y}`;
+      }
 
       const yBase = y1;
+      const xFirst = xForIdx(0);
+      const xLast = xForIdx(n - 1);
+      const dArea = `${dLine} L ${xLast} ${yBase} L ${xFirst} ${yBase} Z`;
 
-      let step = mobile ? 2 : 1;
-      const shouldShowX = (i) => (i === 0 || i === n - 1 || (i % step === 0));
+      weeklyLineEl.setAttribute("d", dLine);
+      weeklyLineEl.setAttribute("stroke", lineColor);
 
+      weeklyAreaEl.setAttribute("d", dArea);
+      weeklyAreaEl.setAttribute("fill", `url(#${gid})`);
+
+      // X labels: keep clean (start/end + a few mids)
+      const showEvery = mobile ? 2 : 1;
       for (let i = 0; i < n; i++) {
-        const v = pts[i].value;
-        const yTop = yFor(v);
-        const h = Math.max(1, yBase - yTop);
-
-        const prev = (i > 0) ? pts[i - 1].value : v;
-        const isUp = v >= prev;
-
-        const fill = (!marketIsOpen)
-          ? "rgba(148,163,184,0.55)"
-          : (isUp ? "rgba(34,197,94,0.85)" : "rgba(239,68,68,0.85)");
-
-        const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        r.setAttribute("class", "bar");
-        r.setAttribute("x", barX(i));
-        r.setAttribute("y", yTop);
-        r.setAttribute("width", barW);
-        r.setAttribute("height", h);
-        r.setAttribute("rx", mobile ? 3.5 : 3.0);
-        r.setAttribute("ry", mobile ? 3.5 : 3.0);
-        r.setAttribute("fill", fill);
-        r.setAttribute("opacity", "0.98");
-        weeklyBarsEl.appendChild(r);
-
-        if (shouldShowX(i)) {
-          const x = barX(i) + (barW / 2);
-          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", x);
-          tx.setAttribute("y", y1 + (mobile ? 22 : 30));
-          tx.setAttribute("text-anchor", "middle");
-          tx.textContent = fmtMMDD(pts[i].xLabel);
-          weeklyXLabelsEl.appendChild(tx);
-        }
+        if (i !== 0 && i !== n - 1 && (i % showEvery !== 0)) continue;
+        const x = xForIdx(i);
+        const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        tx.setAttribute("x", x);
+        tx.setAttribute("y", y1 + (mobile ? 22 : 30));
+        tx.setAttribute("text-anchor", "middle");
+        tx.textContent = fmtMMDD(pts[i].xLabel);
+        weeklyXLabelsEl.appendChild(tx);
       }
 
       function hideTip() {
@@ -1153,7 +1167,7 @@
       function showTip(i) {
         i = Math.max(0, Math.min(n - 1, i));
         const v = pts[i].value;
-        const xCenter = barX(i) + (barW / 2);
+        const xCenter = xForIdx(i);
 
         weeklyCrosshairEl.setAttribute("x1", xCenter);
         weeklyCrosshairEl.setAttribute("x2", xCenter);
@@ -1213,8 +1227,8 @@
         const ctm = svg.getScreenCTM();
         if (!ctm) return 0;
         const p = pt.matrixTransform(ctm.inverse());
-        const rel = Math.max(0, Math.min(innerW - 1, p.x - padL));
-        return Math.floor(rel / slotW);
+        const rel = Math.max(0, Math.min(innerW, p.x - padL));
+        return Math.round(rel / stepX);
       }
 
       weeklyHitEl.onpointerenter = (e) => { try { weeklyHitEl.setPointerCapture(e.pointerId); } catch (_) {} };
@@ -1251,8 +1265,9 @@
       const H = 290;
       const mobile = isMobileNow();
 
+      // Desktop-focused: a bit tighter to fill the tile more
       const padL = mobile ? 20 : 24;
-      const padR = mobile ? 70 : 80;  // tighter so the plot extends further right
+      const padR = mobile ? 72 : 62;
       const padT = mobile ? 12 : 14;
       const padB = mobile ? 34 : 40;
 
@@ -1279,7 +1294,6 @@
         return padT + innerH * (1 - t);
       };
 
-      // grid + y labels
       for (const t of yTicks) {
         const yRaw = yFor(t);
 
@@ -1305,7 +1319,6 @@
       const stepX = innerW / (n - 1);
       const xForIdx = (i) => padL + i * stepX;
 
-      // choose a single overall color (easy + clean)
       const upOverall = pts[n - 1].value >= pts[0].value;
       const lineColor = (!marketIsOpen)
         ? "rgba(148,163,184,0.85)"
@@ -1316,7 +1329,6 @@
         : (upOverall ? "rgba(34,197,94,0.22)" : "rgba(239,68,68,0.22)");
       const areaBot = "rgba(2,6,23,0.02)";
 
-      // gradient fill
       const gid = "ygrad-" + (upOverall ? "up" : "down") + (marketIsOpen ? "" : "-closed");
       yearlyDefsEl.innerHTML = `
         <linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">
@@ -1325,7 +1337,6 @@
         </linearGradient>
       `;
 
-      // build line path
       let dLine = "";
       for (let i = 0; i < n; i++) {
         const x = xForIdx(i);
@@ -1333,7 +1344,6 @@
         dLine += (i === 0) ? `M ${x} ${y}` : ` L ${x} ${y}`;
       }
 
-      // build area path (line + down to baseline + back)
       const yBase = y1;
       const xFirst = xForIdx(0);
       const xLast = xForIdx(n - 1);
@@ -1345,7 +1355,6 @@
       yearlyAreaEl.setAttribute("d", dArea);
       yearlyAreaEl.setAttribute("fill", `url(#${gid})`);
 
-      // X labels (months) - keep readable, show fewer on mobile
       const showEvery = mobile ? 2 : 1;
       for (let i = 0; i < n; i++) {
         if (i !== 0 && i !== n - 1 && (i % showEvery !== 0)) continue;
@@ -1447,7 +1456,7 @@
       const weeklyRows = data?.weekly?.silver || [];
       const yearlyRows = data?.yearly?.silver12m || [];
 
-      renderWeeklyBars({ rows: weeklyRows, marketIsOpen });
+      renderWeeklyLine({ rows: weeklyRows, marketIsOpen });
       renderYearlyLine({ rows: yearlyRows, marketIsOpen });
     }
 
