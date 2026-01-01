@@ -410,6 +410,81 @@
       text-align: center;
     }
 
+    /* === NEW: Silver Summary (locked, no jitter) === */
+    .summary-wrap {
+      width: 100%;
+      max-width: 520px;
+      margin: 6px auto 0;
+      text-align: left;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+    }
+    .summary-head {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.35fr);
+      gap: 10px;
+      padding: 6px 0 8px;
+      color: rgba(148,163,184,0.90);
+      text-transform: uppercase;
+      letter-spacing: 0.10em;
+      font-size: 0.74rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.35fr);
+      gap: 10px;
+      border-top: 1px solid rgba(148,163,184,0.22);
+      border-bottom: 1px solid rgba(148,163,184,0.22);
+    }
+    .summary-row {
+      display: contents; /* keeps strict columns */
+    }
+    .summary-cell {
+      padding: 10px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .summary-row + .summary-row .summary-cell {
+      border-top: 1px solid rgba(148,163,184,0.12); /* hairline separators */
+    }
+    .summary-label {
+      color: rgba(226,232,240,0.90);
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+    .summary-num {
+      text-align: right;
+      font-weight: 800;
+      color: rgba(248,250,252,0.96);
+    }
+    .summary-num.hi { color: var(--hi); }
+    .summary-num.lo { color: var(--lo); }
+    .summary-range {
+      text-align: right;
+      font-weight: 800;
+      color: rgba(248,250,252,0.96);
+    }
+    .summary-range .pct {
+      margin-left: 6px;
+      font-weight: 800;
+      color: rgba(148,163,184,0.92); /* percent muted */
+    }
+    .summary-foot {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: rgba(148,163,184,0.92);
+      line-height: 1.25;
+    }
+    .summary-foot strong {
+      color: rgba(226,232,240,0.92);
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
     .chart-wrap {
       width: 100%;
       overflow: hidden;
@@ -417,10 +492,10 @@
       border: 1px solid rgba(148, 163, 184, 0.25);
       background: rgba(2, 6, 23, 0.25);
       padding: 10px;
-      display: flex;                 /* NEW: enable centering */
-      flex-direction: column;        /* NEW */
-      justify-content: center;       /* NEW: vertical centering */
-      align-items: stretch;          /* NEW */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
     }
 
     .chart-wrap svg {
@@ -429,7 +504,7 @@
       display: block;
       touch-action: pan-y;
       user-select: none;
-      flex: 0 0 auto;                /* NEW: keep svg sized but centered within wrap */
+      flex: 0 0 auto;
     }
 
     .chart-wrap svg text {
@@ -496,6 +571,15 @@
       .chart-wrap svg .price-tag-text { font-size: 18px; }
       .quirk-badge { font-size: 0.92rem; padding: 8px 12px; }
       .since-row { font-size: 0.96rem; }
+
+      /* NEW: Summary sizing tweaks */
+      .summary-wrap { max-width: 100%; }
+      .summary-head, .summary-grid {
+        grid-template-columns: 66px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr);
+        gap: 8px;
+      }
+      .summary-head { font-size: 0.72rem; }
+      .summary-cell { padding: 10px 0; }
     }
 
     @media (max-width: 600px) {
@@ -507,7 +591,6 @@
       .hero-meta { padding-top: 4px; gap: 4px; margin-top: 0; }
     }
 
-    /* REMOVED: chart-meta styling no longer needed (high/low removed) */
     .chart-meta { display:none; }
 
     .table-card { margin-top: 18px; }
@@ -653,8 +736,6 @@
               <span id="since-update-money" class="money">—</span>
               <span id="since-update-pctcombo" class="pctcombo">—</span>
             </div>
-
-            <!-- 24h High/Low REMOVED (global) -->
           </div>
 
           <div class="hero-divider"></div>
@@ -664,6 +745,44 @@
               Last updated: <span id="last-updated">—</span>
             </div>
           </div>
+
+          <!-- NEW: Locked Silver Summary (no jitter) -->
+          <div class="summary-wrap" aria-label="Silver summary">
+            <div class="summary-head" aria-hidden="true">
+              <div></div>
+              <div style="text-align:right;">High</div>
+              <div style="text-align:right;">Low</div>
+              <div style="text-align:right;">Range</div>
+            </div>
+
+            <div class="summary-grid" role="table" aria-label="High low range summary">
+              <div class="summary-row" role="row">
+                <div class="summary-cell summary-label" role="cell">Day</div>
+                <div class="summary-cell summary-num hi" id="sum-day-hi" role="cell">—</div>
+                <div class="summary-cell summary-num lo" id="sum-day-lo" role="cell">—</div>
+                <div class="summary-cell summary-range" id="sum-day-range" role="cell">—</div>
+              </div>
+
+              <div class="summary-row" role="row">
+                <div class="summary-cell summary-label" role="cell">Week</div>
+                <div class="summary-cell summary-num hi" id="sum-week-hi" role="cell">—</div>
+                <div class="summary-cell summary-num lo" id="sum-week-lo" role="cell">—</div>
+                <div class="summary-cell summary-range" id="sum-week-range" role="cell">—</div>
+              </div>
+
+              <div class="summary-row" role="row">
+                <div class="summary-cell summary-label" role="cell">12-mo</div>
+                <div class="summary-cell summary-num hi" id="sum-12m-hi" role="cell">—</div>
+                <div class="summary-cell summary-num lo" id="sum-12m-lo" role="cell">—</div>
+                <div class="summary-cell summary-range" id="sum-12m-range" role="cell">—</div>
+              </div>
+            </div>
+
+            <div class="summary-foot" aria-hidden="true">
+              <strong>Range</strong> is High − Low <span style="opacity:.9;">(percent is vs Low)</span>
+            </div>
+          </div>
+          <!-- /NEW -->
         </div>
       </section>
     </div>
@@ -684,7 +803,6 @@
           <rect id="silver7d-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
         </svg>
 
-        <!-- Weekly tile High/Low REMOVED (global) -->
         <div class="chart-meta" aria-hidden="true"></div>
       </div>
     </section>
@@ -713,7 +831,6 @@
           <rect id="silver12m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
         </svg>
 
-        <!-- Yearly tile High/Low REMOVED (global) -->
         <div class="chart-meta" aria-hidden="true"></div>
       </div>
     </section>
@@ -748,15 +865,16 @@
     const sinceMoneyEl = document.getElementById("since-update-money");
     const sincePctComboEl = document.getElementById("since-update-pctcombo");
 
-    /* 24h high/low elements removed from DOM */
-    // const silver24hHiEl = document.getElementById("hl-hi");
-    // const silver24hLoEl = document.getElementById("hl-lo");
-
-    /* Weekly/Yearly high/low elements removed from DOM */
-    // const silver7dLowEl = document.getElementById("silver7d-low");
-    // const silver7dHighEl = document.getElementById("silver7d-high");
-    // const silver12mLowEl = document.getElementById("silver12m-low");
-    // const silver12mHighEl = document.getElementById("silver12m-high");
+    // NEW: Summary elements
+    const sumDayHiEl = document.getElementById("sum-day-hi");
+    const sumDayLoEl = document.getElementById("sum-day-lo");
+    const sumDayRangeEl = document.getElementById("sum-day-range");
+    const sumWeekHiEl = document.getElementById("sum-week-hi");
+    const sumWeekLoEl = document.getElementById("sum-week-lo");
+    const sumWeekRangeEl = document.getElementById("sum-week-range");
+    const sum12mHiEl = document.getElementById("sum-12m-hi");
+    const sum12mLoEl = document.getElementById("sum-12m-lo");
+    const sum12mRangeEl = document.getElementById("sum-12m-range");
 
     const weeklyGridEl = document.getElementById("silver7d-grid");
     const weeklyBarsEl = document.getElementById("silver7d-bars");
@@ -953,6 +1071,64 @@
       sincePctComboEl.textContent = `${arrow}${fmtPctUnsigned(pct)}`;
     }
 
+    // NEW: Summary helpers (no jitter)
+    function safeFinite(x) {
+      const n = Number(x);
+      return Number.isFinite(n) ? n : null;
+    }
+    function setText(el, txt) { if (el) el.textContent = txt; }
+    function setRangeCell(el, hi, lo) {
+      if (!el) return;
+      if (!Number.isFinite(hi) || !Number.isFinite(lo) || hi < lo) {
+        el.textContent = "—";
+        return;
+      }
+      const range = hi - lo;
+      const pct = (lo !== 0) ? (range / lo) * 100 : null;
+
+      const money = `$${range.toFixed(2)}`;
+      const pctTxt = (pct == null || !Number.isFinite(pct)) ? "—" : `${pct.toFixed(2)}%`;
+
+      el.innerHTML = `${money}<span class="pct">(${pctTxt})</span>`;
+    }
+    function computeMinMaxFromRows(rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return { hi: null, lo: null };
+      let lo = Infinity, hi = -Infinity;
+      let any = false;
+      for (const r of rows) {
+        const v = safeFinite(r?.close);
+        if (v == null) continue;
+        any = true;
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+      }
+      if (!any) return { hi: null, lo: null };
+      return { hi, lo };
+    }
+    function renderSilverSummary(data) {
+      const silver = data?.metals?.silver || {};
+      const dayHi = safeFinite(silver?.high24h);
+      const dayLo = safeFinite(silver?.low24h);
+
+      const weeklyRows = data?.weekly?.silver || [];
+      const yearlyRows = data?.yearly?.silver12m || [];
+
+      const w = computeMinMaxFromRows(weeklyRows);
+      const y = computeMinMaxFromRows(yearlyRows);
+
+      setText(sumDayHiEl, dayHi == null ? "—" : fmtMoney(dayHi));
+      setText(sumDayLoEl, dayLo == null ? "—" : fmtMoney(dayLo));
+      setRangeCell(sumDayRangeEl, dayHi, dayLo);
+
+      setText(sumWeekHiEl, w.hi == null ? "—" : fmtMoney(w.hi));
+      setText(sumWeekLoEl, w.lo == null ? "—" : fmtMoney(w.lo));
+      setRangeCell(sumWeekRangeEl, w.hi, w.lo);
+
+      setText(sum12mHiEl, y.hi == null ? "—" : fmtMoney(y.hi));
+      setText(sum12mLoEl, y.lo == null ? "—" : fmtMoney(y.lo));
+      setRangeCell(sum12mRangeEl, y.hi, y.lo);
+    }
+
     function fmtMMDD(yyyy_mm_dd) {
       if (!yyyy_mm_dd || typeof yyyy_mm_dd !== "string") return "—";
       const m = yyyy_mm_dd.slice(5, 7);
@@ -1008,8 +1184,8 @@
     // OPTION A (locked) + mobile label spacing fix + yearly months removed on mobile
     function getChartPads(mobile, kind) {
       if (mobile) {
-        if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 }; // more bottom so dates sit off the border
-        if (kind === "yearly") return { padL: 10, padR: 56, padT: 8,  padB: 18 }; // months removed on mobile => smaller bottom
+        if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
+        if (kind === "yearly") return { padL: 10, padR: 56, padT: 8,  padB: 18 };
         return { padL: 10, padR: 56, padT: 8,  padB: 34 };
       }
       return { padL: 20, padR: 52, padT: 12, padB: 36 };
@@ -1162,7 +1338,6 @@
         bars.push(r);
       }
 
-      // place labels safely above tile bottom line (especially mobile)
       const yLabelY = y1 + (mobile ? 26 : 30);
 
       const firstLbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -1421,9 +1596,6 @@
       yearlyAreaEl.setAttribute("d", dArea);
       yearlyAreaEl.setAttribute("fill", `url(#${gid})`);
 
-      // X labels:
-      // - MOBILE: remove months entirely (locked)
-      // - DESKTOP: keep months
       if (!mobile) {
         const showEvery = 1;
         const labelY = y1 + 30;
@@ -1697,6 +1869,9 @@
 
       renderSinceLastUpdateFromAPI(silver);
 
+      // NEW: always refresh summary from current dataset
+      renderSilverSummary(data);
+
       const marketIsOpen = !(market && market.isOpen === false);
 
       if (!marketIsOpen) {
@@ -1813,6 +1988,11 @@
         sinceRowEl.className = "since-row flat";
         sinceMoneyEl.textContent = "—";
         sincePctComboEl.textContent = "—";
+
+        // NEW: clear summary on error
+        setText(sumDayHiEl, "—"); setText(sumDayLoEl, "—"); setText(sumDayRangeEl, "—");
+        setText(sumWeekHiEl, "—"); setText(sumWeekLoEl, "—"); setText(sumWeekRangeEl, "—");
+        setText(sum12mHiEl, "—"); setText(sum12mLoEl, "—"); setText(sum12mRangeEl, "—");
 
         clearWeeklyChart();
         clearYearlyChart();
