@@ -466,13 +466,21 @@
     .summary-num.hi { color: var(--hi); }
     .summary-num.lo { color: var(--lo); }
 
+    /* 🔒 Locked change: make "range" behave like metals table trend (money on line 1, arrow% on line 2) */
     .summary-range {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      line-height: 1.05;
       text-align: right;
       font-weight: 600;
       color: rgba(226,232,240,0.86);
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
     }
+    .summary-range .sr-money { font-size: 0.92rem; }
+    .summary-range .sr-pct { font-size: 0.86rem; opacity: 0.95; }
     .summary-range.up { color: var(--accent-up); }
     .summary-range.down { color: var(--accent-down); }
     .summary-range.neutral { color: rgba(226,232,240,0.88); }
@@ -605,18 +613,21 @@
     }
     .change-cell { text-align: right; }
 
+    /* 🔒 Locked change: desktop matches mobile — money line + arrow% line */
     .metal-trend{
       display: inline-flex;
-      align-items: baseline;
-      gap: 10px;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
       justify-content: flex-end;
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
       font-weight: 600;
-      white-space: nowrap;
+      line-height: 1.05;
+      white-space: normal;
     }
-    .metal-trend .mt-money { min-width: 70px; text-align: right; }
-    .metal-trend .mt-pct   { min-width: 62px; text-align: right; }
+    .metal-trend .mt-money { text-align: right; }
+    .metal-trend .mt-pct   { text-align: right; font-size: 0.86rem; opacity: 0.95; }
 
     .metal-trend.up   { color: var(--accent-up); }
     .metal-trend.down { color: var(--accent-down); }
@@ -631,8 +642,6 @@
         white-space: normal;
         line-height: 1.05;
       }
-      .metal-trend .mt-money,
-      .metal-trend .mt-pct{ min-width: 0; }
       .metal-trend .mt-money{ font-size: 0.92rem; }
       .metal-trend .mt-pct{ font-size: 0.86rem; opacity: 0.95; }
     }
@@ -740,8 +749,8 @@
           </div>
         </section>
 
-        <section class="card" aria-label="Silver price ranges">
-          <div class="section-title" style="margin-bottom:6px;">Silver price ranges</div>
+        <section class="card" aria-label="Silver summary">
+          <div class="section-title" style="margin-bottom:6px;">Silver summary</div>
 
           <div class="summary-wrap">
             <div class="summary-head" aria-hidden="true">
@@ -1098,22 +1107,6 @@
       return { hi, lo, first, last };
     }
 
-    function setRangePctArrowCell(el, hi, lo, dirCls) {
-      if (!el) return;
-      el.classList.remove("up", "down", "neutral");
-      el.classList.add(dirCls || "neutral");
-
-      if (!Number.isFinite(hi) || !Number.isFinite(lo) || hi < lo || lo === 0) {
-        el.textContent = "—";
-        return;
-      }
-      const pct = ((hi - lo) / lo) * 100;
-      if (!Number.isFinite(pct)) { el.textContent = "—"; return; }
-
-      const arrow = (dirCls === "up") ? "↑" : (dirCls === "down" ? "↓" : "↔");
-      el.textContent = `${arrow}${pct.toFixed(2)}%`;
-    }
-
     function dirClassFromFirstLast(first, last) {
       if (!Number.isFinite(first) || !Number.isFinite(last)) return "neutral";
       if (last > first) return "up";
@@ -1130,6 +1123,32 @@
         out.push(rows[i]);
       }
       return out.reverse();
+    }
+
+    /* 🔒 Locked change: range cell shows $range on line 1, arrow% on line 2 */
+    function setRangeMoneyAndPct(el, hi, lo, dirCls) {
+      if (!el) return;
+
+      el.classList.remove("up", "down", "neutral");
+      el.classList.add(dirCls || "neutral");
+
+      if (!Number.isFinite(hi) || !Number.isFinite(lo) || hi < lo) {
+        el.textContent = "—";
+        return;
+      }
+
+      const absRange = hi - lo;
+      const pct = (lo !== 0) ? (absRange / lo) * 100 : null;
+
+      const arrow = (dirCls === "up") ? "↑" : (dirCls === "down" ? "↓" : "↔");
+
+      const moneyLine = `$${absRange.toFixed(2)}`;
+      const pctLine = (pct == null || !Number.isFinite(pct)) ? "—" : `${arrow}${pct.toFixed(2)}%`;
+
+      el.innerHTML = `
+        <span class="sr-money">${moneyLine}</span>
+        <span class="sr-pct">${pctLine}</span>
+      `;
     }
 
     function renderSilverSummary(data) {
@@ -1154,19 +1173,19 @@
 
       setText(sumDayHiEl, dayHi == null ? "—" : fmtMoney(dayHi));
       setText(sumDayLoEl, dayLo == null ? "—" : fmtMoney(dayLo));
-      setRangePctArrowCell(sumDayRangeEl, dayHi, dayLo, dayDir);
+      setRangeMoneyAndPct(sumDayRangeEl, dayHi, dayLo, dayDir);
 
       setText(sumWeekHiEl, w.hi == null ? "—" : fmtMoney(w.hi));
       setText(sumWeekLoEl, w.lo == null ? "—" : fmtMoney(w.lo));
-      setRangePctArrowCell(sumWeekRangeEl, w.hi, w.lo, weekDir);
+      setRangeMoneyAndPct(sumWeekRangeEl, w.hi, w.lo, weekDir);
 
       setText(sum1mHiEl, m.hi == null ? "—" : fmtMoney(m.hi));
       setText(sum1mLoEl, m.lo == null ? "—" : fmtMoney(m.lo));
-      setRangePctArrowCell(sum1mRangeEl, m.hi, m.lo, monthDir);
+      setRangeMoneyAndPct(sum1mRangeEl, m.hi, m.lo, monthDir);
 
       setText(sum12mHiEl, y.hi == null ? "—" : fmtMoney(y.hi));
       setText(sum12mLoEl, y.lo == null ? "—" : fmtMoney(y.lo));
-      setRangePctArrowCell(sum12mRangeEl, y.hi, y.lo, yearDir);
+      setRangeMoneyAndPct(sum12mRangeEl, y.hi, y.lo, yearDir);
     }
 
     function fmtMMDD(yyyy_mm_dd) {
@@ -1606,8 +1625,8 @@
       let dLine = "";
       for (let i = 0; i < n; i++) {
         const x = xForIdx(i);
-        const y = yFor(pts[i].value);
-        dLine += (i === 0) ? `M ${x} ${y}` : ` L ${x} ${y}`;
+        const yv = yFor(pts[i].value);
+        dLine += (i === 0) ? `M ${x} ${yv}` : ` L ${x} ${yv}`;
       }
 
       const yBase = y1;
@@ -1621,8 +1640,8 @@
       for (let i = 0; i < n; i++) {
         const x = xForIdx(i);
         const yRaw = yFor(pts[i].value);
-        const y = Math.min(yRaw, yBase - minFillPx);
-        dLineHaze += (i === 0) ? `M ${x} ${y}` : ` L ${x} ${y}`;
+        const yv = Math.min(yRaw, yBase - minFillPx);
+        dLineHaze += (i === 0) ? `M ${x} ${yv}` : ` L ${x} ${yv}`;
       }
       const dHaze = `${dLineHaze} L ${xLast} ${yBase} L ${xFirst} ${yBase} Z`;
 
@@ -2037,10 +2056,10 @@
         sinceMoneyEl.textContent = "—";
         sincePctComboEl.textContent = "—";
 
-        setText(sumDayHiEl, "—"); setText(sumDayLoEl, "—"); setText(sumDayRangeEl, "—");
-        setText(sumWeekHiEl, "—"); setText(sumWeekLoEl, "—"); setText(sumWeekRangeEl, "—");
-        setText(sum1mHiEl, "—"); setText(sum1mLoEl, "—"); setText(sum1mRangeEl, "—");
-        setText(sum12mHiEl, "—"); setText(sum12mLoEl, "—"); setText(sum12mRangeEl, "—");
+        setText(sumDayHiEl, "—"); setText(sumDayLoEl, "—"); sumDayRangeEl.textContent = "—";
+        setText(sumWeekHiEl, "—"); setText(sumWeekLoEl, "—"); sumWeekRangeEl.textContent = "—";
+        setText(sum1mHiEl, "—"); setText(sum1mLoEl, "—"); sum1mRangeEl.textContent = "—";
+        setText(sum12mHiEl, "—"); setText(sum12mLoEl, "—"); sum12mRangeEl.textContent = "—";
 
         clearWeeklyChart();
         clearYearlyChart();
