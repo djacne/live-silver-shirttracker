@@ -610,7 +610,7 @@
           </div>
 
           <div class="hero-substack">
-            <div class="hero-subline hl-row" id="silver-24h-hl">24h high: — &nbsp;&nbsp; 24h low: —</div>
+            <div class="hero-subline hl-row" id="silver-24h-hl">24h: High — • Low —</div>
           </div>
         </div>
 
@@ -1202,7 +1202,7 @@
       return Math.floor(rel / slotW);
     }
 
-    hitEl.onpointerenter = (e) => { try { hitEl.setPointerCapture(e.pointerId); } catch(_) {} };
+    hitEl.onpointerenter = (e) => { try { hitEl.setPointerCapture(e.pointerId); } catch (_) {} };
     hitEl.onpointermove = (e) => showTip(indexFromClientX(e.clientX));
     hitEl.onpointerleave = hideTip;
     hitEl.onpointerup = hideTip;
@@ -1349,7 +1349,9 @@
 
     const hi = fmtMoney(silver.high24h);
     const lo = fmtMoney(silver.low24h);
-    silver24hHLEl.innerHTML = `24h high: <span class="hi">${hi}</span> &nbsp;&nbsp; 24h low: <span class="lo">${lo}</span>`;
+    if (silver24hHLEl) {
+      silver24hHLEl.innerHTML = `24h: High <span class="hi">${hi}</span> • Low <span class="lo">${lo}</span>`;
+    }
 
     const marketIsOpen = !(market && market.isOpen === false);
 
@@ -1456,7 +1458,7 @@
       sinceMoneyEl.textContent = "—";
       sincePctComboEl.textContent = "—";
 
-      if (silver24hHLEl) silver24hHLEl.innerHTML = "24h high: — &nbsp;&nbsp; 24h low: —";
+      if (silver24hHLEl) silver24hHLEl.innerHTML = "24h: High — • Low —";
 
       weeklyGridEl.innerHTML = "";
       weeklyBarsEl.innerHTML = "";
