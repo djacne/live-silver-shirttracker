@@ -316,17 +316,25 @@
       font-weight: 500;
     }
 
-    .since-update {
-      font-size: 0.98rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 4px;
-      margin-bottom: 14px;
-    }
+.since-update {
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  margin-bottom: 14px;
+  gap: 0; /* important: we control spacing per-piece */
+}
+
+/* keep a nice readable gap ONLY between money and arrow+percent */
+.since-update .money { margin-right: 10px; }
+
+/* arrow + percent should look like ↑0.90% (no space) */
+.since-update .arrow { margin-right: 0; }
+.since-update .pct { margin-left: 0; }
+
 
     .since-update .money,
     .since-update .pct {
@@ -927,10 +935,10 @@
     const delta = cur - prev.price;
     const pct = (delta / prev.price) * 100;
 
-    let cls = "flat";
-    let arrow = "→";
-    if (delta > 0) { cls = "up"; arrow = "↑"; }
-    else if (delta < 0) { cls = "down"; arrow = "↓"; }
+let cls = "flat";
+let arrow = "↔";
+if (delta > 0) { cls = "up"; arrow = "↑"; }
+else if (delta < 0) { cls = "down"; arrow = "↓"; }
 
     sinceWrapEl.className = "since-update " + cls;
     sinceMoneyEl.textContent = fmtSignedMoney(delta);
