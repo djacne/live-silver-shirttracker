@@ -462,7 +462,6 @@
     .chart-wrap svg .crosshair { stroke: rgba(226,232,240,0.70); stroke-width: 2; stroke-dasharray: 4 4; opacity: 0; }
     .chart-wrap svg .tipbox { opacity: 0; }
 
-    /* Weekly bars "Yahoo pro" */
     .chart-wrap svg .bar {
       shape-rendering: crispEdges;
       opacity: 0.94;
@@ -477,7 +476,6 @@
       pointer-events: none;
     }
 
-    /* (kept class for compatibility, but we no longer draw weekly refline at all) */
     .chart-wrap svg .refline {
       stroke: rgba(148,163,184,0.22);
       stroke-width: 1;
@@ -485,12 +483,10 @@
       pointer-events: none;
     }
 
-    /* Yearly Yahoo-ish line styling */
     .chart-wrap svg .yline { fill: none; stroke-width: 2.8; opacity: 0.98; }
     .chart-wrap svg .yarea { opacity: 0.90; }
     .chart-wrap svg .yarea-haze { opacity: 0.55; }
 
-    /* Current price (Yahoo-ish) */
     .chart-wrap svg .curline {
       stroke-width: 2;
       stroke-dasharray: 2 6;
@@ -509,23 +505,16 @@
       font-size: 15px;
     }
 
-    /* ===== MOBILE: BIGGER CHARTS + BIGGER TEXT, FEWER LABELS ===== */
     @media (max-width: 600px) {
       .chart-wrap { padding: 10px; }
-
-      /* IMPORTANT: visual height + JS viewBox height now match (see JS) */
-      .chart-wrap svg { height: 330px; }
-
+      .chart-wrap svg { height: 380px; } /* bigger + matches JS */
       .chart-wrap svg text { font-size: 18px; }
       .chart-wrap svg .price-tag-text { font-size: 18px; }
-
       .quirk-badge { font-size: 0.92rem; padding: 8px 12px; }
       .hl-row { font-size: 0.96rem; }
       .since-row { font-size: 0.96rem; }
     }
-    /* ===== END MOBILE CHART BOOST ===== */
 
-    /* ===== MOBILE HERO SPACING FIX (NO HEIGHT INCREASE) ===== */
     @media (max-width: 600px) {
       .hero-stack { gap: 10px; }
       .hero-divider.soft { margin: 6px 0; }
@@ -536,7 +525,6 @@
       .hero-divider:not(.soft) { margin: 6px 0; }
       .hero-meta { padding-top: 4px; gap: 4px; margin-top: 0; }
     }
-    /* ===== END MOBILE HERO SPACING FIX ===== */
 
     .chart-meta {
       display: flex;
@@ -863,13 +851,12 @@
       return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
     }
 
-    // IMPORTANT: one source of truth for chart render height (matches CSS mobile 330px)
-    function chartH(mobile) { return mobile ? 330 : 290; }
+    function chartSize(mobile) {
+      return { W: mobile ? 380 : 1000, H: mobile ? 380 : 290 };
+    }
 
-    function syncSvgHeight(svgEl, H) {
-      // Make the SVG's *drawing space* match the visual height.
-      // This is what fixes "tall tile but smooshed chart".
-      svgEl.setAttribute("viewBox", `0 0 1000 ${H}`);
+    function syncSvgBox(svgEl, W, H) {
+      svgEl.setAttribute("viewBox", `0 0 ${W} ${H}`);
     }
 
     function pickRandom(arr) {
@@ -1073,10 +1060,9 @@
       return ticks;
     }
 
-    // Mobile-only: reclaim vertical plot area + keep desktop identical
     function getChartPads(mobile) {
       if (mobile) {
-        return { padL: 12, padR: 56, padT: 6, padB: 18 };
+        return { padL: 10, padR: 56, padT: 6, padB: 18 };
       }
       return { padL: 20, padR: 52, padT: 10, padB: 34 };
     }
@@ -1106,7 +1092,6 @@
       yearlyCurTagEl.innerHTML = "";
     }
 
-    // WEEKLY: Yahoo-pro bars
     function renderWeeklyBars({ rows, marketIsOpen }) {
       clearWeeklyChart();
 
@@ -1127,16 +1112,14 @@
       silver7dLowEl.textContent = fmtMoney(min);
       silver7dHighEl.textContent = fmtMoney(max);
 
-      const W = 1000;
       const mobile = isMobileNow();
-      const H = chartH(mobile);
+      const { W, H } = chartSize(mobile);
 
-      // CRITICAL FIX: update the SVG drawing space to match mobile height
       const weeklySvg = weeklyHitEl.ownerSVGElement;
-      syncSvgHeight(weeklySvg, H);
+      syncSvgBox(weeklySvg, W, H);
 
-      // and keep interactive layers aligned with the new height
       weeklyCrosshairEl.setAttribute("y2", String(H));
+      weeklyHitEl.setAttribute("width", String(W));
       weeklyHitEl.setAttribute("height", String(H));
 
       const { padL, padR, padT, padB } = getChartPads(mobile);
@@ -1151,7 +1134,7 @@
       const minVisualRange = 0.9;
       if (range < minVisualRange) range = minVisualRange;
 
-      const head = range * 0.08;
+      const head = range * 0.06;
       const yMinData = min - head;
       const yMaxData = max + head;
 
@@ -1188,12 +1171,11 @@
       const n = pts.length;
       const slotW = innerW / n;
 
-      const gap = mobile ? 1.2 : 2.8;
+      const gap = mobile ? 2.0 : 2.8;
       const barW = Math.max(2, slotW - gap);
       const barX = (i) => x0 + i * slotW + (gap / 2);
 
       const yBase = y1;
-
       weeklyReflineEl.setAttribute("opacity", "0");
 
       const bars = [];
@@ -1218,8 +1200,8 @@
         r.setAttribute("y", yTop);
         r.setAttribute("width", barW);
         r.setAttribute("height", h);
-        r.setAttribute("rx", mobile ? 4.5 : 3.0);
-        r.setAttribute("ry", mobile ? 4.5 : 3.0);
+        r.setAttribute("rx", mobile ? 6 : 3.0);
+        r.setAttribute("ry", mobile ? 6 : 3.0);
         r.setAttribute("fill", fill);
         weeklyBarsEl.appendChild(r);
 
@@ -1229,8 +1211,8 @@
         s.setAttribute("y", yTop);
         s.setAttribute("width", barW);
         s.setAttribute("height", h);
-        s.setAttribute("rx", mobile ? 4.5 : 3.0);
-        s.setAttribute("ry", mobile ? 4.5 : 3.0);
+        s.setAttribute("rx", mobile ? 6 : 3.0);
+        s.setAttribute("ry", mobile ? 6 : 3.0);
         s.setAttribute("fill", "none");
         weeklyBarsEl.appendChild(s);
 
@@ -1354,7 +1336,6 @@
       hideTip();
     }
 
-    // YEARLY: line + shaded area + haze underfill + current price dotted line + tag INSIDE plot
     function renderYearlyLine({ rows, marketIsOpen, currentPrice, currentDir }) {
       clearYearlyChart();
 
@@ -1375,14 +1356,14 @@
       silver12mLowEl.textContent = fmtMoney(min);
       silver12mHighEl.textContent = fmtMoney(max);
 
-      const W = 1000;
       const mobile = isMobileNow();
-      const H = chartH(mobile);
+      const { W, H } = chartSize(mobile);
 
       const yearlySvg = yearlyHitEl.ownerSVGElement;
-      syncSvgHeight(yearlySvg, H);
+      syncSvgBox(yearlySvg, W, H);
 
       yearlyCrosshairEl.setAttribute("y2", String(H));
+      yearlyHitEl.setAttribute("width", String(W));
       yearlyHitEl.setAttribute("height", String(H));
 
       const { padL, padR, padT, padB } = getChartPads(mobile);
