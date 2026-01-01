@@ -58,7 +58,6 @@
     body.market-maintenance { background: var(--bg-maintenance); }
     body.market-weekend { background: var(--bg-weekend); }
 
-    /* ===== Animated background layers ===== */
     .bg-layer {
       position: fixed;
       inset: 0;
@@ -237,7 +236,6 @@
       100% { transform: translate3d(8px, 140vh, 0) rotate(160deg); opacity: 0; }
     }
 
-    /* ===== Layout ===== */
     .page {
       width: 100%;
       max-width: 1024px;
@@ -309,6 +307,7 @@
       align-items: baseline;
       gap: 8px;
       justify-content: center;
+      margin-bottom: 4px;
     }
 
     .headline-price span.small {
@@ -317,7 +316,6 @@
       font-weight: 500;
     }
 
-    /* NEW: since-last-update line under price */
     .since-update {
       font-size: 0.98rem;
       font-weight: 700;
@@ -326,36 +324,25 @@
       align-items: center;
       gap: 10px;
       justify-content: center;
+      margin-top: 4px;
+      margin-bottom: 14px;
     }
-    .since-update .label {
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--text-muted);
-    }
-    .since-update .value {
+
+    .since-update .money,
+    .since-update .pct {
       font-feature-settings: "tnum" 1, "lnum" 1;
-    }
-    .since-update .value.up { color: var(--accent-up); }
-    .since-update .value.down { color: var(--accent-down); }
-    .since-update .value.flat { color: var(--flat); }
-
-    .hero-subline {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      margin-top: 0;
+      white-space: nowrap;
     }
 
-    .hero-subline .hi { color: var(--hi); font-weight: 700; }
-    .hero-subline .lo { color: var(--lo); font-weight: 700; }
-
-    .hero-substack {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 2px;
+    .since-update .arrow {
+      font-size: 1.05rem;
+      line-height: 1;
+      opacity: 0.95;
     }
+
+    .since-update.up { color: var(--accent-up); }
+    .since-update.down { color: var(--accent-down); }
+    .since-update.flat { color: var(--flat); }
 
     .trend-row {
       display: flex;
@@ -363,20 +350,19 @@
       align-items: center;
       gap: 10px;
       justify-content: center;
+      margin: 18px 0;
     }
 
     .trend-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 0;
       padding: 6px 11px;
       border-radius: 999px;
       font-size: 0.85rem;
       font-weight: 600;
       border: 1px solid transparent;
     }
-
-    .trend-pill .trend-arrow { font-size: 0.95rem; }
 
     .trend-pill.up {
       background: rgba(22,163,74,0.15);
@@ -393,6 +379,23 @@
       border-color: rgba(148,163,184,0.6);
       color: #e5e7eb;
     }
+
+    .hero-substack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .hero-subline {
+      font-size: 0.9rem;
+      margin-top: 0;
+      line-height: 1.35;
+      color: rgba(148,163,184,0.88);
+    }
+
+    .hero-subline .hi { color: var(--hi) !important; font-weight: 700; }
+    .hero-subline .lo { color: var(--lo) !important; font-weight: 700; }
 
     .hero-divider {
       height: 1px;
@@ -499,7 +502,6 @@
       text-transform: uppercase;
     }
 
-    /* ✅ Make the table feel less “bold everywhere” */
     td { font-weight: 500; color: rgba(226,232,240,0.92); }
     .metal-name { font-weight: 600; }
     .price-cell { text-align: right; font-feature-settings: "tnum" 1, "lnum" 1; font-weight: 600; }
@@ -514,36 +516,6 @@
     .change.up { color: var(--accent-up); }
     .change.down { color: var(--accent-down); }
     .change.neutral { color: var(--text-muted); }
-
-    /* =========================
-   HERO spacing cleanup
-   (paste near end of <style>)
-   ========================= */
-
-/* Keep price + delta tight as a single unit */
-.headline-price { margin-bottom: 4px; }
-
-/* The $ change (%), give it a little air before the quirk pill */
-.since-update { margin-top: 4px; margin-bottom: 14px; }
-
-/* The quirky pill gets breathing room above + below */
-.trend-row { margin: 18px 0; }
-
-/* Separate the 24h high/low block from the quirk pill, but keep high/low tight */
-.hero-substack { margin-top: 10px; gap: 6px; }
-
-/* Make those lines easier to read and feel less “crammed” */
-.hero-subline { line-height: 1.35; }
-
-/* Slightly calmer tone for the 24h lines (more professional) */
-.hero-subline { color: rgba(148,163,184,0.88); }
-
-/* Keep the colored hi/lo strong */
-.hero-subline .hi,
-.hero-subline .lo { color: inherit; }
-.hero-subline .hi { color: var(--hi) !important; font-weight: 700; }
-.hero-subline .lo { color: var(--lo) !important; font-weight: 700; }
-
   </style>
 </head>
 
@@ -615,7 +587,6 @@
       </section>
 
       <section class="card hero-info">
-        <!-- ✅ Make this title match the other section titles -->
         <div class="section-title" style="margin-bottom:6px;">Silver spot price</div>
 
         <div class="hero-main">
@@ -623,15 +594,15 @@
             <span id="headline-price">—</span>
             <span class="small">/ troy ounce</span>
           </div>
-          
-          <!-- ✅ NEW: since last update $ + % (label removed) -->
-          <div class="since-update" aria-label="Silver change since last update">
-            <span id="since-update-value" class="value flat">—</span>
+
+          <div id="since-update" class="since-update flat" aria-label="Silver change since last update">
+            <span id="since-update-money" class="money">—</span>
+            <span id="since-update-arrow" class="arrow">—</span>
+            <span id="since-update-pct" class="pct">—</span>
           </div>
 
           <div class="trend-row" style="margin-top:2px;">
             <div id="trend-pill" class="trend-pill neutral">
-              <span class="trend-arrow">↔</span>
               <span id="trend-text">Loading…</span>
             </div>
           </div>
@@ -704,7 +675,6 @@
           <tr>
             <th>Metal</th>
             <th style="text-align:right;">Price (USD/toz)</th>
-            <!-- ✅ Rename + make it explicitly 24h -->
             <th style="text-align:right;">24h Trend</th>
           </tr>
         </thead>
@@ -724,7 +694,10 @@
   const lastUpdatedEl = document.getElementById("last-updated");
   const metalsTbodyEl = document.getElementById("metals-tbody");
 
-  const sinceUpdateEl = document.getElementById("since-update-value");
+  const sinceWrapEl = document.getElementById("since-update");
+  const sinceMoneyEl = document.getElementById("since-update-money");
+  const sinceArrowEl = document.getElementById("since-update-arrow");
+  const sincePctEl = document.getElementById("since-update-pct");
 
   const silver24hHighEl = document.getElementById("silver-24h-high");
   const silver24hLowEl  = document.getElementById("silver-24h-low");
@@ -761,9 +734,8 @@
 
   window.__LAST_DATA__ = null;
 
-  // === Local “since last update” tracking (client-side) ===
-  // This uses the previously seen price from localStorage, so it always reflects the last refresh interval.
   const LS_SILVER_LAST = "silver_last_seen_v1";
+
   function readLastSeen() {
     try {
       const raw = localStorage.getItem(LS_SILVER_LAST);
@@ -779,6 +751,7 @@
       return null;
     }
   }
+
   function writeLastSeen(price) {
     try {
       localStorage.setItem(LS_SILVER_LAST, JSON.stringify({ price: Number(price), at: Date.now() }));
@@ -807,8 +780,7 @@
 
       IMAGE_LISTS.up = Array.isArray(json.up) ? json.up.map(normalize).filter(Boolean) : [];
       IMAGE_LISTS.down = Array.isArray(json.down) ? json.down.map(normalize).filter(Boolean) : [];
-    } catch (e) {
-      console.warn("Could not load /images.json; falling back to empty lists", e);
+    } catch {
       IMAGE_LISTS = { up: [], down: [] };
     }
   }
@@ -839,11 +811,17 @@
     return `${sign}$${Math.abs(n).toFixed(2)}`;
   }
 
-  function fmtPct(v) {
+  function fmtPctSigned(v) {
     const n = Number(v);
     if (!Number.isFinite(n)) return "—";
     const sign = n > 0 ? "+" : (n < 0 ? "−" : "");
     return `${sign}${Math.abs(n).toFixed(2)}%`;
+  }
+
+  function fmtPctUnsigned(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "—";
+    return `${Math.abs(n).toFixed(2)}%`;
   }
 
   function fmtUpdatedAt(updatedAt) {
@@ -854,9 +832,7 @@
   }
 
   function setMarketClosedPill(market) {
-    const arrowEl = trendPillEl.querySelector(".trend-arrow");
     trendPillEl.className = "trend-pill neutral";
-    arrowEl.textContent = "⏸";
 
     bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
     clearMarketClosedThemes();
@@ -881,12 +857,10 @@
   }
 
   function setTrendPill(direction) {
-    const arrowEl = trendPillEl.querySelector(".trend-arrow");
     const shouldSwapImage = direction !== _currentDirection;
 
     if (direction === "up") {
       trendPillEl.className = "trend-pill up";
-      arrowEl.textContent = "↑";
       trendTextEl.textContent = "Closer to retirement";
       setTrendMode("up");
 
@@ -900,7 +874,6 @@
 
     if (direction === "down") {
       trendPillEl.className = "trend-pill down";
-      arrowEl.textContent = "↓";
       trendTextEl.textContent = "Get back to work";
       setTrendMode("down");
 
@@ -913,7 +886,6 @@
     }
 
     trendPillEl.className = "trend-pill neutral";
-    arrowEl.textContent = "↔";
     trendTextEl.textContent = "Well this is boring";
     setTrendMode("neutral");
 
@@ -932,19 +904,22 @@
     else headlinePriceEl.style.color = "var(--text-main)";
   }
 
-  // ✅ NEW: “since last update” formatter + color
   function renderSinceLastUpdate(curPrice) {
     const cur = Number(curPrice);
     if (!Number.isFinite(cur) || cur <= 0) {
-      sinceUpdateEl.className = "value flat";
-      sinceUpdateEl.textContent = "—";
+      sinceWrapEl.className = "since-update flat";
+      sinceMoneyEl.textContent = "—";
+      sinceArrowEl.textContent = "—";
+      sincePctEl.textContent = "—";
       return;
     }
 
     const prev = readLastSeen();
     if (!prev || !Number.isFinite(prev.price) || prev.price <= 0) {
-      sinceUpdateEl.className = "value flat";
-      sinceUpdateEl.textContent = "—";
+      sinceWrapEl.className = "since-update flat";
+      sinceMoneyEl.textContent = "—";
+      sinceArrowEl.textContent = "—";
+      sincePctEl.textContent = "—";
       writeLastSeen(cur);
       return;
     }
@@ -952,11 +927,15 @@
     const delta = cur - prev.price;
     const pct = (delta / prev.price) * 100;
 
-    const cls = delta > 0 ? "up" : (delta < 0 ? "down" : "flat");
-    sinceUpdateEl.className = "value " + cls;
+    let cls = "flat";
+    let arrow = "→";
+    if (delta > 0) { cls = "up"; arrow = "↑"; }
+    else if (delta < 0) { cls = "down"; arrow = "↓"; }
 
-    const text = `${fmtSignedMoney(delta)} (${fmtPct(pct)})`;
-    sinceUpdateEl.textContent = text;
+    sinceWrapEl.className = "since-update " + cls;
+    sinceMoneyEl.textContent = fmtSignedMoney(delta);
+    sinceArrowEl.textContent = arrow;
+    sincePctEl.textContent = fmtPctUnsigned(pct);
 
     writeLastSeen(cur);
   }
@@ -1016,7 +995,6 @@
     tipEl.innerHTML = "";
   }
 
-  // y labels outside ALWAYS; “100” can’t clip; bars fill box on mobile
   function renderBarChart({
     rows,
     getXLabel,
@@ -1155,8 +1133,6 @@
       }
     }
 
-    const svgNS = "http://www.w3.org/2000/svg";
-
     function hideTip() {
       crosshairEl.style.opacity = "0";
       tipEl.style.opacity = "0";
@@ -1181,17 +1157,17 @@
       const tipPaddingX = 12;
       const tipPaddingY = 10;
 
-      const tx1 = document.createElementNS(svgNS, "text");
+      const tx1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
       tx1.textContent = label;
       tx1.setAttribute("x", 0);
       tx1.setAttribute("y", 0);
 
-      const tx2 = document.createElementNS(svgNS, "text");
+      const tx2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
       tx2.textContent = price;
       tx2.setAttribute("x", 0);
       tx2.setAttribute("y", 22);
 
-      const g = document.createElementNS(svgNS, "g");
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
       g.appendChild(tx1);
       g.appendChild(tx2);
       tipEl.appendChild(g);
@@ -1204,7 +1180,7 @@
       bx = Math.max(x0 + 6, Math.min(x1 - boxW - 6, bx));
       const by = y0 + 8;
 
-      const rect = document.createElementNS(svgNS, "rect");
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
       rect.setAttribute("x", bx);
       rect.setAttribute("y", by);
       rect.setAttribute("width", boxW);
@@ -1295,7 +1271,6 @@
     });
   }
 
-  // ✅ 24h trend in table: show $ change + percent
   function renderMetalsTable(metals) {
     metalsTbodyEl.innerHTML = "";
 
@@ -1319,15 +1294,13 @@
     function format24h(m) {
       const price = safeNumber(m?.price);
       const chg = safeNumber(m?.change);
-
       if (price == null || chg == null) return "—";
 
-      // base estimate = yesterday price
       const base = price - chg;
       const pct = (base && Math.abs(base) > 0.000001) ? (chg / base) * 100 : null;
 
       const dollar = fmtSignedMoney(chg);
-      const pctText = (pct == null || !Number.isFinite(pct)) ? "" : ` (${fmtPct(pct)})`;
+      const pctText = (pct == null || !Number.isFinite(pct)) ? "" : ` (${fmtPctSigned(pct)})`;
       return `${dollar}${pctText}`;
     }
 
@@ -1349,7 +1322,6 @@
 
       const spanTrend = document.createElement("span");
       const d = m?.direction || "same";
-
       spanTrend.className = "change " + dirClass(d);
       spanTrend.textContent = `${dirSymbol(d)} ${format24h(m)}`;
 
@@ -1377,7 +1349,6 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    // ✅ Since-last-update (client-side)
     renderSinceLastUpdate(silver.price);
 
     silver24hHighEl.innerHTML = `24h high: <span class="hi">${fmtMoney(silver.high24h)}</span>`;
@@ -1477,17 +1448,17 @@
 
       window.__LAST_DATA__ = data;
       updateUI(data);
-    } catch (err) {
-      console.error(err);
+    } catch {
       trendPillEl.className = "trend-pill neutral";
-      trendPillEl.querySelector(".trend-arrow").textContent = "!";
       trendTextEl.textContent = "Error fetching prices";
       setTrendMode("neutral");
       headlinePriceEl.style.color = "var(--text-main)";
       characterImgEl.src = IMAGE_CLOSED;
 
-      sinceUpdateEl.className = "value flat";
-      sinceUpdateEl.textContent = "—";
+      sinceWrapEl.className = "since-update flat";
+      sinceMoneyEl.textContent = "—";
+      sinceArrowEl.textContent = "—";
+      sincePctEl.textContent = "—";
 
       silver24hHighEl.innerHTML = "24h high: —";
       silver24hLowEl.innerHTML  = "24h low: —";
@@ -1504,7 +1475,6 @@
     }
   }
 
-  // Breakpoint/orientation changes rerender charts only
   let _lastIsMobile = isMobileNow();
 
   function rerenderChartsOnly() {
@@ -1528,9 +1498,7 @@
 
   (async () => {
     await loadImageLists();
-    if (!applyForcedModeIfAny()) {
-      refreshAllOnce();
-    }
+    if (!applyForcedModeIfAny()) refreshAllOnce();
   })();
 </script>
 </body>
