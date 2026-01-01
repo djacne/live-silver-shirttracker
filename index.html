@@ -467,9 +467,7 @@
       opacity: 0.94;
       transition: opacity 90ms linear;
     }
-    .chart-wrap svg .bar.hover {
-      opacity: 1;
-    }
+    .chart-wrap svg .bar.hover { opacity: 1; }
     .chart-wrap svg .bar-stroke {
       stroke: rgba(2,6,23,0.65);
       stroke-width: 1;
@@ -487,6 +485,25 @@
     /* Yearly Yahoo-ish line styling */
     .chart-wrap svg .yline { fill: none; stroke-width: 2.8; opacity: 0.98; }
     .chart-wrap svg .yarea { opacity: 0.88; }
+
+    /* Current price (Yahoo-ish) */
+    .chart-wrap svg .curline {
+      stroke-width: 2;
+      stroke-dasharray: 2 6;
+      opacity: 0.9;
+      pointer-events: none;
+    }
+    .chart-wrap svg .price-tag-rect {
+      fill: rgba(2,6,23,0.88);
+      stroke-width: 1;
+      rx: 10;
+      ry: 10;
+    }
+    .chart-wrap svg .price-tag-text {
+      fill: rgba(248,250,252,0.98);
+      font-weight: 800;
+      font-size: 15px;
+    }
 
     @media (max-width: 600px) {
       .chart-wrap { padding: 10px; }
@@ -732,6 +749,10 @@
           <path id="silver12m-area" class="yarea" d=""></path>
           <path id="silver12m-line" class="yline" d=""></path>
 
+          <!-- Yahoo-ish current price -->
+          <line id="silver12m-curline" class="curline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+          <g id="silver12m-curtag" opacity="0"></g>
+
           <line id="silver12m-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
           <g id="silver12m-xlabels"></g>
           <g id="silver12m-ylabels"></g>
@@ -807,6 +828,9 @@
     const yearlyCrosshairEl = document.getElementById("silver12m-crosshair");
     const yearlyTipEl = document.getElementById("silver12m-tip");
 
+    const yearlyCurLineEl = document.getElementById("silver12m-curline");
+    const yearlyCurTagEl = document.getElementById("silver12m-curtag");
+
     const IMAGE_FLAT = "/img/flat/flat-1.png";
     const IMAGE_CLOSED = "/img/closed/closed-1.png";
 
@@ -862,7 +886,6 @@
       return `$${n.toFixed(2)}`;
     }
 
-    // whole dollars on axis
     function fmtAxisPrice(v) {
       const n = Number(v);
       if (!Number.isFinite(n)) return "—";
@@ -1022,6 +1045,16 @@
       return ticks;
     }
 
+    // Make weekly + yearly plot geometry IDENTICAL on desktop (same padL/padR/padT/padB)
+    function getChartPads(mobile) {
+      if (mobile) {
+        // leave mobile tuning for later (per your plan)
+        return { padL: 20, padR: 72, padT: 12, padB: 34 };
+      }
+      // desktop: identical for both charts
+      return { padL: 22, padR: 58, padT: 14, padB: 40 };
+    }
+
     function clearWeeklyChart() {
       weeklyGridEl.innerHTML = "";
       weeklyBarsEl.innerHTML = "";
@@ -1041,9 +1074,14 @@
       yearlyYLabelsEl.innerHTML = "";
       yearlyBorderEl.setAttribute("d", "");
       yearlyTipEl.innerHTML = "";
+
+      // current price overlay
+      yearlyCurLineEl.setAttribute("opacity", "0");
+      yearlyCurTagEl.setAttribute("opacity", "0");
+      yearlyCurTagEl.innerHTML = "";
     }
 
-    // WEEKLY: Yahoo-pro bars + FIXED left/right "hugging" by stretching plot to x0..x1 and aligning first/last labels to edges
+    // WEEKLY: Yahoo-pro bars
     function renderWeeklyBars({ rows, marketIsOpen }) {
       clearWeeklyChart();
 
@@ -1068,12 +1106,7 @@
       const H = 290;
       const mobile = isMobileNow();
 
-      // Make the plot extend further right (your main complaint) while keeping y-labels safe.
-      // IMPORTANT: y labels are at x = W-6, so padR is the "label gutter".
-      const padL = mobile ? 20 : 18;  // slightly tighter on desktop so plot starts earlier
-      const padR = mobile ? 72 : 54;  // tighter on desktop so plot reaches further right
-      const padT = mobile ? 12 : 14;
-      const padB = mobile ? 34 : 40;
+      const { padL, padR, padT, padB } = getChartPads(mobile);
 
       const innerW = W - padL - padR;
       const innerH = H - padT - padB;
@@ -1081,7 +1114,6 @@
       const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
       weeklyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
 
-      // Keep bars tall / "filled" by using a tight y-range with a little headroom.
       let range = max - min;
       const minVisualRange = 0.9;
       if (range < minVisualRange) range = minVisualRange;
@@ -1099,7 +1131,6 @@
         return padT + innerH * (1 - t);
       };
 
-      // Grid + y labels
       for (const t of yTicks) {
         const yRaw = yFor(t);
 
@@ -1124,14 +1155,13 @@
       const n = pts.length;
       const slotW = innerW / n;
 
-      // A little breathing room between bars but still "touchy"
       const gap = mobile ? 2.2 : 2.8;
       const barW = Math.max(2, slotW - gap);
       const barX = (i) => x0 + i * slotW + (gap / 2);
 
       const yBase = y1;
 
-      // Reference line: first day's close (subtle)
+      // Weekly reference line: first day's close (subtle) — NO current-price overlay here
       const ref = pts[0].value;
       const refY = yFor(ref);
       weeklyReflineEl.setAttribute("x1", x0);
@@ -1140,7 +1170,6 @@
       weeklyReflineEl.setAttribute("y2", refY);
       weeklyReflineEl.setAttribute("opacity", "1");
 
-      // Draw bars + subtle stroke overlay
       const bars = [];
       for (let i = 0; i < n; i++) {
         const v = pts[i].value;
@@ -1182,10 +1211,6 @@
         bars.push(r);
       }
 
-      // X labels:
-      // - First label aligns to left edge (x0) with text-anchor=start (month digits sit on the left edge like you asked)
-      // - Last label aligns to right edge (x1) with text-anchor=end (day digits sit on the right edge)
-      // - Middle labels centered on their bar
       const yLabelY = y1 + (mobile ? 22 : 30);
 
       const firstLbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -1195,7 +1220,6 @@
       firstLbl.textContent = fmtMMDD(pts[0].xLabel);
       weeklyXLabelsEl.appendChild(firstLbl);
 
-      // Optional mids (desktop shows more)
       const midEvery = mobile ? 2 : 1;
       for (let i = 1; i < n - 1; i++) {
         if (i % midEvery !== 0) continue;
@@ -1306,8 +1330,8 @@
       hideTip();
     }
 
-    // YEARLY: line + shaded area (Yahoo-ish), and uses more of the tile (tighter padR)
-    function renderYearlyLine({ rows, marketIsOpen }) {
+    // YEARLY: line + shaded area + Yahoo-ish current price dotted line + tag INSIDE plot (never collides with y-axis)
+    function renderYearlyLine({ rows, marketIsOpen, currentPrice, currentDir }) {
       clearYearlyChart();
 
       silver12mLowEl.textContent = "—";
@@ -1331,10 +1355,7 @@
       const H = 290;
       const mobile = isMobileNow();
 
-      const padL = mobile ? 20 : 24;
-      const padR = mobile ? 72 : 62;
-      const padT = mobile ? 12 : 14;
-      const padB = mobile ? 34 : 40;
+      const { padL, padR, padT, padB } = getChartPads(mobile);
 
       const innerW = W - padL - padR;
       const innerH = H - padT - padB;
@@ -1384,7 +1405,9 @@
       const stepX = innerW / (n - 1);
       const xForIdx = (i) => padL + i * stepX;
 
+      // Yearly trend color: based on overall first->last (keeps the “yearly” meaning)
       const upOverall = pts[n - 1].value >= pts[0].value;
+
       const lineColor = (!marketIsOpen)
         ? "rgba(148,163,184,0.85)"
         : (upOverall ? "rgba(34,197,94,0.95)" : "rgba(239,68,68,0.95)");
@@ -1430,6 +1453,73 @@
         tx.setAttribute("text-anchor", "middle");
         tx.textContent = pts[i].month || monthNameFromYYYYMM(pts[i].xLabel);
         yearlyXLabelsEl.appendChild(tx);
+      }
+
+      // --- current price overlay (Yahoo-ish) ---
+      const cp = Number(currentPrice);
+      const hasCP = marketIsOpen && Number.isFinite(cp);
+      if (hasCP) {
+        const yCP = Math.max(y0 + 2, Math.min(y1 - 2, yFor(cp)));
+
+        // color reflects *current* direction (up/down/neutral), as requested
+        let curColor = "rgba(148,163,184,0.92)";
+        if (currentDir === "up") curColor = "rgba(34,197,94,0.95)";
+        else if (currentDir === "down") curColor = "rgba(239,68,68,0.95)";
+
+        yearlyCurLineEl.setAttribute("x1", x0);
+        yearlyCurLineEl.setAttribute("x2", x1);
+        yearlyCurLineEl.setAttribute("y1", yCP);
+        yearlyCurLineEl.setAttribute("y2", yCP);
+        yearlyCurLineEl.setAttribute("stroke", curColor);
+        yearlyCurLineEl.setAttribute("opacity", "1");
+
+        // tag INSIDE plot area (never in the axis gutter)
+        const tagText = fmtMoney(cp);
+
+        yearlyCurTagEl.innerHTML = "";
+
+        const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        t.setAttribute("class", "price-tag-text");
+        t.setAttribute("x", 0);
+        t.setAttribute("y", 0);
+        t.setAttribute("dominant-baseline", "middle");
+        t.textContent = tagText;
+
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.appendChild(t);
+        yearlyCurTagEl.appendChild(g);
+
+        // measure, then place
+        const bb = g.getBBox();
+        const padX = 10;
+        const padY = 8;
+        const boxW = bb.width + padX * 2;
+        const boxH = 26 + padY; // slightly fixed height for consistent “Yahoo” look
+
+        // keep it inside plot, inset from right edge so it never touches y-axis labels
+        const insetRight = 10;
+        const bx = Math.max(x0 + 6, (x1 - insetRight) - boxW);
+
+        // vertically align to the dotted line, clamp so it stays fully inside plot
+        let by = yCP - (boxH / 2);
+        by = Math.max(y0 + 6, Math.min(y1 - boxH - 6, by));
+
+        const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        r.setAttribute("class", "price-tag-rect");
+        r.setAttribute("x", bx);
+        r.setAttribute("y", by);
+        r.setAttribute("width", boxW);
+        r.setAttribute("height", boxH);
+        r.setAttribute("rx", 10);
+        r.setAttribute("ry", 10);
+        r.setAttribute("stroke", curColor);
+
+        // move text into the box
+        t.setAttribute("x", bx + padX);
+        t.setAttribute("y", by + boxH / 2);
+
+        yearlyCurTagEl.insertBefore(r, g);
+        yearlyCurTagEl.setAttribute("opacity", "1");
       }
 
       function hideTip() {
@@ -1521,8 +1611,12 @@
       const weeklyRows = data?.weekly?.silver || [];
       const yearlyRows = data?.yearly?.silver12m || [];
 
+      const silver = data?.metals?.silver || {};
+      const currentPrice = silver?.price;
+      const currentDir = silver?.direction || "same";
+
       renderWeeklyBars({ rows: weeklyRows, marketIsOpen });
-      renderYearlyLine({ rows: yearlyRows, marketIsOpen });
+      renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir });
     }
 
     function renderMetalsTable(metals) {
