@@ -378,8 +378,9 @@
     .hero-substack {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      margin-top: 10px;
+      gap: 8px;
+      margin-top: 2px;
+      align-items: center;
     }
 
     .hero-subline {
@@ -391,6 +392,29 @@
 
     .hero-subline .hi { color: var(--hi) !important; font-weight: 700; }
     .hero-subline .lo { color: var(--lo) !important; font-weight: 700; }
+
+    .hl-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.45);
+      background: rgba(148,163,184,0.10);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: rgba(226,232,240,0.92);
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      white-space: nowrap;
+    }
+
+    .hl-pill .label {
+      color: rgba(148,163,184,0.95);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
 
     .hero-divider {
       height: 1px;
@@ -603,14 +627,14 @@
             <span id="since-update-pctcombo" class="pctcombo">—</span>
           </div>
 
-          <div class="trend-row" style="margin-top:2px;">
+          <div class="trend-row" style="margin-top:2px; margin-bottom:10px;">
             <div id="trend-pill" class="trend-pill neutral">
               <span id="trend-text">Loading…</span>
             </div>
-          </div>
 
-          <div class="hero-substack">
-            <div class="hero-subline hl-row" id="silver-24h-hl">24h: High — • Low —</div>
+            <div class="hero-substack">
+              <div class="hl-pill" id="silver-24h-hl"><span class="label">Last 24h</span><span class="hi">—</span><span aria-hidden="true">•</span><span class="lo">—</span></div>
+            </div>
           </div>
         </div>
 
@@ -1350,7 +1374,7 @@
     const hi = fmtMoney(silver.high24h);
     const lo = fmtMoney(silver.low24h);
     if (silver24hHLEl) {
-      silver24hHLEl.innerHTML =  `Last 24h: <span class="hi">${hi}</span> • <span class="lo">${lo}</span>`;
+      silver24hHLEl.innerHTML = `<span class="label">Last 24h</span><span class="hi">${hi}</span><span aria-hidden="true">•</span><span class="lo">${lo}</span>`;
     }
 
     const marketIsOpen = !(market && market.isOpen === false);
@@ -1458,7 +1482,9 @@
       sinceMoneyEl.textContent = "—";
       sincePctComboEl.textContent = "—";
 
-      if (silver24hHLEl) silver24hHLEl.innerHTML = "24h: High — • Low —";
+      if (silver24hHLEl) {
+        silver24hHLEl.innerHTML = `<span class="label">Last 24h</span><span class="hi">—</span><span aria-hidden="true">•</span><span class="lo">—</span>`;
+      }
 
       weeklyGridEl.innerHTML = "";
       weeklyBarsEl.innerHTML = "";
