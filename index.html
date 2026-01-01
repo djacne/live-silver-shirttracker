@@ -10,7 +10,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-
   <style>
     :root {
       --bg-up: radial-gradient(circle at top, #4f46e5 0%, #020617 55%, #02010a 100%);
@@ -18,35 +17,26 @@
       --bg-neutral: radial-gradient(circle at top, #4b5563 0%, #020617 60%, #020107 100%);
       --bg-maintenance: radial-gradient(circle at top, #64748b 0%, #0b1220 55%, #03030b 100%);
       --bg-weekend: radial-gradient(circle at top, #111827 0%, #020617 55%, #000108 100%);
-
       --card-bg: rgba(15, 23, 42, 0.92);
       --card-border: rgba(148, 163, 184, 0.28);
-
       --accent-up: #22c55e;
       --accent-down: #ef4444;
-
       --text-main: #f9fafb;
       --text-muted: #9ca3af;
-
       --hi: #22c55e;
       --lo: #ef4444;
       --flat: rgba(148,163,184,0.95);
-
       --badge-bg: rgba(148,163,184,0.10);
       --badge-border: rgba(148,163,184,0.46);
       --badge-text: rgba(226,232,240,0.94);
-
       --badge-up-bg: rgba(34,197,94,0.12);
       --badge-up-border: rgba(34,197,94,0.62);
       --badge-up-text: rgba(187,247,208,0.98);
-
       --badge-down-bg: rgba(239,68,68,0.12);
       --badge-down-border: rgba(248,113,113,0.70);
       --badge-down-text: rgba(254,202,202,0.98);
     }
-
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -60,13 +50,11 @@
       transition: background 0.6s ease;
       overflow-x: hidden;
     }
-
     body.trend-up { background: var(--bg-up); }
     body.trend-down { background: var(--bg-down); }
     body.trend-neutral { background: var(--bg-neutral); }
     body.market-maintenance { background: var(--bg-maintenance); }
     body.market-weekend { background: var(--bg-weekend); }
-
     .bg-layer {
       position: fixed;
       inset: 0;
@@ -74,7 +62,6 @@
       overflow: hidden;
       z-index: 0;
     }
-
     .bg-stars {
       opacity: 0;
       transition: opacity 0.6s ease;
@@ -83,7 +70,6 @@
         radial-gradient(circle at 80% 10%, rgba(191,219,254,0.5) 0, transparent 55%),
         radial-gradient(circle at 50% 85%, rgba(129,140,248,0.5) 0, transparent 55%);
     }
-
     .bg-stars::before {
       content: "";
       position: absolute;
@@ -107,7 +93,6 @@
       opacity: 0.65;
       animation: twinkle 6s linear infinite alternate;
     }
-
     .bg-stars::after{
       content:"";
       position:absolute;
@@ -123,10 +108,8 @@
       opacity:0.40;
       animation: twinkle2 8s linear infinite alternate;
     }
-
     @keyframes twinkle { 0% { opacity: 0.40; transform: translateY(0); } 100% { opacity: 1; transform: translateY(10px); } }
     @keyframes twinkle2{ 0% { opacity:0.22; transform: translateY(0); } 100% { opacity:0.52; transform: translateY(8px); } }
-
     .bg-fire {
       opacity: 0;
       transition: opacity 0.6s ease;
@@ -136,7 +119,6 @@
         radial-gradient(circle at 100% 120%, rgba(251,146,60,0.7) 0, transparent 60%);
       mix-blend-mode: screen;
     }
-
     .bg-fire::before {
       content: "";
       position: absolute;
@@ -145,12 +127,10 @@
       opacity: 0.8;
       animation: heatWave 4s ease-in-out infinite alternate;
     }
-
     @keyframes heatWave {
       0% { transform: translateY(0) scaleY(1); opacity: 0.4; }
       100% { transform: translateY(-18px) scaleY(1.1); opacity: 0.9; }
     }
-
     .coins-rain, .bills-rain, .crash-rain {
       position: absolute;
       inset: -20vh 0;
@@ -160,7 +140,6 @@
       transition: opacity 0.6s ease;
       font-size: 1.4rem;
     }
-
     .coin, .bill, .crash {
       position: absolute;
       top: -10vh;
@@ -171,19 +150,16 @@
     .coin { filter: drop-shadow(0 0 6px rgba(250, 250, 210, 0.8)); }
     .bill { filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.9)); }
     .crash { filter: drop-shadow(0 0 8px rgba(239,68,68,0.85)); font-size: 1.6rem; }
-
     @keyframes fall {
       0% { transform: translate3d(var(--x), -120vh, 0) rotate(0deg); opacity: 0; }
       10% { opacity: 1; }
       100% { transform: translate3d(calc(var(--x) + 20px), 120vh, 0) rotate(360deg); opacity: 0; }
     }
-
     body.trend-up .bg-stars { opacity: 1; }
     body.trend-up .coins-rain { opacity: 0.9; }
     body.trend-down .bg-fire { opacity: 1; }
     body.trend-down .bills-rain { opacity: 0.9; }
     body.trend-down .crash-rain { opacity: 0.95; }
-
     .rockets-layer, .crash-rockets-layer, .sprinkles-layer {
       position: absolute;
       inset: 0;
@@ -196,7 +172,6 @@
     body.trend-up .rockets-layer { opacity: 0.85; }
     body.trend-down .crash-rockets-layer { opacity: 0.85; }
     body.trend-up .sprinkles-layer { opacity: 0.55; }
-
     .rocket, .crash-rocket {
       position: absolute;
       font-size: 1.6rem;
@@ -208,7 +183,6 @@
       transform-origin: center;
       will-change: transform, opacity;
     }
-
     .rocket { bottom: -14vh; filter: drop-shadow(0 0 8px rgba(248,250,252,0.22)); }
     .rocket-l { left: var(--x); animation-name: rocketFlyL; }
     @keyframes rocketFlyL {
@@ -217,7 +191,6 @@
       60%  { opacity: 0.55; }
       100% { transform: translate3d(120vw, -140vh, 0) rotate(-35deg) scale(1.05); opacity: 0; }
     }
-
     .crash-rocket { top: -14vh; filter: drop-shadow(0 0 10px rgba(239,68,68,0.35)); }
     .crash-rocket-r { left: var(--x); animation-name: crashFlyR; }
     @keyframes crashFlyR {
@@ -226,7 +199,6 @@
       60%  { opacity: 0.55; }
       100% { transform: translate3d(-140vw, 120vh, 0) rotate(35deg) scale(1.05); opacity: 0; }
     }
-
     .sprinkles-layer { inset: -10vh 0; font-size: 1.15rem; }
     .sprinkle {
       position: absolute;
@@ -244,7 +216,6 @@
       85%  { opacity: 0.5; }
       100% { transform: translate3d(8px, 140vh, 0) rotate(160deg); opacity: 0; }
     }
-
     .page {
       width: 100%;
       max-width: 1024px;
@@ -252,21 +223,18 @@
       position: relative;
       z-index: 1;
     }
-
     header { text-align: center; margin-bottom: 16px; }
     header h1 {
       font-size: clamp(1.6rem, 2.6vw, 2.2rem);
       margin: 0;
       letter-spacing: 0.03em;
     }
-
     .layout {
       display: grid;
       grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
       gap: 18px;
     }
     @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
-
     .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -275,14 +243,12 @@
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(10px);
     }
-
     .hero-image-card {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 10px;
     }
-
     .hero-image-wrapper {
       position: relative;
       width: 100%;
@@ -291,7 +257,6 @@
       overflow: hidden;
       border-radius: 16px;
     }
-
     .hero-image-wrapper img {
       width: 100%;
       height: 100%;
@@ -299,7 +264,6 @@
       object-position: center;
       display: block;
     }
-
     .hero-info {
       display: flex;
       flex-direction: column;
@@ -308,14 +272,12 @@
       align-items: stretch;
       text-align: center;
     }
-
     .hero-stack {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 10px;
     }
-
     .quirk-badge {
       display: inline-flex;
       align-items: center;
@@ -333,23 +295,9 @@
       white-space: nowrap;
       backdrop-filter: blur(8px);
     }
-
-    .quirk-badge.up {
-      border-color: var(--badge-up-border);
-      background: var(--badge-up-bg);
-      color: var(--badge-up-text);
-    }
-    .quirk-badge.down {
-      border-color: var(--badge-down-border);
-      background: var(--badge-down-bg);
-      color: var(--badge-down-text);
-    }
-    .quirk-badge.flat {
-      border-color: rgba(148,163,184,0.46);
-      background: rgba(148,163,184,0.10);
-      color: rgba(226,232,240,0.94);
-    }
-
+    .quirk-badge.up { border-color: var(--badge-up-border); background: var(--badge-up-bg); color: var(--badge-up-text); }
+    .quirk-badge.down { border-color: var(--badge-down-border); background: var(--badge-down-bg); color: var(--badge-down-text); }
+    .quirk-badge.flat { border-color: rgba(148,163,184,0.46); background: rgba(148,163,184,0.10); color: rgba(226,232,240,0.94); }
     .headline-row {
       display: inline-flex;
       align-items: baseline;
@@ -359,33 +307,18 @@
       font-variant-numeric: tabular-nums lining-nums;
       margin-top: 2px;
     }
-
     .headline-price {
       font-size: clamp(2.25rem, 4.1vw, 2.95rem);
       font-weight: 800;
       letter-spacing: 0.01em;
       color: var(--text-main);
     }
-
     .headline-unit {
       font-size: 0.95rem;
       font-weight: 700;
       color: rgba(148,163,184,0.92);
       letter-spacing: 0.01em;
     }
-
-    .meta-row {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      align-items: center;
-      font-size: 0.96rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      font-feature-settings: "tnum" 1, "lnum" 1;
-      font-variant-numeric: tabular-nums lining-nums;
-    }
-
     .since-row {
       display: inline-flex;
       align-items: center;
@@ -396,7 +329,6 @@
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
     }
-
     .since-row .money,
     .since-row .pctcombo {
       font-feature-settings: "tnum" 1, "lnum" 1;
@@ -404,11 +336,9 @@
       font-weight: 700;
       white-space: nowrap;
     }
-
     .since-row.up { color: var(--accent-up); }
     .since-row.down { color: var(--accent-down); }
     .since-row.flat { color: rgba(226,232,240,0.88); }
-
     .hl-row {
       display: inline-flex;
       align-items: center;
@@ -420,7 +350,6 @@
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
     }
-
     .hl-row .label {
       color: rgba(148,163,184,0.92);
       font-weight: 800;
@@ -428,22 +357,15 @@
       text-transform: uppercase;
       font-size: 0.78rem;
     }
-
     .hl-row .hi { color: var(--hi); font-weight: 700; }
     .hl-row .lo { color: var(--lo); font-weight: 700; }
-
     .hero-divider {
       height: 1px;
       width: 100%;
       background: linear-gradient(to right, transparent, rgba(148,163,184,0.55), transparent);
       opacity: 0.7;
     }
-
-    .hero-divider.soft {
-      opacity: 0.35;
-      margin: 4px 0;
-    }
-
+    .hero-divider.soft { opacity: 0.35; margin: 4px 0; }
     .hero-meta {
       display: flex;
       flex-direction: column;
@@ -452,9 +374,7 @@
       font-size: 0.85rem;
       color: var(--text-muted);
     }
-
     .last-updated { font-size: 0.85rem; color: var(--text-muted); text-align: center; }
-
     .section-title {
       font-size: 0.92rem;
       text-transform: uppercase;
@@ -463,7 +383,6 @@
       margin: 0 0 10px 0;
       text-align: center;
     }
-
     .chart-wrap {
       width: 100%;
       overflow: hidden;
@@ -472,7 +391,6 @@
       background: rgba(2, 6, 23, 0.25);
       padding: 10px;
     }
-
     .chart-wrap svg {
       width: 100%;
       height: 260px;
@@ -480,7 +398,6 @@
       touch-action: pan-y;
       user-select: none;
     }
-
     .chart-wrap svg text {
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       fill: rgba(170,180,195,0.98);
@@ -489,23 +406,10 @@
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
     }
-
-    .chart-wrap svg .gridline {
-      stroke: rgba(148,163,184,0.12);
-      stroke-width: 1;
-    }
-
+    .chart-wrap svg .gridline { stroke: rgba(148,163,184,0.12); stroke-width: 1; }
     .chart-wrap svg .bar { shape-rendering: crispEdges; }
-
-    .chart-wrap svg .crosshair {
-      stroke: rgba(226,232,240,0.70);
-      stroke-width: 2;
-      stroke-dasharray: 4 4;
-      opacity: 0;
-    }
-
+    .chart-wrap svg .crosshair { stroke: rgba(226,232,240,0.70); stroke-width: 2; stroke-dasharray: 4 4; opacity: 0; }
     .chart-wrap svg .tipbox { opacity: 0; }
-
     @media (max-width: 600px) {
       .chart-wrap { padding: 10px; }
       .chart-wrap svg { height: 260px; }
@@ -514,7 +418,6 @@
       .hl-row { font-size: 0.96rem; }
       .since-row { font-size: 0.96rem; }
     }
-
     .chart-meta {
       display: flex;
       justify-content: space-between;
@@ -528,18 +431,10 @@
     }
     .chart-meta .hi { color: var(--hi); }
     .chart-meta .lo { color: var(--lo); }
-
     .table-card { margin-top: 18px; }
-
     table { width: 100%; border-collapse: collapse; }
     thead { border-bottom: 1px solid rgba(148, 163, 184, 0.4); }
-
-    th, td {
-      padding: 10px 2px;
-      text-align: left;
-      font-size: 0.92rem;
-    }
-
+    th, td { padding: 10px 2px; text-align: left; font-size: 0.92rem; }
     th {
       color: var(--text-muted);
       font-weight: 700;
@@ -547,12 +442,10 @@
       letter-spacing: 0.03em;
       text-transform: uppercase;
     }
-
     td { font-weight: 500; color: rgba(226,232,240,0.92); }
     .metal-name { font-weight: 600; }
     .price-cell { text-align: right; font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; font-weight: 600; }
     .change-cell { text-align: right; }
-
     .change {
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
@@ -779,30 +672,6 @@
 
   window.__LAST_DATA__ = null;
 
-  const LS_SILVER_LAST = "silver_last_seen_v1";
-
-  function readLastSeen() {
-    try {
-      const raw = localStorage.getItem(LS_SILVER_LAST);
-      if (!raw) return null;
-      const obj = JSON.parse(raw);
-      if (!obj) return null;
-      const price = Number(obj.price);
-      const at = Number(obj.at);
-      if (!Number.isFinite(price) || price <= 0) return null;
-      if (!Number.isFinite(at) || at <= 0) return null;
-      return { price, at };
-    } catch {
-      return null;
-    }
-  }
-
-  function writeLastSeen(price) {
-    try {
-      localStorage.setItem(LS_SILVER_LAST, JSON.stringify({ price: Number(price), at: Date.now() }));
-    } catch {}
-  }
-
   function isMobileNow() {
     return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
   }
@@ -849,12 +718,6 @@
     return `$${n.toFixed(2)}`;
   }
 
-  function fmtPctUnsigned(v) {
-    const n = Number(v);
-    if (!Number.isFinite(n)) return "—";
-    return `${Math.abs(n).toFixed(2)}%`;
-  }
-
   function fmtUpdatedAt(updatedAt) {
     if (!updatedAt) return "—";
     const dt = new Date(updatedAt);
@@ -869,9 +732,7 @@
 
     const closedType = (market?.closedType || "").toLowerCase();
     const reason = (market?.reason || "").toLowerCase();
-
-    const isMaintenance =
-      closedType === "maintenance" || reason.includes("daily") || reason.includes("maintenance");
+    const isMaintenance = closedType === "maintenance" || reason.includes("daily") || reason.includes("maintenance");
 
     if (isMaintenance) {
       bodyEl.classList.add("market-maintenance");
@@ -893,7 +754,6 @@
       trendPillEl.className = "quirk-badge up";
       trendTextEl.textContent = "Closer to retirement";
       setTrendMode("up");
-
       if (shouldSwapImage) {
         _currentImageSrc = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
         _currentDirection = "up";
@@ -906,7 +766,6 @@
       trendPillEl.className = "quirk-badge down";
       trendTextEl.textContent = "Get back to work";
       setTrendMode("down");
-
       if (shouldSwapImage) {
         _currentImageSrc = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
         _currentDirection = "down";
@@ -918,7 +777,6 @@
     trendPillEl.className = "quirk-badge flat";
     trendTextEl.textContent = "Flat as the earth";
     setTrendMode("neutral");
-
     _currentDirection = "neutral";
     _currentImageSrc = IMAGE_FLAT;
     characterImgEl.src = _currentImageSrc;
@@ -934,26 +792,22 @@
     else headlinePriceEl.style.color = "var(--text-main)";
   }
 
-  function renderSinceLastUpdate(curPrice) {
-    const cur = Number(curPrice);
-    if (!Number.isFinite(cur) || cur <= 0) {
+  function fmtPctUnsigned(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "—";
+    return `${Math.abs(n).toFixed(2)}%`;
+  }
+
+  function renderSinceLastUpdateFromAPI(silver) {
+    const delta = Number(silver?.tickChange);
+    const pct = Number(silver?.tickPct);
+
+    if (!Number.isFinite(delta) || !Number.isFinite(pct)) {
       sinceRowEl.className = "since-row flat";
       sinceMoneyEl.textContent = "—";
       sincePctComboEl.textContent = "—";
       return;
     }
-
-    const prev = readLastSeen();
-    if (!prev || !Number.isFinite(prev.price) || prev.price <= 0) {
-      sinceRowEl.className = "since-row flat";
-      sinceMoneyEl.textContent = "—";
-      sincePctComboEl.textContent = "—";
-      writeLastSeen(cur);
-      return;
-    }
-
-    const delta = cur - prev.price;
-    const pct = (delta / prev.price) * 100;
 
     let cls = "flat";
     let arrow = "↔";
@@ -963,8 +817,6 @@
     sinceRowEl.className = "since-row " + cls;
     sinceMoneyEl.textContent = `${delta > 0 ? "+" : (delta < 0 ? "−" : "")}$${Math.abs(delta).toFixed(2)}`;
     sincePctComboEl.textContent = `${arrow}${fmtPctUnsigned(pct)}`;
-
-    writeLastSeen(cur);
   }
 
   function fmtMMDD(yyyy_mm_dd) {
@@ -1044,7 +896,6 @@
 
     if (minEl) minEl.textContent = "—";
     if (maxEl) maxEl.textContent = "—";
-
     if (!Array.isArray(rows) || rows.length < 2) return;
 
     const pts = rows
@@ -1376,7 +1227,7 @@
     lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
     headlinePriceEl.textContent = fmtMoney(silver.price);
 
-    renderSinceLastUpdate(silver.price);
+    renderSinceLastUpdateFromAPI(silver);
 
     const hi = fmtMoney(silver.high24h);
     const lo = fmtMoney(silver.low24h);
@@ -1433,10 +1284,10 @@
     const fake = {
       updatedAt: new Date().toISOString(),
       metals: {
-        silver: { price: 72.27, direction: "down", change: -4.12, high24h: 83.96, low24h: 72.27 },
-        gold: { price: 4326.15, direction: "down", change: -4.94 },
-        platinum: { price: 1012.40, direction: "same", change: 0.0 },
-        palladium: { price: 967.35, direction: "same", change: 0.0 }
+        silver: { price: 72.27, direction: "down", change: -4.12, high24h: 83.96, low24h: 72.27, tickChange: -0.64, tickPct: -0.89 },
+        gold: { price: 4326.15, direction: "down", change: -4.94, tickChange: -12.3, tickPct: -0.28 },
+        platinum: { price: 1012.40, direction: "same", change: 0.0, tickChange: 0.0, tickPct: 0.0 },
+        palladium: { price: 967.35, direction: "same", change: 0.0, tickChange: 0.0, tickPct: 0.0 }
       },
       weekly: { silver: fakeWeekly },
       yearly: { silver12m: fakeYearly },
@@ -1450,6 +1301,8 @@
       fake.metals.silver.direction = "same";
       fake.market.isOpen = true;
       fake.market.closedType = null;
+      fake.metals.silver.tickChange = 0;
+      fake.metals.silver.tickPct = 0;
     }
 
     if (mode === "closed") {
