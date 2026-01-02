@@ -857,6 +857,26 @@
     </section>
 
     <section class="card" style="margin-top:18px;">
+      <div class="section-title">1-Month Trend</div>
+
+      <div class="chart-wrap">
+        <svg id="silver1m-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 1-month trend chart">
+          <g id="silver1m-grid"></g>
+          <line id="silver1m-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+          <g id="silver1m-bars"></g>
+          <line id="silver1m-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
+          <g id="silver1m-xlabels"></g>
+          <g id="silver1m-ylabels"></g>
+          <g id="silver1m-tip" class="tipbox"></g>
+          <path id="silver1m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+          <rect id="silver1m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
+        </svg>
+
+        <div class="chart-meta" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:18px;">
       <div class="section-title">12-Month Trend</div>
 
       <div class="chart-wrap">
@@ -941,6 +961,16 @@
     const weeklyHitEl = document.getElementById("silver7d-hit");
     const weeklyCrosshairEl = document.getElementById("silver7d-crosshair");
     const weeklyTipEl = document.getElementById("silver7d-tip");
+
+    const monthlyGridEl = document.getElementById("silver1m-grid");
+    const monthlyBarsEl = document.getElementById("silver1m-bars");
+    const monthlyReflineEl = document.getElementById("silver1m-refline");
+    const monthlyXLabelsEl = document.getElementById("silver1m-xlabels");
+    const monthlyYLabelsEl = document.getElementById("silver1m-ylabels");
+    const monthlyBorderEl = document.getElementById("silver1m-border");
+    const monthlyHitEl = document.getElementById("silver1m-hit");
+    const monthlyCrosshairEl = document.getElementById("silver1m-crosshair");
+    const monthlyTipEl = document.getElementById("silver1m-tip");
 
     const yearlyDefsEl = document.getElementById("silver12m-defs");
     const yearlyGridEl = document.getElementById("silver12m-grid");
@@ -1236,6 +1266,12 @@
       return names[m - 1];
     }
 
+    function dayOfMonthFromYYYYMMDD(yyyy_mm_dd) {
+      if (!yyyy_mm_dd || typeof yyyy_mm_dd !== "string") return null;
+      const d = Number(yyyy_mm_dd.slice(8, 10));
+      return Number.isFinite(d) ? d : null;
+    }
+
     function niceNumber(x) {
       if (!Number.isFinite(x) || x <= 0) return 1;
       const exp = Math.floor(Math.log10(x));
@@ -1275,6 +1311,7 @@
     function getChartPads(mobile, kind) {
       if (mobile) {
         if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
+        if (kind === "monthly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
         if (kind === "yearly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
         return { padL: 10, padR: 56, padT: 8,  padB: 34 };
       }
@@ -1289,6 +1326,16 @@
       weeklyBorderEl.setAttribute("d", "");
       weeklyTipEl.innerHTML = "";
       weeklyReflineEl.setAttribute("opacity", "0");
+    }
+
+    function clearMonthlyChart() {
+      monthlyGridEl.innerHTML = "";
+      monthlyBarsEl.innerHTML = "";
+      monthlyXLabelsEl.innerHTML = "";
+      monthlyYLabelsEl.innerHTML = "";
+      monthlyBorderEl.setAttribute("d", "");
+      monthlyTipEl.innerHTML = "";
+      monthlyReflineEl.setAttribute("opacity", "0");
     }
 
     function clearYearlyChart() {
@@ -1541,6 +1588,239 @@
       weeklyHitEl.onpointerleave = hideTip;
       weeklyHitEl.onpointerup = hideTip;
       weeklyHitEl.onpointercancel = hideTip;
+
+      hideTip();
+    }
+
+    function renderMonthlyBars({ rows, marketIsOpen }) {
+      clearMonthlyChart();
+      if (!Array.isArray(rows) || rows.length < 2) return;
+
+      const pts = rows
+        .map((r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }))
+        .filter((p) => p?.xLabel && Number.isFinite(p.value));
+
+      if (pts.length < 2) return;
+
+      let min = Infinity, max = -Infinity;
+      for (const p of pts) { if (p.value < min) min = p.value; if (p.value > max) max = p.value; }
+      if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+
+      const mobile = isMobileNow();
+      const { W, H } = chartSize(mobile);
+
+      const monthlySvg = monthlyHitEl.ownerSVGElement;
+      syncSvgBox(monthlySvg, W, H);
+
+      monthlyCrosshairEl.setAttribute("y2", String(H));
+      monthlyHitEl.setAttribute("width", String(W));
+      monthlyHitEl.setAttribute("height", String(H));
+
+      const { padL, padR, padT, padB } = getChartPads(mobile, "monthly");
+
+      const innerW = W - padL - padR;
+      const innerH = H - padT - padB;
+
+      const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
+      monthlyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
+
+      let range = max - min;
+      const minVisualRange = 1.2;
+      if (range < minVisualRange) range = minVisualRange;
+
+      const head = range * 0.06;
+      const yMinData = min - head;
+      const yMaxData = max + head;
+
+      const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 3 : 5);
+      const yMin = Math.min(...yTicks);
+      const yMax = Math.max(...yTicks);
+
+      const yFor = (v) => {
+        const t = (v - yMin) / (yMax - yMin || 1);
+        return padT + innerH * (1 - t);
+      };
+
+      for (const t of yTicks) {
+        const yRaw = yFor(t);
+
+        const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        gl.setAttribute("x1", x0);
+        gl.setAttribute("x2", x1);
+        gl.setAttribute("y1", yRaw);
+        gl.setAttribute("y2", yRaw);
+        gl.setAttribute("class", "gridline");
+        monthlyGridEl.appendChild(gl);
+
+        const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
+        const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        tx.setAttribute("x", W - 6);
+        tx.setAttribute("text-anchor", "end");
+        tx.setAttribute("y", y);
+        tx.setAttribute("dominant-baseline", "middle");
+        tx.textContent = fmtAxisPrice(t);
+        monthlyYLabelsEl.appendChild(tx);
+      }
+
+      const n = pts.length;
+      const slotW = innerW / n;
+
+      const gap = mobile ? 1.6 : 2.4;
+      const barW = Math.max(2, slotW - gap);
+      const barX = (i) => x0 + i * slotW + (gap / 2);
+      const barCenter = (i) => barX(i) + (barW / 2);
+
+      const yBase = y1;
+      monthlyReflineEl.setAttribute("opacity", "0");
+
+      const bars = [];
+      for (let i = 0; i < n; i++) {
+        const v = pts[i].value;
+        const yTop = yFor(v);
+        const h = Math.max(1, yBase - yTop);
+
+        const prev = (i > 0) ? pts[i - 1].value : v;
+        const isUp = v >= prev;
+        const isFlat = v === prev;
+
+        const fill = (!marketIsOpen)
+          ? "rgba(148,163,184,0.55)"
+          : (isFlat ? "rgba(148,163,184,0.62)" : (isUp ? "rgba(34,197,94,0.90)" : "rgba(239,68,68,0.90)"));
+
+        const x = barX(i);
+
+        const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        r.setAttribute("class", "bar");
+        r.setAttribute("x", x);
+        r.setAttribute("y", yTop);
+        r.setAttribute("width", barW);
+        r.setAttribute("height", h);
+        r.setAttribute("rx", mobile ? 6 : 3.0);
+        r.setAttribute("ry", mobile ? 6 : 3.0);
+        r.setAttribute("fill", fill);
+        monthlyBarsEl.appendChild(r);
+
+        const s = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        s.setAttribute("class", "bar-stroke");
+        s.setAttribute("x", x);
+        s.setAttribute("y", yTop);
+        s.setAttribute("width", barW);
+        s.setAttribute("height", h);
+        s.setAttribute("rx", mobile ? 6 : 3.0);
+        s.setAttribute("ry", mobile ? 6 : 3.0);
+        s.setAttribute("fill", "none");
+        monthlyBarsEl.appendChild(s);
+
+        bars.push(r);
+      }
+
+      let midIdx = 0;
+      let best = Infinity;
+      for (let i = 0; i < n; i++) {
+        const d = dayOfMonthFromYYYYMMDD(pts[i].xLabel);
+        if (d == null) continue;
+        const diff = Math.abs(d - 15);
+        if (diff < best) { best = diff; midIdx = i; }
+      }
+
+      const labelY = y1 + (mobile ? 26 : 30);
+      const labelIdxs = new Set([0, n - 1, midIdx]);
+      const ordered = Array.from(labelIdxs).filter((i) => i >= 0 && i < n).sort((a,b) => a-b);
+
+      for (const i of ordered) {
+        const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        tx.setAttribute("x", barCenter(i));
+        tx.setAttribute("y", labelY);
+        tx.setAttribute("text-anchor", "middle");
+        tx.textContent = (i === n - 1) ? "Today" : fmtMMDD(pts[i].xLabel);
+        monthlyXLabelsEl.appendChild(tx);
+      }
+
+      function clearHover() { for (const b of bars) b.classList.remove("hover"); }
+
+      function hideTip() {
+        monthlyCrosshairEl.style.opacity = "0";
+        monthlyTipEl.style.opacity = "0";
+        monthlyTipEl.innerHTML = "";
+        clearHover();
+      }
+
+      function showTip(i) {
+        i = Math.max(0, Math.min(n - 1, i));
+
+        clearHover();
+        if (bars[i]) bars[i].classList.add("hover");
+
+        const v = pts[i].value;
+        const xCenter = barCenter(i);
+
+        monthlyCrosshairEl.setAttribute("x1", xCenter);
+        monthlyCrosshairEl.setAttribute("x2", xCenter);
+        monthlyCrosshairEl.style.opacity = "1";
+
+        const label = fmtMMDD(pts[i].xLabel);
+        const price = fmtMoney(v);
+
+        monthlyTipEl.innerHTML = "";
+        monthlyTipEl.style.opacity = "1";
+
+        const tipPaddingX = 12;
+        const tipPaddingY = 10;
+
+        const tx1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        tx1.textContent = label;
+        tx1.setAttribute("x", 0);
+        tx1.setAttribute("y", 0);
+
+        const tx2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        tx2.textContent = price;
+        tx2.setAttribute("x", 0);
+        tx2.setAttribute("y", 22);
+
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.appendChild(tx1);
+        g.appendChild(tx2);
+        monthlyTipEl.appendChild(g);
+
+        const bb = g.getBBox();
+        const boxW = bb.width + tipPaddingX * 2;
+        const boxH = bb.height + tipPaddingY * 2;
+
+        let bx = xCenter - boxW / 2;
+        bx = Math.max(x0 + 6, Math.min(x1 - boxW - 6, bx));
+        const by = y0 + 8;
+
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", bx);
+        rect.setAttribute("y", by);
+        rect.setAttribute("width", boxW);
+        rect.setAttribute("height", boxH);
+        rect.setAttribute("rx", 10);
+        rect.setAttribute("ry", 10);
+        rect.setAttribute("fill", "rgba(2,6,23,0.78)");
+        rect.setAttribute("stroke", "rgba(148,163,184,0.35)");
+        rect.setAttribute("stroke-width", "1");
+
+        g.setAttribute("transform", `translate(${bx + tipPaddingX}, ${by + tipPaddingY + 14})`);
+        monthlyTipEl.insertBefore(rect, g);
+      }
+
+      function indexFromClientX(clientX) {
+        const svg = monthlyHitEl.ownerSVGElement;
+        const pt = svg.createSVGPoint();
+        pt.x = clientX; pt.y = 0;
+        const ctm = svg.getScreenCTM();
+        if (!ctm) return 0;
+        const p = pt.matrixTransform(ctm.inverse());
+        const rel = Math.max(0, Math.min(innerW - 0.0001, p.x - x0));
+        return Math.floor(rel / slotW);
+      }
+
+      monthlyHitEl.onpointerenter = (e) => { try { monthlyHitEl.setPointerCapture(e.pointerId); } catch (_) {} };
+      monthlyHitEl.onpointermove = (e) => showTip(indexFromClientX(e.clientX));
+      monthlyHitEl.onpointerleave = hideTip;
+      monthlyHitEl.onpointerup = hideTip;
+      monthlyHitEl.onpointercancel = hideTip;
 
       hideTip();
     }
@@ -1872,6 +2152,7 @@
       const marketIsOpen = !(market && market.isOpen === false);
 
       const weeklyRows = data?.weekly?.silver || [];
+      const monthlyRows = data?.monthly?.silver || [];
       const yearlyRows = data?.yearly?.silver12m || [];
 
       const silver = data?.metals?.silver || {};
@@ -1881,6 +2162,7 @@
       const currentDir = (d === "same" ? "neutral" : d);
 
       renderWeeklyBars({ rows: weeklyRows, marketIsOpen });
+      renderMonthlyBars({ rows: monthlyRows, marketIsOpen });
       renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir });
     }
 
@@ -2001,6 +2283,25 @@
         { date: "2026-01-01", close: 73.10 }
       ];
 
+      const fakeMonthly = [
+        { date: "2025-12-06", close: 70.35 },
+        { date: "2025-12-09", close: 71.10 },
+        { date: "2025-12-10", close: 70.82 },
+        { date: "2025-12-11", close: 71.55 },
+        { date: "2025-12-12", close: 71.05 },
+        { date: "2025-12-16", close: 72.40 },
+        { date: "2025-12-17", close: 72.10 },
+        { date: "2025-12-18", close: 72.95 },
+        { date: "2025-12-19", close: 72.20 },
+        { date: "2025-12-23", close: 73.15 },
+        { date: "2025-12-24", close: 72.70 },
+        { date: "2025-12-26", close: 78.54 },
+        { date: "2025-12-29", close: 83.96 },
+        { date: "2025-12-30", close: 78.06 },
+        { date: "2025-12-31", close: 73.29 },
+        { date: "2026-01-01", close: 72.70 }
+      ];
+
       const fakeYearly = [
         { ym: "2025-01", month: "Jan", close: 31.7335 },
         { ym: "2025-02", month: "Feb", close: 33.391 },
@@ -2035,6 +2336,7 @@
           palladium: { price: 967.35, direction: "same", change: 0.0, tickChange: 0.0, tickPct: 0.0 }
         },
         weekly: { silver: fakeWeekly },
+        monthly: { silver: fakeMonthly },
         yearly: { silver12m: fakeYearly },
         market: { isOpen: true, reason: "Open", closedType: null }
       };
@@ -2094,6 +2396,7 @@
         setText(sum12mHiEl, "—"); setText(sum12mLoEl, "—"); sum12mRangeEl.textContent = "—";
 
         clearWeeklyChart();
+        clearMonthlyChart();
         clearYearlyChart();
       }
     }
