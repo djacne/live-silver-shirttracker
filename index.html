@@ -1746,11 +1746,11 @@
       const minVisualRange = 1.2;
       if (range < minVisualRange) range = minVisualRange;
 
-      const head = range * 0.06;
+      const head = range * (mobile ? 0.04 : 0.06);
       const yMinData = min - head;
       const yMaxData = max + head;
 
-      const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 5 : 5);
+      const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
       const yMin = Math.min(...yTicks);
       const yMax = Math.max(...yTicks);
 
@@ -1999,7 +1999,7 @@
       const minVisualRange = 2.0;
       if (range < minVisualRange) range = minVisualRange;
 
-      const head = range * (mobile ? 0.07 : 0.10);
+      const head = range * (mobile ? 0.06 : 0.10);
       const yMinData = min - head;
       const yMaxData = max + head;
 
