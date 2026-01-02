@@ -924,6 +924,7 @@
     </footer>
   </div>
 
+
   <script>
     const BACKEND_URL = "https://api.dansretirement.com/";
 
@@ -1318,6 +1319,99 @@
       return { padL: 20, padR: 52, padT: 12, padB: 36 };
     }
 
+    function ensureLineAndTag(svgEl, lineId, tagId) {
+      let line = svgEl.querySelector("#" + lineId);
+      if (!line) {
+        line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("id", lineId);
+        line.setAttribute("class", "curline");
+        line.setAttribute("opacity", "0");
+        svgEl.appendChild(line);
+      }
+
+      let tag = svgEl.querySelector("#" + tagId);
+      if (!tag) {
+        tag = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        tag.setAttribute("id", tagId);
+        tag.setAttribute("opacity", "0");
+        svgEl.appendChild(tag);
+      }
+      return { line, tag };
+    }
+
+    function hideLineAndTag(svgEl, lineId, tagId) {
+      const line = svgEl.querySelector("#" + lineId);
+      const tag = svgEl.querySelector("#" + tagId);
+      if (line) line.setAttribute("opacity", "0");
+      if (tag) { tag.setAttribute("opacity", "0"); tag.innerHTML = ""; }
+    }
+
+    function renderCurrentPriceLine({ svgEl, lineId, tagId, x0, x1, y0, y1, yFor, currentPrice, currentDir, marketIsOpen }) {
+      const cp = Number(currentPrice);
+      if (!Number.isFinite(cp)) {
+        hideLineAndTag(svgEl, lineId, tagId);
+        return;
+      }
+
+      const { line, tag } = ensureLineAndTag(svgEl, lineId, tagId);
+
+      let curColor = "rgba(148,163,184,0.92)";
+      if (currentDir === "up") curColor = "rgba(34,197,94,0.95)";
+      else if (currentDir === "down") curColor = "rgba(239,68,68,0.95)";
+      if (!marketIsOpen) curColor = "rgba(148,163,184,0.70)";
+
+      const yCP = Math.max(y0 + 2, Math.min(y1 - 2, yFor(cp)));
+
+      line.setAttribute("x1", x0);
+      line.setAttribute("x2", x1);
+      line.setAttribute("y1", yCP);
+      line.setAttribute("y2", yCP);
+      line.setAttribute("stroke", curColor);
+      line.setAttribute("opacity", "1");
+
+      const tagText = fmtMoney(cp);
+      tag.innerHTML = "";
+
+      const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      t.setAttribute("class", "price-tag-text");
+      t.setAttribute("x", 0);
+      t.setAttribute("y", 0);
+      t.setAttribute("dominant-baseline", "middle");
+      t.textContent = tagText;
+
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.appendChild(t);
+      tag.appendChild(g);
+
+      const bb = g.getBBox();
+      const padX = 10;
+      const padY = 8;
+      const boxW = bb.width + padX * 2;
+      const boxH = 26 + padY;
+
+      const insetRight = 10;
+      const bx = Math.max(x0 + 6, (x1 - insetRight) - boxW);
+
+      let by = yCP - (boxH / 2);
+      by = Math.max(y0 + 6, Math.min(y1 - boxH - 6, by));
+
+      const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      r.setAttribute("class", "price-tag-rect");
+      r.setAttribute("x", bx);
+      r.setAttribute("y", by);
+      r.setAttribute("width", boxW);
+      r.setAttribute("height", boxH);
+      r.setAttribute("rx", 10);
+      r.setAttribute("ry", 10);
+      r.setAttribute("stroke", curColor);
+
+      t.setAttribute("x", bx + padX);
+      t.setAttribute("y", by + boxH / 2);
+
+      tag.insertBefore(r, g);
+      tag.setAttribute("opacity", "1");
+    }
+
     function clearWeeklyChart() {
       weeklyGridEl.innerHTML = "";
       weeklyBarsEl.innerHTML = "";
@@ -1326,6 +1420,8 @@
       weeklyBorderEl.setAttribute("d", "");
       weeklyTipEl.innerHTML = "";
       weeklyReflineEl.setAttribute("opacity", "0");
+      const svgEl = weeklyHitEl.ownerSVGElement;
+      hideLineAndTag(svgEl, "silver7d-curline", "silver7d-curtag");
     }
 
     function clearMonthlyChart() {
@@ -1336,6 +1432,8 @@
       monthlyBorderEl.setAttribute("d", "");
       monthlyTipEl.innerHTML = "";
       monthlyReflineEl.setAttribute("opacity", "0");
+      const svgEl = monthlyHitEl.ownerSVGElement;
+      hideLineAndTag(svgEl, "silver1m-curline", "silver1m-curtag");
     }
 
     function clearYearlyChart() {
@@ -1353,7 +1451,7 @@
       yearlyCurTagEl.innerHTML = "";
     }
 
-    function renderWeeklyBars({ rows, marketIsOpen }) {
+    function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
       clearWeeklyChart();
       if (!Array.isArray(rows) || rows.length < 2) return;
 
@@ -1478,10 +1576,15 @@
       const yLabelY = y1 + (mobile ? 26 : 30);
 
       const firstLbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      firstLbl.setAttribute("x", barCenter(0));
       firstLbl.setAttribute("y", yLabelY);
-      firstLbl.setAttribute("text-anchor", "middle");
       firstLbl.textContent = fmtMMDD(pts[0].xLabel);
+      if (mobile) {
+        firstLbl.setAttribute("x", x0 + 2);
+        firstLbl.setAttribute("text-anchor", "start");
+      } else {
+        firstLbl.setAttribute("x", barCenter(0));
+        firstLbl.setAttribute("text-anchor", "middle");
+      }
       weeklyXLabelsEl.appendChild(firstLbl);
 
       const midEvery = mobile ? 3 : 1;
@@ -1497,11 +1600,26 @@
       }
 
       const lastLbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      lastLbl.setAttribute("x", barCenter(n - 1));
       lastLbl.setAttribute("y", yLabelY);
-      lastLbl.setAttribute("text-anchor", "middle");
       lastLbl.textContent = fmtMMDD(pts[n - 1].xLabel);
+      if (mobile) {
+        lastLbl.setAttribute("x", x1 - 2);
+        lastLbl.setAttribute("text-anchor", "end");
+      } else {
+        lastLbl.setAttribute("x", barCenter(n - 1));
+        lastLbl.setAttribute("text-anchor", "middle");
+      }
       weeklyXLabelsEl.appendChild(lastLbl);
+
+      renderCurrentPriceLine({
+        svgEl: weeklySvg,
+        lineId: "silver7d-curline",
+        tagId: "silver7d-curtag",
+        x0, x1, y0, y1, yFor,
+        currentPrice,
+        currentDir,
+        marketIsOpen
+      });
 
       function clearHover() { for (const b of bars) b.classList.remove("hover"); }
 
@@ -1592,7 +1710,7 @@
       hideTip();
     }
 
-    function renderMonthlyBars({ rows, marketIsOpen }) {
+    function renderMonthlyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
       clearMonthlyChart();
       if (!Array.isArray(rows) || rows.length < 2) return;
 
@@ -1729,12 +1847,32 @@
 
       for (const i of ordered) {
         const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        tx.setAttribute("x", barCenter(i));
         tx.setAttribute("y", labelY);
-        tx.setAttribute("text-anchor", "middle");
-        tx.textContent = (i === n - 1) ? "Today" : fmtMMDD(pts[i].xLabel);
+        tx.textContent = fmtMMDD(pts[i].xLabel);
+
+        if (mobile && i === 0) {
+          tx.setAttribute("x", x0 + 2);
+          tx.setAttribute("text-anchor", "start");
+        } else if (mobile && i === n - 1) {
+          tx.setAttribute("x", x1 - 2);
+          tx.setAttribute("text-anchor", "end");
+        } else {
+          tx.setAttribute("x", barCenter(i));
+          tx.setAttribute("text-anchor", "middle");
+        }
+
         monthlyXLabelsEl.appendChild(tx);
       }
+
+      renderCurrentPriceLine({
+        svgEl: monthlySvg,
+        lineId: "silver1m-curline",
+        tagId: "silver1m-curtag",
+        x0, x1, y0, y1, yFor,
+        currentPrice,
+        currentDir,
+        marketIsOpen
+      });
 
       function clearHover() { for (const b of bars) b.classList.remove("hover"); }
 
@@ -2161,8 +2299,8 @@
       const d = (silver?.direction || "same");
       const currentDir = (d === "same" ? "neutral" : d);
 
-      renderWeeklyBars({ rows: weeklyRows, marketIsOpen });
-      renderMonthlyBars({ rows: monthlyRows, marketIsOpen });
+      renderWeeklyBars({ rows: weeklyRows, marketIsOpen, currentPrice, currentDir });
+      renderMonthlyBars({ rows: monthlyRows, marketIsOpen, currentPrice, currentDir });
       renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir });
     }
 
