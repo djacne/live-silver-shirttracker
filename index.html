@@ -458,10 +458,10 @@
          .summary-num {
          text-align: right;
          font-weight: 600;
-         color: rgba(226,232,240,0.92);
+         color: rgba(170,180,195,0.98);
          }
-         .summary-num.hi { color: var(--hi); }
-         .summary-num.lo { color: var(--lo); }
+         .summary-num.hi { color: rgba(170,180,195,0.98); }
+         .summary-num.lo { color: rgba(170,180,195,0.98); }
          .summary-range {
          display: inline-flex;
          flex-direction: column;
@@ -718,7 +718,7 @@
                   <div class="section-title" style="margin-bottom:6px;">Price Ranges</div>
                   <div class="summary-wrap">
                      <div class="summary-head" aria-hidden="true">
-                        <div></div>
+                        <div style="text-align:left;">Time</div>
                         <div style="text-align:right;">High</div>
                         <div style="text-align:right;">Low</div>
                         <div style="text-align:right;">Range</div>
@@ -726,105 +726,106 @@
                      <div class="summary-grid" role="table" aria-label="High low range summary">
                         <div class="summary-row" role="row">
                            <div class="summary-cell summary-label" role="cell">1D</div>
-                           <div class="summary-cell summary-num hi" id="sum-day-hi" role="cell">—</div>
-                           <div class="summary-cell summary-num lo" id="sum-day-lo" role="cell">—</div>
+                           <div class="summary-cell summary-num" id="sum-day-hi" role="cell">—</div>
+                           <div class="summary-cell summary-num" id="sum-day-lo" role="cell">—</div>
                            <div class="summary-cell summary-range neutral" id="sum-day-range" role="cell">—</div>
                         </div>
                         <div class="summary-row" role="row">
                            <div class="summary-cell summary-label" role="cell">7D</div>
-                           <div class="summary-cell summary-num hi" id="sum-week-hi" role="cell">—</div>
-                           <div class="summary-cell summary-num lo" id="sum-week-lo" role="cell">—</div>
+                           <div class="summary-cell summary-num" id="sum-week-hi" role="cell">—</div>
+                           <div class="summary-cell summary-num" id="sum-week-lo" role="cell">—</div>
                            <div class="summary-cell summary-range neutral" id="sum-week-range" role="cell">—</div>
                         </div>
                         <div class="summary-row" role="row">
                            <div class="summary-cell summary-label" role="cell">1M</div>
-                           <div class="summary-cell summary-num hi" id="sum-1m-hi" role="cell">—</div>
-                           <div class="summary-cell summary-num lo" id="sum-1m-lo" role="cell">—</div>
+                           <div class="summary-cell summary-num" id="sum-1m-hi" role="cell">—</div>
+                           <div class="summary-cell summary-num" id="sum-1m-lo" role="cell">—</div>
                            <div class="summary-cell summary-range neutral" id="sum-1m-range" role="cell">—</div>
                         </div>
                         <div class="summary-row" role="row">
                            <div class="summary-cell summary-label" role="cell">1Y</div>
-                           <div class="summary-cell summary-num hi" id="sum-12m-hi" role="cell">—</div>
-                           <div class="summary-cell summary-num lo" id="sum-12m-lo" role="cell">—</div>
+                           <div class="summary-cell summary-num" id="sum-12m-hi" role="cell">—</div>
+                           <div class="summary-cell summary-num" id="sum-12m-lo" role="cell">—</div>
                            <div class="summary-cell summary-range neutral" id="sum-12m-range" role="cell">—</div>
                         </div>
                      </div>
                   </div>
-               </section>
             </div>
+            </section>
          </div>
-         <section class="card" style="margin-top:18px;">
-            <div class="section-title">7-Day Trend</div>
-            <div class="chart-wrap">
-               <svg id="silver7d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 7-day trend chart">
-                  <g id="silver7d-grid"></g>
-                  <line id="silver7d-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
-                  <g id="silver7d-bars"></g>
-                  <line id="silver7d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
-                  <g id="silver7d-xlabels"></g>
-                  <g id="silver7d-ylabels"></g>
-                  <g id="silver7d-tip" class="tipbox"></g>
-                  <path id="silver7d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
-                  <rect id="silver7d-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
-               </svg>
-               <div class="chart-meta" aria-hidden="true"></div>
-            </div>
-         </section>
-         <section class="card" style="margin-top:18px;">
-            <div class="section-title">1-Month Trend</div>
-            <div class="chart-wrap">
-               <svg id="silver1m-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 1-month trend chart">
-                  <g id="silver1m-grid"></g>
-                  <line id="silver1m-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
-                  <g id="silver1m-bars"></g>
-                  <line id="silver1m-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
-                  <g id="silver1m-xlabels"></g>
-                  <g id="silver1m-ylabels"></g>
-                  <g id="silver1m-tip" class="tipbox"></g>
-                  <path id="silver1m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
-                  <rect id="silver1m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
-               </svg>
-               <div class="chart-meta" aria-hidden="true"></div>
-            </div>
-         </section>
-         <section class="card" style="margin-top:18px;">
-            <div class="section-title">12-Month Trend</div>
-            <div class="chart-wrap">
-               <svg id="silver12m-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 12-month trend chart">
-                  <defs id="silver12m-defs"></defs>
-                  <g id="silver12m-grid"></g>
-                  <path id="silver12m-haze" class="yarea-haze" d=""></path>
-                  <path id="silver12m-area" class="yarea" d=""></path>
-                  <path id="silver12m-line" class="yline" d=""></path>
-                  <line id="silver12m-curline" class="curline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
-                  <g id="silver12m-curtag" opacity="0"></g>
-                  <line id="silver12m-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
-                  <g id="silver12m-xlabels"></g>
-                  <g id="silver12m-ylabels"></g>
-                  <g id="silver12m-tip" class="tipbox"></g>
-                  <path id="silver12m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
-                  <rect id="silver12m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
-               </svg>
-               <div class="chart-meta" aria-hidden="true"></div>
-            </div>
-         </section>
-         <section class="card table-card">
-            <div class="section-title">Spot Metals</div>
-            <table>
-               <thead>
-                  <tr>
-                     <th>Metal</th>
-                     <th style="text-align:right;">Price (USD/toz)</th>
-                     <th style="text-align:right;">24h Trend</th>
-                  </tr>
-               </thead>
-               <tbody id="metals-tbody"></tbody>
-            </table>
-         </section>
-         <footer class="page-footer" aria-label="Update timing">
-            <div>Last updated: <span id="last-updated">—</span></div>
-            <div class="muted">Updates every 30 minutes during market hours</div>
-         </footer>
+      </div>
+      <section class="card" style="margin-top:18px;">
+         <div class="section-title">7-Day Trend</div>
+         <div class="chart-wrap">
+            <svg id="silver7d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 7-day trend chart">
+               <g id="silver7d-grid"></g>
+               <line id="silver7d-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+               <g id="silver7d-bars"></g>
+               <line id="silver7d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
+               <g id="silver7d-xlabels"></g>
+               <g id="silver7d-ylabels"></g>
+               <g id="silver7d-tip" class="tipbox"></g>
+               <path id="silver7d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+               <rect id="silver7d-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
+            </svg>
+            <div class="chart-meta" aria-hidden="true"></div>
+         </div>
+      </section>
+      <section class="card" style="margin-top:18px;">
+         <div class="section-title">1-Month Trend</div>
+         <div class="chart-wrap">
+            <svg id="silver1m-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 1-month trend chart">
+               <g id="silver1m-grid"></g>
+               <line id="silver1m-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+               <g id="silver1m-bars"></g>
+               <line id="silver1m-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
+               <g id="silver1m-xlabels"></g>
+               <g id="silver1m-ylabels"></g>
+               <g id="silver1m-tip" class="tipbox"></g>
+               <path id="silver1m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+               <rect id="silver1m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
+            </svg>
+            <div class="chart-meta" aria-hidden="true"></div>
+         </div>
+      </section>
+      <section class="card" style="margin-top:18px;">
+         <div class="section-title">12-Month Trend</div>
+         <div class="chart-wrap">
+            <svg id="silver12m-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 12-month trend chart">
+               <defs id="silver12m-defs"></defs>
+               <g id="silver12m-grid"></g>
+               <path id="silver12m-haze" class="yarea-haze" d=""></path>
+               <path id="silver12m-area" class="yarea" d=""></path>
+               <path id="silver12m-line" class="yline" d=""></path>
+               <line id="silver12m-curline" class="curline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+               <g id="silver12m-curtag" opacity="0"></g>
+               <line id="silver12m-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
+               <g id="silver12m-xlabels"></g>
+               <g id="silver12m-ylabels"></g>
+               <g id="silver12m-tip" class="tipbox"></g>
+               <path id="silver12m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+               <rect id="silver12m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
+            </svg>
+            <div class="chart-meta" aria-hidden="true"></div>
+         </div>
+      </section>
+      <section class="card table-card">
+         <div class="section-title">Spot Metals</div>
+         <table>
+            <thead>
+               <tr>
+                  <th>Metal</th>
+                  <th style="text-align:right;">Price (USD/toz)</th>
+                  <th style="text-align:right;">24h Trend</th>
+               </tr>
+            </thead>
+            <tbody id="metals-tbody"></tbody>
+         </table>
+      </section>
+      <footer class="page-footer" aria-label="Update timing">
+         <div>Last updated: <span id="last-updated">—</span></div>
+         <div class="muted">Updates every 30 minutes during market hours</div>
+      </footer>
       </div>
       <script>
          const BACKEND_URL = "https://api.dansretirement.com/";
