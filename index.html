@@ -626,15 +626,33 @@
       .metal-trend .mt-money{ font-size: 0.92rem; }
       .metal-trend .mt-pct{ font-size: 0.86rem; opacity: 0.95; }
       }
-      .page-footer {
-      margin: 22px 0 14px;
-      padding-bottom: 6px;
+      .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(10px);
+      }
+      .meta-card {
+      max-width: fit-content;
+      margin: 18px auto 14px;
+      padding: 8px 14px;
       text-align: center;
-      color: rgba(148,163,184,0.92);
+      }
+      .meta-primary {
       font-size: 0.86rem;
-      line-height: 1.35;
+      font-weight: 600;
+      color: rgba(148,163,184,0.92);
       font-feature-settings: "tnum" 1, "lnum" 1;
       font-variant-numeric: tabular-nums lining-nums;
+      white-space: nowrap;
+      }
+      .meta-secondary {
+      margin-top: 2px;
+      font-size: 0.78rem;
+      color: rgba(148,163,184,0.80);
+      white-space: nowrap;
       }
       .page-footer > div:first-child { margin-bottom: 6px; }
       .page-footer .muted { color: rgba(148,163,184,0.88); }
@@ -823,10 +841,14 @@
           <tbody id="metals-tbody"></tbody>
         </table>
       </section>
-      <footer class="page-footer" aria-label="Update timing">
-        <div>Last updated: <span id="last-updated">—</span></div>
-        <div class="muted">Updates every 30 minutes during market hours</div>
-      </footer>
+      <section class="card meta-card" aria-label="Update timing">
+        <div class="meta-primary">
+          Last updated: <span id="last-updated">—</span>
+        </div>
+        <div class="meta-secondary">
+          Updates every 30 minutes during market hours
+        </div>
+      </section>
     </div>
     <script>
       const BACKEND_URL = "https://api.dansretirement.com/";
