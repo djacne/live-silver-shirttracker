@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
   <head>
@@ -657,10 +656,7 @@
       }
       .page-footer > div:first-child { margin-bottom: 6px; }
       .page-footer .muted { color: rgba(148,163,184,0.88); }
-    
-    #character-img{opacity:0;transition:opacity .18s ease;}
-    body.ready #character-img{opacity:1;}
-</style>
+    </style>
   </head>
   <body class="trend-neutral">
     <div class="bg-layer bg-stars"></div>
@@ -1467,9 +1463,33 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
         const anchor = Number(currentPrice);
         let last = Number.isFinite(anchor) ? anchor : null;
 
+        // Find last index that has a real close (finite) so we can distinguish
+        // "closed slot inside the day" vs "future slot not printed yet".
+        let lastFiniteIdx = -1;
+        for (let i = 0; i < rows.length; i++) {
+          const raw = rows[i]?.close;
+          const v = (raw === null || raw === undefined) ? NaN : Number(raw);
+          if (Number.isFinite(v)) lastFiniteIdx = i;
+        }
+
         const pts = rows.map((r, idx) => {
           const raw = r?.close;
           const v = (raw === null || raw === undefined) ? NaN : Number(raw);
+          const hasPrint = Number.isFinite(v);
+          if (hasPrint) last = v;
+
+          // "Market Closed" only when the series explicitly marks close:null
+          // *and* that slot is not a future/unprinted slot.
+          const isClosed = (raw === null) && (idx <= lastFiniteIdx);
+
+          return {
+            i: idx,
+            t: r?.t,
+            close: hasPrint ? v : null,
+            eff: Number.isFinite(last) ? last : (hasPrint ? v : null),
+            isClosed
+          };
+        });
           const isOpenTick = Number.isFinite(v);
           if (isOpenTick) last = v;
           return {
@@ -1495,26 +1515,50 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
         let yMax = max + pad;
         if (yMax <= yMin) { yMax = yMin + 1; }
 
-        // Adaptive intraday ticks (aim for ~5 on both desktop/mobile)
-        const targetTicks = 5;
-        const range = (yMax - yMin) || 1;
-        const stepLadder = [0.10, 0.25, 0.50, 1.00, 2.00, 5.00, 10.00];
-        let step = stepLadder[stepLadder.length - 1];
-        for (const s of stepLadder) {
-          const count = Math.ceil(range / s) + 1;
-          if (count <= targetTicks + 1) { step = s; break; }
+        // 1-Day axis ticks: exactly 5 ticks (desktop + mobile), with adaptive step.
+        function pickStep(range) {
+          const steps = [0.10, 0.25, 0.50, 1.00, 2.00, 5.00, 10.00, 20.00];
+          for (const s of steps) {
+            if (range / s <= 4.2) return s; // ~5 ticks max
+          }
+          return 50.0;
         }
-        const yMinTick = Math.floor(yMin / step) * step;
-        const yMaxTick = Math.ceil(yMax / step) * step;
-        const yTicks = [];
-        for (let v = yMinTick; v <= yMaxTick + step * 0.5; v += step) yTicks.push(v);
 
-        function fmtAxisPriceDaily(v) {
-          const n = Number(v);
-          if (!Number.isFinite(n)) return "—";
-          // show cents for sub-dollar steps
-          return step < 1 ? n.toFixed(2) : n.toFixed(0);
+        const rawRange = (yMax - yMin) || 1;
+        let step = pickStep(rawRange);
+
+        // snap bounds to step
+        let yMinNice = Math.floor(yMin / step) * step;
+        let yMaxNice = Math.ceil(yMax / step) * step;
+
+        // Ensure we have at least 4 steps (5 ticks). Expand if needed.
+        while ((yMaxNice - yMinNice) / step < 4) {
+          yMinNice -= step;
+          yMaxNice += step;
         }
+
+        // If too wide (more than ~6 steps), bump step until it fits.
+        while ((yMaxNice - yMinNice) / step > 6) {
+          step = pickStep((yMaxNice - yMinNice) * 1.01);
+          yMinNice = Math.floor(yMin / step) * step;
+          yMaxNice = Math.ceil(yMax / step) * step;
+          while ((yMaxNice - yMinNice) / step < 4) {
+            yMinNice -= step;
+            yMaxNice += step;
+          }
+        }
+
+        // 5 ticks
+        const yTicks = [
+          yMinNice,
+          yMinNice + step,
+          yMinNice + step * 2,
+          yMinNice + step * 3,
+          yMinNice + step * 4
+        ];
+        // use nice bounds for mapping
+        yMin = yMinNice;
+        yMax = yMinNice + step * 4;
 
         // Grid + Y labels
         for (const t of yTicks) {
@@ -1537,7 +1581,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-          tx.textContent = fmtAxisPriceDaily(t);
+          tx.textContent = fmtAxisPrice(t);
           dailyYLabelsEl.appendChild(tx);
         }
 
@@ -1607,8 +1651,8 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
           const t = pts[i]?.t || "";
           const label = fmtIntraday12h(t).replace(":00 ", ":00").replace(" 0", " ");
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", String(Math.max(x0 + 10, Math.min(x1 - 10, barCenter(i)))));
-          tx.setAttribute("y", String(y1 + 18));
+          tx.setAttribute("x", String(barCenter(i)));
+          tx.setAttribute("y", String(H - 10));
           tx.setAttribute("text-anchor", "middle");
           tx.textContent = label;
           dailyXLabelsEl.appendChild(tx);
@@ -1616,8 +1660,8 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
         // End-of-day marker label at right edge
         {
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", String(x1 - 10));
-          tx.setAttribute("y", String(y1 + 18));
+          tx.setAttribute("x", String(x1));
+          tx.setAttribute("y", String(H - 10));
           tx.setAttribute("text-anchor", "end");
           tx.textContent = "12:00 AM";
           dailyXLabelsEl.appendChild(tx);
@@ -1633,83 +1677,56 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
           currentDir,
           marketIsOpen
         });
-// Hover / tooltip (match other charts)
-        function clearHover() { /* no hover class on daily bars */ }
+// Hover / tooltip
+        const hit = dailyHitEl;
+        const crosshair = dailyCrosshairEl;
+        const tip = dailyTipEl;
 
-        function hideTip() {
-          dailyCrosshairEl.style.opacity = "0";
-          dailyTipEl.style.opacity = "0";
-          dailyTipEl.innerHTML = "";
-          clearHover();
+        function nearestIndex(evt) {
+          const pt = dailySvg.createSVGPoint();
+          pt.x = evt.clientX; pt.y = evt.clientY;
+          const ctm = hit.getScreenCTM();
+          if (!ctm) return null;
+          const inv = ctm.inverse();
+          const local = pt.matrixTransform(inv);
+          const lx = local.x;
+          const i = Math.max(0, Math.min(n - 1, Math.floor((lx - x0) / slotW)));
+          return i;
         }
 
-        function showTip(i) {
-          i = Math.max(0, Math.min(n - 1, i));
-
-          const xCenter = barCenter(i);
-          dailyCrosshairEl.style.opacity = "1";
-          dailyCrosshairEl.setAttribute("x1", String(xCenter));
-          dailyCrosshairEl.setAttribute("x2", String(xCenter));
+        function setTipAt(i) {
+          const b = bars.find(bb => bb.i === i) || { i, x: barX(i), yTop: yFor(pts[i].eff), h: Math.max(1, yBase - yFor(pts[i].eff)), vEff: pts[i].eff, t: pts[i].t, isClosed: pts[i].isClosed };
+          const cx = barCenter(i);
+          crosshair.setAttribute("x1", String(cx));
+          crosshair.setAttribute("x2", String(cx));
 
           const when = fmtIntraday12h(pts[i]?.t || "");
-          const msg = pts[i]?.isClosed ? "Market Closed" : fmtMoney(pts[i].eff);
-
-          dailyTipEl.innerHTML = "";
-          dailyTipEl.style.opacity = "1";
-
+          const msg = b.isClosed ? "Market Closed" : fmtMoney(b.vEff);
+          tip.innerHTML = "";
           const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-          const tipText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tipText.textContent = `${when} • ${msg}`;
-          tipText.setAttribute("class", "tiptext");
-          g.appendChild(tipText);
-          dailyTipEl.appendChild(g);
 
-          // place near top like other charts
-          const tipPaddingX = 14;
-          const tipPaddingY = 10;
+          const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          label.setAttribute("x", String(cx));
+          label.setAttribute("y", String(y0 + 16));
+          label.setAttribute("text-anchor", "middle");
+          label.textContent = `${when} • ${msg}`;
+          g.appendChild(label);
+          tip.appendChild(g);
 
-          // compute bbox after append
-          const bb = g.getBBox();
-          const boxW = bb.width + tipPaddingX * 2;
-          const boxH = bb.height + tipPaddingY * 2;
-
-          const bx = Math.max(x0 + 10, Math.min(x1 - boxW - 10, xCenter - boxW / 2));
-          const by = y0 + 10;
-
-          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-          rect.setAttribute("x", bx);
-          rect.setAttribute("y", by);
-          rect.setAttribute("width", boxW);
-          rect.setAttribute("height", boxH);
-          rect.setAttribute("rx", 10);
-          rect.setAttribute("ry", 10);
-          rect.setAttribute("fill", "rgba(2,6,23,0.78)");
-          rect.setAttribute("stroke", "rgba(148,163,184,0.35)");
-          rect.setAttribute("stroke-width", "1");
-
-          g.setAttribute("transform", `translate(${bx + tipPaddingX}, ${by + tipPaddingY + 14})`);
-          dailyTipEl.insertBefore(rect, g);
+          // Ensure tooltip sits above current line/tag (paint last)
+          dailySvg.appendChild(tip);
         }
 
-        function indexFromClientX(clientX) {
-          const svg = dailyHitEl.ownerSVGElement;
-          const pt = svg.createSVGPoint();
-          pt.x = clientX; pt.y = 0;
-          const ctm = svg.getScreenCTM();
-          if (!ctm) return 0;
-          const p = pt.matrixTransform(ctm.inverse());
-          const rel = Math.max(0, Math.min(innerW - 0.0001, p.x - x0));
-          return Math.floor(rel / slotW);
-        }
+        hit.addEventListener("mousemove", (e) => {
+          const i = nearestIndex(e);
+          if (i === null) return;
+          setTipAt(i);
+        });
 
-        dailyHitEl.onpointerenter = (e) => { try { dailyHitEl.setPointerCapture(e.pointerId); } catch (_) {} };
-        dailyHitEl.onpointermove = (e) => showTip(indexFromClientX(e.clientX));
-        dailyHitEl.onpointerleave = hideTip;
-        dailyHitEl.onpointerup = hideTip;
-        dailyHitEl.onpointercancel = hideTip;
-
-        hideTip();
-}
+        hit.addEventListener("mouseleave", () => {
+          tip.innerHTML = "";
+        });
+      }
 
 function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
         clearWeeklyChart();
@@ -1751,7 +1768,7 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 5 : 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 3 : 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -2659,9 +2676,7 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
           setMarketClosedPill(market);
           renderMetalsTable(metals);
           renderChartsFromData(data);
-          
-        document.body.classList.add("ready");
-return;
+          return;
         }
       
         setHeadlinePriceColor(silver.direction || "same", true);
