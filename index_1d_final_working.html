@@ -662,6 +662,7 @@
 </style>
   </head>
   <body class="trend-neutral">
+  <div id=\"dbg\" style=\"position:fixed;z-index:99999;left:10px;bottom:10px;max-width:92vw;background:rgba(2,6,23,.9);color:#e2e8f0;border:1px solid rgba(148,163,184,.35);border-radius:12px;padding:10px 12px;font:12px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;box-shadow:0 8px 30px rgba(0,0,0,.35)\">debug: loading...</div>
     <div class="bg-layer bg-stars"></div>
     <div class="bg-layer bg-fire"></div>
     <div class="bg-layer">
@@ -876,8 +877,17 @@
       
       
 
-    window.addEventListener('error', (e)=>{ console.error('window.error', e?.message, e?.error); });
-    window.addEventListener('unhandledrejection', (e)=>{ console.error('unhandledrejection', e?.reason); });
+    
+
+    function dbgLog(msg) {
+      try {
+        const el = document.getElementById("dbg");
+        if (el) el.textContent = String(msg);
+      } catch (_) {}
+      try { console.log("[dbg]", msg); } catch (_) {}
+    }
+window.addEventListener('error', (e)=>{ dbgLog('window.error: ' + (e?.message||'')); console.error('window.error', e?.message, e?.error); });
+window.addEventListener('unhandledrejection', (e)=>{ dbgLog('unhandledrejection: ' + (e?.reason?.message||e?.reason||'')); console.error('unhandledrejection', e?.reason); });
 const bodyEl = document.body;
       const characterImgEl = document.getElementById("character-img");
       
@@ -1009,7 +1019,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
           IMAGE_LISTS.up = Array.isArray(json.up) ? json.up.map(normalize).filter(Boolean) : [];
           IMAGE_LISTS.down = Array.isArray(json.down) ? json.down.map(normalize).filter(Boolean) : [];
         } catch (e) {
-          console.error('refreshAllOnce failed:', e);
+          dbgLog('refreshAllOnce failed: ' + (e && (e.message||e))); console.error('refreshAllOnce failed:', e);
           IMAGE_LISTS = { up: [], down: [] };
         }
       }
@@ -2819,10 +2829,10 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
           const data = await res.json();
       
           window.__LAST_DATA__ = data;
-          console.log('updateUI about to run');
+          dbgLog('updateUI about to run');
         updateUI(data);
         
-        console.log('updateUI finished');
+        dbgLog('updateUI finished');
 } catch {
           trendPillEl.className = "quirk-badge flat";
           trendTextEl.textContent = "Error fetching prices";
