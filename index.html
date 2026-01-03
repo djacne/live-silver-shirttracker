@@ -773,7 +773,25 @@
           </section>
         </div>
       </div>
+      
       <section class="card" style="margin-top:18px;">
+        <div class="section-title">1-Day Trend</div>
+        <div class="chart-wrap">
+          <svg id="silver1d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 1-day intraday trend chart">
+            <g id="silver1d-grid"></g>
+            <line id="silver1d-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+            <g id="silver1d-bars"></g>
+            <line id="silver1d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
+            <g id="silver1d-xlabels"></g>
+            <g id="silver1d-ylabels"></g>
+            <g id="silver1d-tip" class="tipbox"></g>
+            <path id="silver1d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+            <rect id="silver1d-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
+          </svg>
+          <div class="chart-meta" aria-hidden="true"></div>
+        </div>
+      </section>
+<section class="card" style="margin-top:18px;">
         <div class="section-title">7-Day Trend</div>
         <div class="chart-wrap">
           <svg id="silver7d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 7-day trend chart">
@@ -878,7 +896,17 @@
       const sum12mLoEl = document.getElementById("sum-12m-lo");
       const sum12mRangeEl = document.getElementById("sum-12m-range");
       
-      const weeklyGridEl = document.getElementById("silver7d-grid");
+      
+      const dailyGridEl = document.getElementById("silver1d-grid");
+      const dailyBarsEl = document.getElementById("silver1d-bars");
+      const dailyXLabelsEl = document.getElementById("silver1d-xlabels");
+      const dailyYLabelsEl = document.getElementById("silver1d-ylabels");
+      const dailyBorderEl = document.getElementById("silver1d-border");
+      const dailyHitEl = document.getElementById("silver1d-hit");
+      const dailyCrosshairEl = document.getElementById("silver1d-crosshair");
+      const dailyTipEl = document.getElementById("silver1d-tip");
+      const dailyReflineEl = document.getElementById("silver1d-refline");
+const weeklyGridEl = document.getElementById("silver7d-grid");
       const weeklyBarsEl = document.getElementById("silver7d-bars");
       const weeklyReflineEl = document.getElementById("silver7d-refline");
       const weeklyXLabelsEl = document.getElementById("silver7d-xlabels");
@@ -1143,6 +1171,7 @@
         const dayHi = safeFinite(silver?.high24h);
         const dayLo = safeFinite(silver?.low24h);
       
+        const dailyRows = data?.intraday?.silver || [];
         const weeklyRows = data?.weekly?.silver || [];
         const yearlyRows = data?.yearly?.silver12m || [];
       
@@ -1386,7 +1415,245 @@
         yearlyCurTagEl.innerHTML = "";
       }
       
-      function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
+            function clearDailyChart() {
+        dailyGridEl.innerHTML = "";
+        dailyBarsEl.innerHTML = "";
+        dailyXLabelsEl.innerHTML = "";
+        dailyYLabelsEl.innerHTML = "";
+        dailyBorderEl.setAttribute("d", "");
+        dailyTipEl.innerHTML = "";
+        dailyReflineEl.setAttribute("opacity", "0");
+        const svgEl = dailyHitEl.ownerSVGElement;
+        hideLineAndTag(svgEl, "silver1d-curline", "silver1d-curtag");
+      }
+
+      function fmtIntraday12h(t24) {
+        if (!t24 || typeof t24 !== "string") return "";
+        const m = /^(\d{2}):(\d{2})$/.exec(t24.trim());
+        if (!m) return t24;
+        const hh = Number(m[1]), mm = m[2];
+        const am = hh < 12;
+        let h12 = hh % 12;
+        if (h12 === 0) h12 = 12;
+        return `${h12}:${mm} ${am ? "AM" : "PM"}`;
+      }
+
+      function renderDailyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
+        clearDailyChart();
+        if (!Array.isArray(rows) || rows.length < 2) return;
+
+        const mobile = isMobileNow();
+        const { W, H } = chartSize(mobile);
+
+        const dailySvg = dailyHitEl.ownerSVGElement;
+        syncSvgBox(dailySvg, W, H);
+
+        dailyCrosshairEl.setAttribute("y2", String(H));
+        dailyHitEl.setAttribute("width", String(W));
+        dailyHitEl.setAttribute("height", String(H));
+
+        const { padL, padR, padT, padB } = getChartPads(mobile, "weekly"); // same geometry as 7d
+        const innerW = W - padL - padR;
+        const innerH = H - padT - padB;
+        const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
+
+        dailyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
+
+        // Build effective values with carry-forward for nulls.
+        const anchor = Number(currentPrice);
+        let last = Number.isFinite(anchor) ? anchor : null;
+
+        const pts = rows.map((r, idx) => {
+          const v = Number(r?.close);
+          const isOpenTick = Number.isFinite(v);
+          if (isOpenTick) last = v;
+          return {
+            i: idx,
+            t: r?.t,
+            close: isOpenTick ? v : null,
+            eff: (Number.isFinite(last) ? last : (isOpenTick ? v : null)),
+            isClosed: !isOpenTick
+          };
+        });
+
+        // If we still don't have any finite values, nothing to scale.
+        const effVals = pts.map(p => p.eff).filter(Number.isFinite);
+        if (effVals.length < 2) return;
+
+        let min = Infinity, max = -Infinity;
+        for (const v of effVals) { if (v < min) min = v; if (v > max) max = v; }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+
+        // Nice padding like weekly
+        const pad = (max - min) * 0.10 || 0.5;
+        let yMin = min - pad;
+        let yMax = max + pad;
+        if (yMax <= yMin) { yMax = yMin + 1; }
+
+        const yTicks = makeTicksCovering(yMin, yMax, mobile ? 3 : 5);
+
+        // Grid + Y labels
+        for (const t of yTicks) {
+          const yRaw = (function(v){
+            const tt = (v - yMin) / (yMax - yMin || 1);
+            return padT + innerH * (1 - tt);
+          })(t);
+
+          const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          gl.setAttribute("x1", x0);
+          gl.setAttribute("x2", x1);
+          gl.setAttribute("y1", yRaw);
+          gl.setAttribute("y2", yRaw);
+          gl.setAttribute("class", "gridline");
+          dailyGridEl.appendChild(gl);
+
+          const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", W - 6);
+          tx.setAttribute("text-anchor", "end");
+          tx.setAttribute("y", y);
+          tx.setAttribute("dominant-baseline", "middle");
+          tx.textContent = fmtAxisPrice(t);
+          dailyYLabelsEl.appendChild(tx);
+        }
+
+        const n = pts.length;
+        const slotW = innerW / n;
+        const gap = mobile ? 2.0 : 2.8;
+        const barW = Math.max(2, slotW - gap);
+        const barX = (i) => x0 + i * slotW + (gap / 2);
+        const barCenter = (i) => barX(i) + (barW / 2);
+
+        const yFor = (v) => {
+          const tt = (v - yMin) / (yMax - yMin || 1);
+          return padT + innerH * (1 - tt);
+        };
+
+        const yBase = y1;
+        dailyReflineEl.setAttribute("opacity", "0");
+
+        const bars = [];
+        for (let i = 0; i < n; i++) {
+          const vEff = pts[i].eff;
+          if (!Number.isFinite(vEff)) continue;
+
+          const yTop = yFor(vEff);
+          const h = Math.max(1, yBase - yTop);
+
+          const prevEff = (i > 0 && Number.isFinite(pts[i-1].eff)) ? pts[i-1].eff : vEff;
+          const isUp = vEff >= prevEff;
+          const isFlat = vEff === prevEff;
+
+          const isClosedSlot = pts[i].isClosed;
+          const fill = (isClosedSlot || !marketIsOpen)
+            ? "rgba(148,163,184,0.55)"
+            : (isFlat ? "rgba(148,163,184,0.62)" : (isUp ? "rgba(34,197,94,0.90)" : "rgba(239,68,68,0.90)"));
+
+          const x = barX(i);
+
+          const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          r.setAttribute("class", "bar");
+          r.setAttribute("x", x);
+          r.setAttribute("y", yTop);
+          r.setAttribute("width", barW);
+          r.setAttribute("height", h);
+          r.setAttribute("rx", mobile ? 6 : 3.0);
+          r.setAttribute("ry", mobile ? 6 : 3.0);
+          r.setAttribute("fill", fill);
+          dailyBarsEl.appendChild(r);
+
+          const s = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          s.setAttribute("class", "bar-stroke");
+          s.setAttribute("x", x);
+          s.setAttribute("y", yTop);
+          s.setAttribute("width", barW);
+          s.setAttribute("height", h);
+          s.setAttribute("rx", mobile ? 6 : 3.0);
+          s.setAttribute("ry", mobile ? 6 : 3.0);
+          s.setAttribute("fill", "none");
+          dailyBarsEl.appendChild(s);
+
+          bars.push({ i, x, yTop, h, vEff, t: pts[i].t, isClosed: isClosedSlot });
+        }
+
+        // X labels: 12 AM, 6 AM, 12 PM, 6 PM, 12 AM (end marker)
+        const tickIdx = [0, 12, 24, 36];
+        for (const i of tickIdx) {
+          if (i < 0 || i >= n) continue;
+          const t = pts[i]?.t || "";
+          const label = fmtIntraday12h(t).replace(":00 ", ":00").replace(" 0", " ");
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", String(barCenter(i)));
+          tx.setAttribute("y", String(H - 10));
+          tx.setAttribute("text-anchor", "middle");
+          tx.textContent = label;
+          dailyXLabelsEl.appendChild(tx);
+        }
+        // End-of-day marker label at right edge
+        {
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", String(x1));
+          tx.setAttribute("y", String(H - 10));
+          tx.setAttribute("text-anchor", "end");
+          tx.textContent = "12:00 AM";
+          dailyXLabelsEl.appendChild(tx);
+        }
+
+        // Current price line + tag
+        renderCurrentPriceLine(dailySvg, "silver1d-curline", "silver1d-curtag", currentPrice, yFor, x0, x1, y0, y1, currentDir);
+
+        // Hover / tooltip
+        const hit = dailyHitEl;
+        const crosshair = dailyCrosshairEl;
+        const tip = dailyTipEl;
+
+        function nearestIndex(evt) {
+          const pt = dailySvg.createSVGPoint();
+          pt.x = evt.clientX; pt.y = evt.clientY;
+          const ctm = hit.getScreenCTM();
+          if (!ctm) return null;
+          const inv = ctm.inverse();
+          const local = pt.matrixTransform(inv);
+          const lx = local.x;
+          const i = Math.max(0, Math.min(n - 1, Math.floor((lx - x0) / slotW)));
+          return i;
+        }
+
+        function setTipAt(i) {
+          const b = bars.find(bb => bb.i === i) || { i, x: barX(i), yTop: yFor(pts[i].eff), h: Math.max(1, yBase - yFor(pts[i].eff)), vEff: pts[i].eff, t: pts[i].t, isClosed: pts[i].isClosed };
+          const cx = barCenter(i);
+          crosshair.setAttribute("x1", String(cx));
+          crosshair.setAttribute("x2", String(cx));
+
+          const when = fmtIntraday12h(pts[i]?.t || "");
+          const msg = b.isClosed ? "Market Closed" : fmtMoney(b.vEff);
+          tip.innerHTML = "";
+          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+          const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          label.setAttribute("x", String(cx));
+          label.setAttribute("y", String(y0 + 16));
+          label.setAttribute("text-anchor", "middle");
+          label.textContent = `${when} • ${msg}`;
+          g.appendChild(label);
+          tip.appendChild(g);
+
+          // Ensure tooltip sits above current line/tag (paint last)
+          dailySvg.appendChild(tip);
+        }
+
+        hit.addEventListener("mousemove", (e) => {
+          const i = nearestIndex(e);
+          if (i === null) return;
+          setTipAt(i);
+        });
+
+        hit.addEventListener("mouseleave", () => {
+          tip.innerHTML = "";
+        });
+      }
+
+function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
         clearWeeklyChart();
         if (!Array.isArray(rows) || rows.length < 2) return;
       
@@ -2234,6 +2501,7 @@
         const d = (silver?.direction || "same");
         const currentDir = (d === "same" ? "neutral" : d);
       
+        renderDailyBars({ rows: dailyRows, marketIsOpen, currentPrice, currentDir });
         renderWeeklyBars({ rows: weeklyRows, marketIsOpen, currentPrice, currentDir });
         renderMonthlyBars({ rows: monthlyRows, marketIsOpen, currentPrice, currentDir });
         renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir });
