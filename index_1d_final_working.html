@@ -665,6 +665,13 @@
   <body class="trend-neutral">
   <div id="dbg" style="position:fixed;z-index:99999;left:10px;bottom:10px;max-width:92vw;background:rgba(2,6,23,.9);color:#e2e8f0;border:1px solid rgba(148,163,184,.35);border-radius:12px;padding:10px 12px;font:12px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;box-shadow:0 8px 30px rgba(0,0,0,.35)">debug: loading...</div>
   <script>
+    window.dbgLog = window.dbgLog || function(msg){
+      try{var el=document.getElementById(\"dbg\"); if(el) el.textContent=String(msg);}catch(e){}
+      try{console.log(\"[dbg]\", msg);}catch(e){}
+    };
+    window.dbgLog(\"debug: inline ok\");
+  </script>
+  <script>
     (function(){
       var el=document.getElementById("dbg");
       if(el) el.textContent="debug: inline script ran";
@@ -886,7 +893,10 @@
 
     
 
-    function dbgLog(msg) {
+    
+
+    dbgLog("debug: main script start");
+function dbgLog(msg) {
       try {
         const el = document.getElementById("dbg");
         if (el) el.textContent = String(msg);
