@@ -874,7 +874,11 @@
     <script>
       const BACKEND_URL = "https://api.dansretirement.com/";
       
-      const bodyEl = document.body;
+      
+
+    window.addEventListener('error', (e)=>{ console.error('window.error', e?.message, e?.error); });
+    window.addEventListener('unhandledrejection', (e)=>{ console.error('unhandledrejection', e?.reason); });
+const bodyEl = document.body;
       const characterImgEl = document.getElementById("character-img");
       
 
@@ -887,7 +891,7 @@
       im.onload = () => {
         // Only apply if still desired
         if (characterImgEl.dataset.desiredSrc !== src) return;
-        setHeroImagePreloaded(src);
+        characterImgEl.src = src;
         document.body.classList.add("hero-ready");
       };
       im.onerror = () => {
@@ -1004,7 +1008,8 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
       
           IMAGE_LISTS.up = Array.isArray(json.up) ? json.up.map(normalize).filter(Boolean) : [];
           IMAGE_LISTS.down = Array.isArray(json.down) ? json.down.map(normalize).filter(Boolean) : [];
-        } catch {
+        } catch (e) {
+          console.error('refreshAllOnce failed:', e);
           IMAGE_LISTS = { up: [], down: [] };
         }
       }
@@ -2814,8 +2819,11 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
           const data = await res.json();
       
           window.__LAST_DATA__ = data;
-          updateUI(data);
-        } catch {
+          console.log('updateUI about to run');
+        updateUI(data);
+        
+        console.log('updateUI finished');
+} catch {
           trendPillEl.className = "quirk-badge flat";
           trendTextEl.textContent = "Error fetching prices";
           setTrendMode("neutral");
