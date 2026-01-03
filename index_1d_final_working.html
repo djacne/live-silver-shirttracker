@@ -2699,13 +2699,18 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
       }
       
       function updateUI(data) {
+      try {
+        dbgLog('updateUI inside start');
+
         const metals = data?.metals || {};
         const silver = metals.silver || {};
         const updatedAt = data?.updatedAt || null;
         const market = data?.market || null;
       
+        dbgLog('updateUI step: lastUpdated');
         lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
-        headlinePriceEl.textContent = fmtMoney(silver.price);
+        dbgLog('updateUI step: setHeadline');
+        headlinePriceEl\.textContent = fmtMoney(silver.price);
       
         renderSinceLastUpdateFromAPI(silver);
         renderSilverSummary(data);
@@ -2716,7 +2721,8 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
           setHeadlinePriceColor("same", false);
           setMarketClosedPill(market);
           renderMetalsTable(metals);
-          renderChartsFromData(data);
+          dbgLog('updateUI step: charts');
+        renderChartsFromData\(data\);
           return;
         dbgLog('updateUI finished');
       }
@@ -2725,7 +2731,15 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
         setTrendPill(silver.direction || "same");
         renderMetalsTable(metals);
         renderChartsFromData(data);
+      
+        dbgLog('updateUI inside end');
+      } catch (e) {
+        dbgLog('updateUI failed: ' + (e && (e.message || e)));
+        console.error('updateUI failed', e);
+        throw e;
       }
+    }
+
       
       function applyForcedModeIfAny() {
         const params = new URLSearchParams(window.location.search);
