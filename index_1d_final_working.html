@@ -1,0 +1,2780 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+    <meta charset="utf-8" />
+    <title>Dan's Retirement Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      :root {
+      --bg-up: radial-gradient(circle at top, #4f46e5 0%, #020617 55%, #02010a 100%);
+      --bg-down: radial-gradient(circle at top, #f97316 0%, #7f1d1d 50%, #020106 100%);
+      --bg-neutral: radial-gradient(circle at top, #4b5563 0%, #020617 60%, #020107 100%);
+      --bg-maintenance: radial-gradient(circle at top, #64748b 0%, #0b1220 55%, #03030b 100%);
+      --bg-weekend: radial-gradient(circle at top, #111827 0%, #020617 55%, #000108 100%);
+      --card-bg: rgba(15, 23, 42, 0.92);
+      --card-border: rgba(148, 163, 184, 0.28);
+      --accent-up: #22c55e;
+      --accent-down: #ef4444;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --hi: #22c55e;
+      --lo: #ef4444;
+      --flat: rgba(148,163,184,0.95);
+      --badge-bg: rgba(148,163,184,0.10);
+      --badge-border: rgba(148,163,184,0.46);
+      --badge-text: rgba(226,232,240,0.94);
+      --badge-up-bg: rgba(34,197,94,0.12);
+      --badge-up-border: rgba(34,197,94,0.62);
+      --badge-up-text: rgba(187,247,208,0.98);
+      --badge-down-bg: rgba(239,68,68,0.12);
+      --badge-down-border: rgba(248,113,113,0.70);
+      --badge-down-text: rgba(254,202,202,0.98);
+      --closed-accent: rgba(148,163,184,0.92);
+      --closed-accent-soft: rgba(148,163,184,0.72);
+      --closed-text: rgba(226,232,240,0.86);
+      --closed-muted: rgba(148,163,184,0.90);
+      }
+      * { box-sizing: border-box; }
+      body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 16px;
+      background: var(--bg-neutral);
+      transition: background 0.6s ease;
+      overflow-x: hidden;
+      }
+      body.trend-up { background: var(--bg-up); }
+      body.trend-down { background: var(--bg-down); }
+      body.trend-neutral { background: var(--bg-neutral); }
+      body.market-maintenance { background: var(--bg-maintenance); }
+      body.market-weekend { background: var(--bg-weekend); }
+      body.market-maintenance, body.market-weekend {
+      --accent-up: var(--closed-accent);
+      --accent-down: var(--closed-accent);
+      --hi: var(--closed-accent);
+      --lo: var(--closed-accent);
+      --text-main: var(--closed-text);
+      --text-muted: var(--closed-muted);
+      --badge-up-bg: rgba(148,163,184,0.10);
+      --badge-up-border: rgba(148,163,184,0.46);
+      --badge-up-text: rgba(226,232,240,0.92);
+      --badge-down-bg: rgba(148,163,184,0.10);
+      --badge-down-border: rgba(148,163,184,0.46);
+      --badge-down-text: rgba(226,232,240,0.92);
+      }
+      .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+      }
+      .bg-stars {
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      background-image:
+      radial-gradient(circle at 20% 20%, rgba(248,250,252,0.7) 0, transparent 55%),
+      radial-gradient(circle at 80% 10%, rgba(191,219,254,0.5) 0, transparent 55%),
+      radial-gradient(circle at 50% 85%, rgba(129,140,248,0.5) 0, transparent 55%);
+      }
+      .bg-stars::before {
+      content: "";
+      position: absolute;
+      inset: -200px;
+      background-image:
+      radial-gradient(2px 2px at 6% 10%, rgba(226,232,240,0.95) 70%, transparent 71%),
+      radial-gradient(2px 2px at 12% 58%, rgba(199,210,254,0.85) 70%, transparent 71%),
+      radial-gradient(2px 2px at 18% 82%, rgba(226,232,240,0.9) 70%, transparent 71%),
+      radial-gradient(2px 2px at 24% 28%, rgba(191,219,254,0.8) 70%, transparent 71%),
+      radial-gradient(2px 2px at 31% 66%, rgba(226,232,240,0.92) 70%, transparent 71%),
+      radial-gradient(2px 2px at 38% 14%, rgba(199,210,254,0.82) 70%, transparent 71%),
+      radial-gradient(2px 2px at 46% 44%, rgba(226,232,240,0.9) 70%, transparent 71%),
+      radial-gradient(2px 2px at 52% 88%, rgba(191,219,254,0.78) 70%, transparent 71%),
+      radial-gradient(2px 2px at 58% 22%, rgba(226,232,240,0.92) 70%, transparent 71%),
+      radial-gradient(2px 2px at 64% 72%, rgba(199,210,254,0.82) 70%, transparent 71%),
+      radial-gradient(2px 2px at 71% 36%, rgba(226,232,240,0.9) 70%, transparent 71%),
+      radial-gradient(2px 2px at 78% 60%, rgba(191,219,254,0.78) 70%, transparent 71%),
+      radial-gradient(2px 2px at 84% 18%, rgba(226,232,240,0.92) 70%, transparent 71%),
+      radial-gradient(2px 2px at 90% 48%, rgba(199,210,254,0.82) 70%, transparent 71%),
+      radial-gradient(2px 2px at 95% 86%, rgba(226,232,240,0.88) 70%, transparent 71%);
+      opacity: 0.65;
+      animation: twinkle 6s linear infinite alternate;
+      }
+      .bg-stars::after {
+      content: "";
+      position: absolute;
+      inset: -240px;
+      background-image:
+      radial-gradient(1px 1px at 8% 18%, rgba(226,232,240,0.75) 70%, transparent 71%),
+      radial-gradient(1px 1px at 16% 72%, rgba(199,210,254,0.62) 70%, transparent 71%),
+      radial-gradient(1px 1px at 28% 40%, rgba(226,232,240,0.7) 70%, transparent 71%),
+      radial-gradient(1px 1px at 42% 16%, rgba(191,219,254,0.55) 70%, transparent 71%),
+      radial-gradient(1px 1px at 56% 84%, rgba(226,232,240,0.68) 70%, transparent 71%),
+      radial-gradient(1px 1px at 70% 28%, rgba(199,210,254,0.6) 70%, transparent 71%),
+      radial-gradient(1px 1px at 86% 66%, rgba(226,232,240,0.66) 70%, transparent 71%);
+      opacity: 0.40;
+      animation: twinkle2 8s linear infinite alternate;
+      }
+      @keyframes twinkle {
+      0% { opacity: 0.40; transform: translateY(0); }
+      100% { opacity: 1; transform: translateY(10px); }
+      }
+      @keyframes twinkle2 {
+      0% { opacity: 0.22; transform: translateY(0); }
+      100% { opacity: 0.52; transform: translateY(8px); }
+      }
+      .bg-fire {
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      background-image:
+      radial-gradient(circle at 50% 120%, rgba(239,68,68,0.8) 0, transparent 60%),
+      radial-gradient(circle at 0% 120%, rgba(249,115,22,0.75) 0, transparent 60%),
+      radial-gradient(circle at 100% 120%, rgba(251,146,60,0.7) 0, transparent 60%);
+      mix-blend-mode: screen;
+      }
+      .bg-fire::before {
+      content: "";
+      position: absolute;
+      inset: 30% 0 -40%;
+      background: radial-gradient(circle, rgba(248,250,252,0.08) 0, transparent 55%);
+      opacity: 0.8;
+      animation: heatWave 4s ease-in-out infinite alternate;
+      }
+      @keyframes heatWave {
+      0% { transform: translateY(0) scaleY(1); opacity: 0.4; }
+      100% { transform: translateY(-18px) scaleY(1.1); opacity: 0.9; }
+      }
+      .coins-rain, .bills-rain, .crash-rain {
+      position: absolute;
+      inset: -20vh 0;
+      overflow: visible;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      font-size: 1.4rem;
+      }
+      .coin, .bill, .crash {
+      position: absolute;
+      top: -10vh;
+      animation-name: fall;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      }
+      .coin { filter: drop-shadow(0 0 6px rgba(250, 250, 210, 0.8)); }
+      .bill { filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.9)); }
+      .crash { filter: drop-shadow(0 0 8px rgba(239,68,68,0.85)); font-size: 1.6rem; }
+      @keyframes fall {
+      0% { transform: translate3d(var(--x), -120vh, 0) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      100% { transform: translate3d(calc(var(--x) + 20px), 120vh, 0) rotate(360deg); opacity: 0; }
+      }
+      body.trend-up .bg-stars { opacity: 1; }
+      body.trend-up .coins-rain { opacity: 0.9; }
+      body.trend-down .bg-fire { opacity: 1; }
+      body.trend-down .bills-rain { opacity: 0.9; }
+      body.trend-down .crash-rain { opacity: 0.95; }
+      .rockets-layer, .crash-rockets-layer, .sprinkles-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      overflow: hidden;
+      z-index: 0;
+      }
+      body.trend-up .rockets-layer { opacity: 0.85; }
+      body.trend-down .crash-rockets-layer { opacity: 0.85; }
+      body.trend-up .sprinkles-layer { opacity: 0.55; }
+      .rocket, .crash-rocket {
+      position: absolute;
+      font-size: 1.6rem;
+      opacity: 0;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      animation-delay: var(--delay);
+      animation-duration: var(--dur);
+      transform-origin: center;
+      will-change: transform, opacity;
+      }
+      .rocket { bottom: -14vh; filter: drop-shadow(0 0 8px rgba(248,250,252,0.22)); }
+      .rocket-l { left: var(--x); animation-name: rocketFlyL; }
+      @keyframes rocketFlyL {
+      0% { transform: translate3d(0, 0, 0) rotate(-35deg) scale(0.95); opacity: 0; }
+      10% { opacity: 0.55; }
+      60% { opacity: 0.55; }
+      100% { transform: translate3d(120vw, -140vh, 0) rotate(-35deg) scale(1.05); opacity: 0; }
+      }
+      .crash-rocket { top: -14vh; filter: drop-shadow(0 0 10px rgba(239,68,68,0.35)); }
+      .crash-rocket-r { left: var(--x); animation-name: crashFlyR; }
+      @keyframes crashFlyR {
+      0% { transform: translate3d(120vw, 0, 0) rotate(35deg) scale(0.95); opacity: 0; }
+      10% { opacity: 0.55; }
+      60% { opacity: 0.55; }
+      100% { transform: translate3d(-140vw, 120vh, 0) rotate(35deg) scale(1.05); opacity: 0; }
+      }
+      .sprinkles-layer { inset: -10vh 0; font-size: 1.15rem; }
+      .sprinkle {
+      position: absolute;
+      top: -12vh;
+      left: var(--x);
+      opacity: 0;
+      animation: sprinkleFall var(--dur) linear infinite;
+      animation-delay: var(--delay);
+      filter: drop-shadow(0 0 6px rgba(148,163,184,0.22));
+      will-change: transform, opacity;
+      }
+      @keyframes sprinkleFall {
+      0% { transform: translate3d(0, -20vh, 0) rotate(0deg); opacity: 0; }
+      12% { opacity: 0.5; }
+      85% { opacity: 0.5; }
+      100% { transform: translate3d(8px, 140vh, 0) rotate(160deg); opacity: 0; }
+      }
+      .page {
+      width: 100%;
+      max-width: 1024px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+      }
+      header { text-align: center; margin-bottom: 16px; }
+      header h1 {
+      font-size: clamp(1.55rem, 2.4vw, 2.15rem);
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      color: rgba(248,250,252,0.96);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 1px 2px rgba(2,6,23,0.8);
+      line-height: 1.15;
+      white-space: nowrap;
+      }
+      @media (max-width: 600px) {
+      header { margin-bottom: 14px; }
+      header h1 {
+      font-size: 1.25rem;
+      letter-spacing: 0.10em;
+      }
+      }
+      .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 18px;
+      }
+      @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+      .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(10px);
+      }
+      .hero-image-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      }
+      .hero-image-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      border-radius: 16px;
+      margin: 0 auto;
+      }
+      .hero-image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      filter:
+      drop-shadow(0 18px 22px rgba(0,0,0,0.45))
+      drop-shadow(0 6px 12px rgba(0,0,0,0.35));
+      }
+      .hero-right {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: stretch;
+      }
+      .hero-info {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      justify-content: flex-start;
+      align-items: stretch;
+      text-align: center;
+      }
+      .hero-center {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+      }
+      .hero-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      }
+      .quirk-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--badge-border);
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+      }
+      .quirk-badge.up { border-color: var(--badge-up-border); background: var(--badge-up-bg); color: var(--badge-up-text); }
+      .quirk-badge.down { border-color: var(--badge-down-border); background: var(--badge-down-bg); color: var(--badge-down-text); }
+      .quirk-badge.flat { border-color: rgba(148,163,184,0.46); background: rgba(148,163,184,0.10); color: rgba(226,232,240,0.94); }
+      .headline-row {
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 10px;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      margin-top: 2px;
+      }
+      .headline-price {
+      font-size: clamp(2.25rem, 4.1vw, 2.95rem);
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      color: var(--text-main);
+      }
+      @media (max-width: 600px) { .headline-price { font-size: clamp(2.05rem, 5.2vw, 2.45rem); } }
+      .headline-unit {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: rgba(148,163,184,0.92);
+      letter-spacing: 0.01em;
+      }
+      .since-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+      font-size: 0.96rem;
+      font-weight: 600;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      }
+      .since-row .money, .since-row .pctcombo {
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      font-weight: 600;
+      white-space: nowrap;
+      }
+      .since-row.up { color: var(--accent-up); }
+      .since-row.down { color: var(--accent-down); }
+      .since-row.flat { color: rgba(226,232,240,0.88); }
+      .hero-divider {
+      height: 1px;
+      width: 100%;
+      background: linear-gradient(to right, transparent, rgba(148,163,184,0.55), transparent);
+      opacity: 0.7;
+      }
+      .hero-divider.soft { opacity: 0.35; margin: 4px 0; }
+      .section-title {
+      font-size: 0.90rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: rgba(156,163,175,0.92);
+      margin: 0 0 10px 0;
+      text-align: center;
+      font-weight: 600;
+      }
+      .summary-wrap {
+      width: 100%;
+      max-width: 520px;
+      margin: 4px auto 0;
+      text-align: left;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      }
+      .summary-head {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      padding: 6px 0 8px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+      }
+      .summary-grid {
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid rgba(148,163,184,0.22);
+      border-bottom: 1px solid rgba(148,163,184,0.22);
+      }
+      .summary-row {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      }
+      .summary-row + .summary-row {
+      border-top: 1px solid rgba(148,163,184,0.12);
+      }
+      .summary-cell {
+      padding: 11px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      }
+      .summary-label {
+      color: rgba(226,232,240,0.92);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      }
+      .summary-num {
+      text-align: right;
+      font-weight: 600;
+      color: rgba(226,232,240,0.92);
+      }
+      .summary-num.hi,
+      .summary-num.lo {
+      color: rgba(226,232,240,0.92);
+      }
+      .summary-range {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      line-height: 1.05;
+      text-align: right;
+      font-weight: 600;
+      color: rgba(226,232,240,0.86);
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      white-space: normal;
+      }
+      .summary-range .mt-money { font-size: 0.92rem; }
+      .summary-range .mt-pct   { font-size: 0.86rem; opacity: 0.95; }
+      .summary-range.up { color: var(--accent-up); }
+      .summary-range.down { color: var(--accent-down); }
+      .summary-range.neutral { color: rgba(226,232,240,0.88); }
+      .chart-wrap {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      background: rgba(2, 6, 23, 0.25);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      }
+      .chart-wrap svg {
+      width: 100%;
+      height: 290px;
+      display: block;
+      touch-action: pan-y;
+      user-select: none;
+      flex: 0 0 auto;
+      }
+      .chart-wrap svg text {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      fill: rgba(170,180,195,0.98);
+      font-size: 15px;
+      font-weight: 600;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      text-shadow: 0 1px 2px rgba(2,6,23,0.85);
+      }
+      body.market-maintenance .chart-wrap svg text,
+      body.market-weekend .chart-wrap svg text {
+      fill: rgba(186,196,210,0.95);
+      }
+      .chart-wrap svg .gridline { stroke: rgba(148,163,184,0.12); stroke-width: 1; }
+      .chart-wrap svg .crosshair { stroke: rgba(226,232,240,0.70); stroke-width: 2; stroke-dasharray: 4 4; opacity: 0; }
+      .chart-wrap svg .tipbox { opacity: 0; }
+      .chart-wrap svg .bar {
+      shape-rendering: crispEdges;
+      opacity: 0.94;
+      transition: opacity 90ms linear;
+      }
+      .chart-wrap svg .bar.hover { opacity: 1; }
+      .chart-wrap svg .bar-stroke {
+      stroke: rgba(2,6,23,0.65);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+      opacity: 0.9;
+      pointer-events: none;
+      }
+      .chart-wrap svg .refline {
+      stroke: rgba(148,163,184,0.22);
+      stroke-width: 1;
+      stroke-dasharray: 3 6;
+      pointer-events: none;
+      }
+      .chart-wrap svg .yline { fill: none; stroke-width: 2.8; opacity: 0.98; }
+      .chart-wrap svg .yarea { opacity: 0.90; }
+      .chart-wrap svg .yarea-haze { opacity: 0.55; }
+      .chart-wrap svg .curline {
+      stroke-width: 2;
+      stroke-dasharray: 2 6;
+      opacity: 0.9;
+      pointer-events: none;
+      }
+      .chart-wrap svg .price-tag-rect {
+      fill: rgba(2,6,23,0.88);
+      stroke-width: 1;
+      rx: 10;
+      ry: 10;
+      }
+      .chart-wrap svg .price-tag-text {
+      fill: rgba(248,250,252,0.98);
+      font-weight: 800;
+      font-size: 15px;
+      }
+      @media (max-width: 600px) {
+      .chart-wrap { padding: 10px; }
+      .chart-wrap svg { height: 380px; }
+      .chart-wrap svg text { font-size: 18px; }
+      .chart-wrap svg .price-tag-text { font-size: 18px; }
+      .quirk-badge { font-size: 0.92rem; padding: 8px 12px; }
+      .since-row { font-size: 0.96rem; }
+      .summary-wrap { max-width: 100%; }
+      .summary-head { grid-template-columns: 66px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; font-size: 0.80rem; }
+      .summary-row  { grid-template-columns: 66px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+      .summary-cell { padding: 11px 0; }
+      }
+      @media (max-width: 600px) {
+      .hero-stack { gap: 10px; }
+      .hero-divider.soft { margin: 6px 0; }
+      .headline-row { margin-top: 0px; }
+      .since-row { margin-top: -2px; }
+      .hero-divider:not(.soft) { margin: 6px 0; }
+      }
+      .chart-meta { display:none; }
+      .table-card { margin-top: 18px; }
+      table { width: 100%; border-collapse: collapse; }
+      thead { border-bottom: 1px solid rgba(148, 163, 184, 0.4); }
+      th, td { padding: 10px 2px; text-align: left; font-size: 0.92rem; }
+      th {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      }
+      td { font-weight: 500; color: rgba(226,232,240,0.92); }
+      .metal-name { font-weight: 600; }
+      .price-cell {
+      text-align: right;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      font-weight: 600;
+      }
+      .change-cell { text-align: right; }
+      .metal-trend{
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      justify-content: flex-end;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      font-weight: 600;
+      line-height: 1.05;
+      white-space: normal;
+      }
+      .metal-trend .mt-money { text-align: right; }
+      .metal-trend .mt-pct   { text-align: right; font-size: 0.86rem; opacity: 0.95; }
+      .metal-trend.up   { color: var(--accent-up); }
+      .metal-trend.down { color: var(--accent-down); }
+      .metal-trend.neutral { color: rgba(226,232,240,0.88); }
+      @media (max-width: 600px) {
+      th, td { font-size: 0.92rem; }
+      .metal-trend{
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      white-space: normal;
+      line-height: 1.05;
+      }
+      .metal-trend .mt-money{ font-size: 0.92rem; }
+      .metal-trend .mt-pct{ font-size: 0.86rem; opacity: 0.95; }
+      }
+      .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(10px);
+      }
+      .meta-card {
+      max-width: fit-content;
+      margin: 18px auto 14px;
+      padding: 8px 14px;
+      text-align: center;
+      }
+      .meta-primary {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: rgba(148,163,184,0.92);
+      font-feature-settings: "tnum" 1, "lnum" 1;
+      font-variant-numeric: tabular-nums lining-nums;
+      white-space: nowrap;
+      }
+      .meta-secondary {
+      margin-top: 2px;
+      font-size: 0.78rem;
+      color: rgba(148,163,184,0.80);
+      white-space: nowrap;
+      }
+      .page-footer > div:first-child { margin-bottom: 6px; }
+      .page-footer .muted { color: rgba(148,163,184,0.88); }
+    </style>
+  </head>
+  <body class="trend-neutral">
+    <div class="bg-layer bg-stars"></div>
+    <div class="bg-layer bg-fire"></div>
+    <div class="bg-layer">
+      <div class="rockets-layer" aria-hidden="true">
+        <div class="rocket rocket-l" style="--x:-10vw; --dur:8.2s; --delay:0.3s;">🚀</div>
+        <div class="rocket rocket-l" style="--x:8vw; --dur:9.0s; --delay:1.6s;">🚀</div>
+        <div class="rocket rocket-l" style="--x:24vw; --dur:8.6s; --delay:2.9s;">🚀</div>
+        <div class="rocket rocket-l" style="--x:40vw; --dur:9.4s; --delay:4.2s;">🚀</div>
+      </div>
+      <div class="crash-rockets-layer" aria-hidden="true">
+        <div class="crash-rocket crash-rocket-r" style="--x:-10vw; --dur:8.2s; --delay:0.3s;">📉</div>
+        <div class="crash-rocket crash-rocket-r" style="--x:8vw; --dur:9.0s; --delay:1.6s;">💥</div>
+        <div class="crash-rocket crash-rocket-r" style="--x:24vw; --dur:8.6s; --delay:2.9s;">📉</div>
+        <div class="crash-rocket crash-rocket-r" style="--x:40vw; --dur:9.4s; --delay:4.2s;">💥</div>
+      </div>
+      <div class="sprinkles-layer" aria-hidden="true">
+        <div class="sprinkle" style="--x:12vw; --dur:18s; --delay:0.2s;">🌙</div>
+        <div class="sprinkle" style="--x:26vw; --dur:22s; --delay:2.0s;">🌙</div>
+        <div class="sprinkle" style="--x:40vw; --dur:26s; --delay:4.0s;">¢</div>
+        <div class="sprinkle" style="--x:58vw; --dur:20s; --delay:1.2s;">🌙</div>
+        <div class="sprinkle" style="--x:72vw; --dur:28s; --delay:5.4s;">🌙</div>
+        <div class="sprinkle" style="--x:86vw; --dur:30s; --delay:7.0s;">¢</div>
+      </div>
+      <div class="coins-rain" id="coins-rain">
+        <div class="coin" style="--x:5vw; animation-duration:9s;">🪙</div>
+        <div class="coin" style="--x:20vw; animation-duration:11s; animation-delay:1s;">🪙</div>
+        <div class="coin" style="--x:35vw; animation-duration:8s; animation-delay:2s;">🪙</div>
+        <div class="coin" style="--x:50vw; animation-duration:10s; animation-delay:0.5s;">🪙</div>
+        <div class="coin" style="--x:65vw; animation-duration:12s; animation-delay:1.7s;">🪙</div>
+        <div class="coin" style="--x:80vw; animation-duration:9.5s; animation-delay:2.8s;">🪙</div>
+      </div>
+      <div class="bills-rain" id="bills-rain">
+        <div class="bill" style="--x:10vw; animation-duration:9s;">💵</div>
+        <div class="bill" style="--x:28vw; animation-duration:11s; animation-delay:0.7s;">💵</div>
+        <div class="bill" style="--x:46vw; animation-duration:8.5s; animation-delay:1.8s;">💵</div>
+        <div class="bill" style="--x:62vw; animation-duration:10.5s; animation-delay:0.3s;">💵</div>
+        <div class="bill" style="--x:78vw; animation-duration:12.5s; animation-delay:2.2s;">💵</div>
+      </div>
+      <div class="crash-rain" id="crash-rain" aria-hidden="true">
+        <div class="crash" style="--x:8vw; animation-duration:9s;">📉</div>
+        <div class="crash" style="--x:22vw; animation-duration:11s; animation-delay:1.2s;">💥</div>
+        <div class="crash" style="--x:36vw; animation-duration:8.5s; animation-delay:0.6s;">📉</div>
+        <div class="crash" style="--x:50vw; animation-duration:10.5s; animation-delay:2.1s;">🔻</div>
+        <div class="crash" style="--x:64vw; animation-duration:9.5s; animation-delay:0.9s;">📉</div>
+        <div class="crash" style="--x:78vw; animation-duration:12s; animation-delay:1.7s;">💥</div>
+      </div>
+    </div>
+    <div class="page">
+      <header>
+        <h1>Dan's Retirement Tracker</h1>
+      </header>
+      <div class="layout">
+        <section class="card hero-image-card">
+          <div class="hero-image-wrapper">
+            <img id="character-img" src="/img/flat/flat-1.png" alt="Silver price character" />
+          </div>
+        </section>
+        <div class="hero-right">
+          <section class="card hero-info" aria-label="Silver spot price">
+            <div class="section-title" style="margin-bottom:6px;">Silver Spot Price</div>
+            <div class="hero-center">
+              <div class="hero-stack">
+                <div class="headline-row" aria-label="Silver spot price">
+                  <span id="headline-price" class="headline-price">—</span>
+                  <span class="headline-unit">/ toz</span>
+                </div>
+                <div id="since-row" class="since-row flat" aria-label="Silver change since last update">
+                  <span id="since-update-money" class="money">—</span>
+                  <span id="since-update-pctcombo" class="pctcombo">—</span>
+                </div>
+                <div class="hero-divider soft"></div>
+                <div id="trend-pill" class="quirk-badge flat"><span id="trend-text">Loading…</span></div>
+              </div>
+            </div>
+          </section>
+          <section class="card" aria-label="Price ranges">
+            <div class="section-title" style="margin-bottom:6px;">Price Ranges</div>
+            <div class="summary-wrap">
+              <div class="summary-head" aria-hidden="true">
+                <div>Time</div>
+                <div style="text-align:right;">High</div>
+                <div style="text-align:right;">Low</div>
+                <div style="text-align:right;">Range</div>
+              </div>
+              <div class="summary-grid" role="table" aria-label="High low range summary">
+                <div class="summary-row" role="row">
+                  <div class="summary-cell summary-label" role="cell">1D</div>
+                  <div class="summary-cell summary-num" id="sum-day-hi" role="cell">—</div>
+                  <div class="summary-cell summary-num" id="sum-day-lo" role="cell">—</div>
+                  <div class="summary-cell summary-range neutral" id="sum-day-range" role="cell">—</div>
+                </div>
+                <div class="summary-row" role="row">
+                  <div class="summary-cell summary-label" role="cell">7D</div>
+                  <div class="summary-cell summary-num" id="sum-week-hi" role="cell">—</div>
+                  <div class="summary-cell summary-num" id="sum-week-lo" role="cell">—</div>
+                  <div class="summary-cell summary-range neutral" id="sum-week-range" role="cell">—</div>
+                </div>
+                <div class="summary-row" role="row">
+                  <div class="summary-cell summary-label" role="cell">1M</div>
+                  <div class="summary-cell summary-num" id="sum-1m-hi" role="cell">—</div>
+                  <div class="summary-cell summary-num" id="sum-1m-lo" role="cell">—</div>
+                  <div class="summary-cell summary-range neutral" id="sum-1m-range" role="cell">—</div>
+                </div>
+                <div class="summary-row" role="row">
+                  <div class="summary-cell summary-label" role="cell">1Y</div>
+                  <div class="summary-cell summary-num" id="sum-12m-hi" role="cell">—</div>
+                  <div class="summary-cell summary-num" id="sum-12m-lo" role="cell">—</div>
+                  <div class="summary-cell summary-range neutral" id="sum-12m-range" role="cell">—</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+      
+      <section class="card" style="margin-top:18px;">
+        <div class="section-title">1-Day Trend</div>
+        <div class="chart-wrap">
+          <svg id="silver1d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 1-day intraday trend chart">
+            <g id="silver1d-grid"></g>
+            <line id="silver1d-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+            <g id="silver1d-bars"></g>
+            <line id="silver1d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
+            <g id="silver1d-xlabels"></g>
+            <g id="silver1d-ylabels"></g>
+            <g id="silver1d-tip" class="tipbox"></g>
+            <path id="silver1d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+            <rect id="silver1d-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
+          </svg>
+          <div class="chart-meta" aria-hidden="true"></div>
+        </div>
+      </section>
+<section class="card" style="margin-top:18px;">
+        <div class="section-title">7-Day Trend</div>
+        <div class="chart-wrap">
+          <svg id="silver7d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 7-day trend chart">
+            <g id="silver7d-grid"></g>
+            <line id="silver7d-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+            <g id="silver7d-bars"></g>
+            <line id="silver7d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
+            <g id="silver7d-xlabels"></g>
+            <g id="silver7d-ylabels"></g>
+            <g id="silver7d-tip" class="tipbox"></g>
+            <path id="silver7d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+            <rect id="silver7d-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
+          </svg>
+          <div class="chart-meta" aria-hidden="true"></div>
+        </div>
+      </section>
+      <section class="card" style="margin-top:18px;">
+        <div class="section-title">30-Day Trend</div>
+        <div class="chart-wrap">
+          <svg id="silver1m-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 1-month trend chart">
+            <g id="silver1m-grid"></g>
+            <line id="silver1m-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+            <g id="silver1m-bars"></g>
+            <line id="silver1m-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
+            <g id="silver1m-xlabels"></g>
+            <g id="silver1m-ylabels"></g>
+            <g id="silver1m-tip" class="tipbox"></g>
+            <path id="silver1m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+            <rect id="silver1m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
+          </svg>
+          <div class="chart-meta" aria-hidden="true"></div>
+        </div>
+      </section>
+      <section class="card" style="margin-top:18px;">
+        <div class="section-title">12-Month Trend</div>
+        <div class="chart-wrap">
+          <svg id="silver12m-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 12-month trend chart">
+            <defs id="silver12m-defs"></defs>
+            <g id="silver12m-grid"></g>
+            <path id="silver12m-haze" class="yarea-haze" d=""></path>
+            <path id="silver12m-area" class="yarea" d=""></path>
+            <path id="silver12m-line" class="yline" d=""></path>
+            <line id="silver12m-curline" class="curline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+            <g id="silver12m-curtag" opacity="0"></g>
+            <line id="silver12m-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="290"></line>
+            <g id="silver12m-xlabels"></g>
+            <g id="silver12m-ylabels"></g>
+            <g id="silver12m-tip" class="tipbox"></g>
+            <path id="silver12m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+            <rect id="silver12m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
+          </svg>
+          <div class="chart-meta" aria-hidden="true"></div>
+        </div>
+      </section>
+      <section class="card table-card">
+        <div class="section-title">Spot Metals</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Metal</th>
+              <th style="text-align:right;">Price (USD/toz)</th>
+              <th style="text-align:right;">24h Trend</th>
+            </tr>
+          </thead>
+          <tbody id="metals-tbody"></tbody>
+        </table>
+      </section>
+      <section class="card meta-card" aria-label="Update timing">
+        <div class="meta-primary">
+          Last updated: <span id="last-updated">—</span>
+        </div>
+        <div class="meta-secondary">
+          Updates every 30 minutes during market hours
+        </div>
+      </section>
+    </div>
+    <script>
+      const BACKEND_URL = "https://api.dansretirement.com/";
+      
+      const bodyEl = document.body;
+      const characterImgEl = document.getElementById("character-img");
+      const headlinePriceEl = document.getElementById("headline-price");
+      const trendPillEl = document.getElementById("trend-pill");
+      const trendTextEl = document.getElementById("trend-text");
+      const lastUpdatedEl = document.getElementById("last-updated");
+      const metalsTbodyEl = document.getElementById("metals-tbody");
+      
+      const sinceRowEl = document.getElementById("since-row");
+      const sinceMoneyEl = document.getElementById("since-update-money");
+      const sincePctComboEl = document.getElementById("since-update-pctcombo");
+      
+      const sumDayHiEl = document.getElementById("sum-day-hi");
+      const sumDayLoEl = document.getElementById("sum-day-lo");
+      const sumDayRangeEl = document.getElementById("sum-day-range");
+      const sumWeekHiEl = document.getElementById("sum-week-hi");
+      const sumWeekLoEl = document.getElementById("sum-week-lo");
+      const sumWeekRangeEl = document.getElementById("sum-week-range");
+      const sum1mHiEl = document.getElementById("sum-1m-hi");
+      const sum1mLoEl = document.getElementById("sum-1m-lo");
+      const sum1mRangeEl = document.getElementById("sum-1m-range");
+      const sum12mHiEl = document.getElementById("sum-12m-hi");
+      const sum12mLoEl = document.getElementById("sum-12m-lo");
+      const sum12mRangeEl = document.getElementById("sum-12m-range");
+      
+      
+      const dailyGridEl = document.getElementById("silver1d-grid");
+      const dailyBarsEl = document.getElementById("silver1d-bars");
+      const dailyXLabelsEl = document.getElementById("silver1d-xlabels");
+      const dailyYLabelsEl = document.getElementById("silver1d-ylabels");
+      const dailyBorderEl = document.getElementById("silver1d-border");
+      const dailyHitEl = document.getElementById("silver1d-hit");
+      const dailyCrosshairEl = document.getElementById("silver1d-crosshair");
+      const dailyTipEl = document.getElementById("silver1d-tip");
+      const dailyReflineEl = document.getElementById("silver1d-refline");
+const weeklyGridEl = document.getElementById("silver7d-grid");
+      const weeklyBarsEl = document.getElementById("silver7d-bars");
+      const weeklyReflineEl = document.getElementById("silver7d-refline");
+      const weeklyXLabelsEl = document.getElementById("silver7d-xlabels");
+      const weeklyYLabelsEl = document.getElementById("silver7d-ylabels");
+      const weeklyBorderEl = document.getElementById("silver7d-border");
+      const weeklyHitEl = document.getElementById("silver7d-hit");
+      const weeklyCrosshairEl = document.getElementById("silver7d-crosshair");
+      const weeklyTipEl = document.getElementById("silver7d-tip");
+      
+      const monthlyGridEl = document.getElementById("silver1m-grid");
+      const monthlyBarsEl = document.getElementById("silver1m-bars");
+      const monthlyReflineEl = document.getElementById("silver1m-refline");
+      const monthlyXLabelsEl = document.getElementById("silver1m-xlabels");
+      const monthlyYLabelsEl = document.getElementById("silver1m-ylabels");
+      const monthlyBorderEl = document.getElementById("silver1m-border");
+      const monthlyHitEl = document.getElementById("silver1m-hit");
+      const monthlyCrosshairEl = document.getElementById("silver1m-crosshair");
+      const monthlyTipEl = document.getElementById("silver1m-tip");
+      
+      const yearlyDefsEl = document.getElementById("silver12m-defs");
+      const yearlyGridEl = document.getElementById("silver12m-grid");
+      const yearlyHazeEl = document.getElementById("silver12m-haze");
+      const yearlyAreaEl = document.getElementById("silver12m-area");
+      const yearlyLineEl = document.getElementById("silver12m-line");
+      const yearlyXLabelsEl = document.getElementById("silver12m-xlabels");
+      const yearlyYLabelsEl = document.getElementById("silver12m-ylabels");
+      const yearlyBorderEl = document.getElementById("silver12m-border");
+      const yearlyHitEl = document.getElementById("silver12m-hit");
+      const yearlyCrosshairEl = document.getElementById("silver12m-crosshair");
+      const yearlyTipEl = document.getElementById("silver12m-tip");
+      
+      const yearlyCurLineEl = document.getElementById("silver12m-curline");
+      const yearlyCurTagEl = document.getElementById("silver12m-curtag");
+      
+      const IMAGE_FLAT = "/img/flat/flat-1.png";
+      const IMAGE_CLOSED = "/img/closed/closed-1.png";
+      
+      let IMAGE_LISTS = { up: [], down: [] };
+      let _currentDirection = null;
+      let _currentImageSrc = null;
+      
+      window.__LAST_DATA__ = null;
+      
+      function isMobileNow() {
+        return window.matchMedia && window.matchMedia("(max-width: 600px)").matches;
+      }
+      
+      function chartSize(mobile) {
+        return { W: mobile ? 380 : 1000, H: mobile ? 380 : 290 };
+      }
+      
+      function syncSvgBox(svgEl, W, H) {
+        svgEl.setAttribute("viewBox", `0 0 ${W} ${H}`);
+      }
+      
+      function pickRandom(arr) {
+        if (!arr || arr.length === 0) return null;
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+      
+      async function loadImageLists() {
+        try {
+          const res = await fetch("/images.json?t=" + Date.now(), { cache: "no-store" });
+          if (!res.ok) throw new Error("images.json HTTP " + res.status);
+          const json = await res.json();
+      
+          const normalize = (p) => {
+            if (typeof p !== "string") return null;
+            return p.startsWith("/") ? p : ("/" + p);
+          };
+      
+          IMAGE_LISTS.up = Array.isArray(json.up) ? json.up.map(normalize).filter(Boolean) : [];
+          IMAGE_LISTS.down = Array.isArray(json.down) ? json.down.map(normalize).filter(Boolean) : [];
+        } catch {
+          IMAGE_LISTS = { up: [], down: [] };
+        }
+      }
+      
+      function clearMarketClosedThemes() {
+        bodyEl.classList.remove("market-maintenance", "market-weekend");
+      }
+      
+      function setTrendMode(mode) {
+        bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
+        clearMarketClosedThemes();
+        if (mode === "up") bodyEl.classList.add("trend-up");
+        else if (mode === "down") bodyEl.classList.add("trend-down");
+        else bodyEl.classList.add("trend-neutral");
+      }
+      
+      function fmtMoney(v) {
+        if (v == null) return "—";
+        const n = Number(v);
+        if (!Number.isFinite(n)) return "—";
+        return `$${n.toFixed(2)}`;
+      }
+      
+      function fmtAxisPrice(v) {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return "—";
+        return n.toFixed(0);
+      }
+      
+      function fmtUpdatedAt(updatedAt) {
+        if (!updatedAt) return "—";
+        const dt = new Date(updatedAt);
+        if (Number.isNaN(dt.getTime())) return "—";
+        return dt.toLocaleString();
+      }
+      
+      function setMarketClosedPill(market) {
+        trendPillEl.className = "quirk-badge flat";
+        bodyEl.classList.remove("trend-up", "trend-down", "trend-neutral");
+        clearMarketClosedThemes();
+      
+        const closedType = (market?.closedType || "").toLowerCase();
+        const reason = (market?.reason || "").toLowerCase();
+        const isMaintenance = closedType === "maintenance" || reason.includes("daily") || reason.includes("maintenance");
+      
+        if (isMaintenance) {
+          bodyEl.classList.add("market-maintenance");
+          trendTextEl.textContent = "Daily break — Resumes at 5pm CT";
+        } else {
+          bodyEl.classList.add("market-weekend");
+          trendTextEl.textContent = "Market opens Sunday 5pm CT";
+        }
+      
+        _currentDirection = "closed";
+        _currentImageSrc = IMAGE_CLOSED;
+        characterImgEl.src = _currentImageSrc;
+      }
+      
+      function setTrendPill(direction) {
+        const shouldSwapImage = direction !== _currentDirection;
+      
+        if (direction === "up") {
+          trendPillEl.className = "quirk-badge up";
+          trendTextEl.textContent = "Closer to retirement";
+          setTrendMode("up");
+          if (shouldSwapImage) {
+            _currentImageSrc = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
+            _currentDirection = "up";
+          }
+          characterImgEl.src = _currentImageSrc || IMAGE_CLOSED;
+          return;
+        }
+      
+        if (direction === "down") {
+          trendPillEl.className = "quirk-badge down";
+          trendTextEl.textContent = "Get back to work";
+          setTrendMode("down");
+          if (shouldSwapImage) {
+            _currentImageSrc = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
+            _currentDirection = "down";
+          }
+          characterImgEl.src = _currentImageSrc || IMAGE_CLOSED;
+          return;
+        }
+      
+        trendPillEl.className = "quirk-badge flat";
+        trendTextEl.textContent = "Flat as the earth";
+        setTrendMode("neutral");
+        _currentDirection = "neutral";
+        _currentImageSrc = IMAGE_FLAT;
+        characterImgEl.src = _currentImageSrc;
+      }
+      
+      function setHeadlinePriceColor(direction, marketIsOpen) {
+        if (!marketIsOpen) {
+          headlinePriceEl.style.color = "var(--text-main)";
+          return;
+        }
+        if (direction === "up") headlinePriceEl.style.color = "var(--accent-up)";
+        else if (direction === "down") headlinePriceEl.style.color = "var(--accent-down)";
+        else headlinePriceEl.style.color = "var(--text-main)";
+      }
+      
+      function fmtPctUnsigned(v) {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return "—";
+        return `${Math.abs(n).toFixed(2)}%`;
+      }
+      
+      function renderSinceLastUpdateFromAPI(silver) {
+        const delta = Number(silver?.deltaSinceLast);
+        const pct = Number(silver?.pctSinceLast);
+      
+        if (!Number.isFinite(delta) || !Number.isFinite(pct)) {
+          sinceRowEl.className = "since-row flat";
+          sinceMoneyEl.textContent = "—";
+          sincePctComboEl.textContent = "—";
+          return;
+        }
+      
+        let cls = "flat";
+        let arrow = "↔";
+        if (delta > 0) { cls = "up"; arrow = "↑"; }
+        else if (delta < 0) { cls = "down"; arrow = "↓"; }
+      
+        sinceRowEl.className = "since-row " + cls;
+        sinceMoneyEl.textContent = `${delta > 0 ? "+" : (delta < 0 ? "−" : "")}$${Math.abs(delta).toFixed(2)}`;
+        sincePctComboEl.textContent = `${arrow}${fmtPctUnsigned(pct)}`;
+      }
+      
+      function safeFinite(x) {
+        const n = Number(x);
+        return Number.isFinite(n) ? n : null;
+      }
+      function setText(el, txt) { if (el) el.textContent = txt; }
+      
+      function computeMinMaxFromRows(rows) {
+        if (!Array.isArray(rows) || rows.length === 0) return { hi: null, lo: null, first: null, last: null };
+        let lo = Infinity, hi = -Infinity;
+        let first = null, last = null;
+        for (let i = 0; i < rows.length; i++) {
+          const v = safeFinite(rows[i]?.close);
+          if (v == null) continue;
+          if (first == null) first = v;
+          last = v;
+          if (v < lo) lo = v;
+          if (v > hi) hi = v;
+        }
+        if (first == null || last == null) return { hi: null, lo: null, first: null, last: null };
+        return { hi, lo, first, last };
+      }
+      
+      function dirClassFromFirstLast(first, last) {
+        if (!Number.isFinite(first) || !Number.isFinite(last)) return "neutral";
+        if (last > first) return "up";
+        if (last < first) return "down";
+        return "neutral";
+      }
+      
+      function setRangeMoneyAndPct(el, hi, lo, dirCls) {
+        if (!el) return;
+      
+        el.classList.remove("up", "down", "neutral");
+        el.classList.add(dirCls || "neutral");
+      
+        if (!Number.isFinite(hi) || !Number.isFinite(lo) || hi < lo) {
+          el.textContent = "—";
+          return;
+        }
+      
+        const absRange = hi - lo;
+        const pct = (lo !== 0) ? (absRange / lo) * 100 : null;
+      
+        const arrow = (dirCls === "up") ? "↑" : (dirCls === "down" ? "↓" : "↔");
+      
+        const moneyLine = `$${absRange.toFixed(2)}`;
+        const pctLine = (pct == null || !Number.isFinite(pct)) ? "—" : `${arrow}${pct.toFixed(2)}%`;
+      
+        el.innerHTML = `
+          <span class="mt-money">${moneyLine}</span>
+          <span class="mt-pct">${pctLine}</span>
+        `;
+      }
+      
+      function renderSilverSummary(data) {
+        const silver = data?.metals?.silver || {};
+      
+        const dayHi = safeFinite(silver?.high24h);
+        const dayLo = safeFinite(silver?.low24h);
+      
+        const dailyRows = data?.intraday?.silver || [];
+        const weeklyRows = data?.weekly?.silver || [];
+        const yearlyRows = data?.yearly?.silver12m || [];
+      
+        const w = computeMinMaxFromRows(weeklyRows);
+        const y = computeMinMaxFromRows(yearlyRows);
+      
+        const dayChg = safeFinite(silver?.change);
+        const dayDir = (dayChg == null) ? "neutral" : (dayChg > 0 ? "up" : (dayChg < 0 ? "down" : "neutral"));
+        const weekDir = dirClassFromFirstLast(w.first, w.last);
+        const yearDir = dirClassFromFirstLast(y.first, y.last);
+      
+        const mHi = safeFinite(silver?.high30d);
+        const mLo = safeFinite(silver?.low30d);
+        const mChg = safeFinite(silver?.change30d);
+        const monthDir = (mChg == null) ? "neutral" : (mChg > 0 ? "up" : (mChg < 0 ? "down" : "neutral"));
+      
+        setText(sumDayHiEl, dayHi == null ? "—" : fmtMoney(dayHi));
+        setText(sumDayLoEl, dayLo == null ? "—" : fmtMoney(dayLo));
+        setRangeMoneyAndPct(sumDayRangeEl, dayHi, dayLo, dayDir);
+      
+        setText(sumWeekHiEl, w.hi == null ? "—" : fmtMoney(w.hi));
+        setText(sumWeekLoEl, w.lo == null ? "—" : fmtMoney(w.lo));
+        setRangeMoneyAndPct(sumWeekRangeEl, w.hi, w.lo, weekDir);
+      
+        setText(sum1mHiEl, mHi == null ? "—" : fmtMoney(mHi));
+        setText(sum1mLoEl, mLo == null ? "—" : fmtMoney(mLo));
+        setRangeMoneyAndPct(sum1mRangeEl, mHi, mLo, monthDir);
+      
+        setText(sum12mHiEl, y.hi == null ? "—" : fmtMoney(y.hi));
+        setText(sum12mLoEl, y.lo == null ? "—" : fmtMoney(y.lo));
+        setRangeMoneyAndPct(sum12mRangeEl, y.hi, y.lo, yearDir);
+      }
+      
+      function fmtMMDD(yyyy_mm_dd) {
+        if (!yyyy_mm_dd || typeof yyyy_mm_dd !== "string") return "—";
+        const m = yyyy_mm_dd.slice(5, 7);
+        const d = yyyy_mm_dd.slice(8, 10);
+        if (!m || !d) return "—";
+        return `${m}/${d}`;
+      }
+      
+      function monthNameFromYYYYMM(yyyy_mm) {
+        if (!yyyy_mm || typeof yyyy_mm !== "string") return "—";
+        const m = Number(yyyy_mm.slice(5, 7));
+        const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        if (!Number.isFinite(m) || m < 1 || m > 12) return "—";
+        return names[m - 1];
+      }
+      
+      function dayOfMonthFromYYYYMMDD(yyyy_mm_dd) {
+        if (!yyyy_mm_dd || typeof yyyy_mm_dd !== "string") return null;
+        const d = Number(yyyy_mm_dd.slice(8, 10));
+        return Number.isFinite(d) ? d : null;
+      }
+      
+      function niceNumber(x) {
+        if (!Number.isFinite(x) || x <= 0) return 1;
+        const exp = Math.floor(Math.log10(x));
+        const f = x / Math.pow(10, exp);
+        let nf = 1;
+        if (f < 1.5) nf = 1;
+        else if (f < 3) nf = 2;
+        else if (f < 7) nf = 5;
+        else nf = 10;
+        return nf * Math.pow(10, exp);
+      }
+      
+      function makeTicksCovering(minVal, maxVal, count = 5) {
+        if (!Number.isFinite(minVal) || !Number.isFinite(maxVal)) return [];
+        if (minVal === maxVal) {
+          const step = minVal === 0 ? 1 : Math.abs(minVal) * 0.05;
+          return [minVal - step, minVal, minVal + step];
+        }
+        const span = maxVal - minVal;
+        const step = niceNumber(span / Math.max(1, count - 1));
+        const start = Math.floor(minVal / step) * step;
+        const end = Math.ceil(maxVal / step) * step;
+      
+        const ticks = [];
+        for (let v = start; v <= end + step / 2; v += step) ticks.push(v);
+      
+        if (ticks.length > 7) {
+          const stride = Math.ceil(ticks.length / 6);
+          const compact = [];
+          for (let i = 0; i < ticks.length; i += stride) compact.push(ticks[i]);
+          if (compact[compact.length - 1] !== ticks[ticks.length - 1]) compact.push(ticks[ticks.length - 1]);
+          return compact;
+        }
+        return ticks;
+      }
+      
+      function getChartPads(mobile, kind) {
+        if (mobile) {
+          if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
+          if (kind === "monthly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
+          if (kind === "yearly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
+          return { padL: 10, padR: 56, padT: 8,  padB: 34 };
+        }
+        return { padL: 20, padR: 52, padT: 12, padB: 36 };
+      }
+      
+      function ensureLineAndTag(svgEl, lineId, tagId) {
+      let line = svgEl.querySelector("#" + lineId);
+      if (!line) {
+      line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("id", lineId);
+      line.setAttribute("class", "curline");
+      line.setAttribute("opacity", "0");
+      svgEl.appendChild(line);
+      }
+      
+      let tag = svgEl.querySelector("#" + tagId);
+      if (!tag) {
+      tag = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      tag.setAttribute("id", tagId);
+      tag.setAttribute("opacity", "0");
+      svgEl.appendChild(tag);
+      }
+      
+      return { line, tag };
+      }
+      
+      function hideLineAndTag(svgEl, lineId, tagId) {
+        const line = svgEl.querySelector("#" + lineId);
+        const tag = svgEl.querySelector("#" + tagId);
+        if (line) line.setAttribute("opacity", "0");
+        if (tag) { tag.setAttribute("opacity", "0"); tag.innerHTML = ""; }
+      }
+      
+      function renderCurrentPriceLine({ svgEl, lineId, tagId, x0, x1, y0, y1, yFor, currentPrice, currentDir, marketIsOpen }) {
+      const cp = Number(currentPrice);
+      if (!Number.isFinite(cp)) {
+      hideLineAndTag(svgEl, lineId, tagId);
+      return;
+      }
+      
+      const { line, tag } = ensureLineAndTag(svgEl, lineId, tagId);
+      
+      let curColor = "rgba(148,163,184,0.92)";
+      if (currentDir === "up") curColor = "rgba(34,197,94,0.95)";
+      else if (currentDir === "down") curColor = "rgba(239,68,68,0.95)";
+      if (!marketIsOpen) curColor = "rgba(148,163,184,0.70)";
+      
+      const yCP = Math.max(y0 + 2, Math.min(y1 - 2, yFor(cp)));
+      
+      line.setAttribute("x1", x0);
+      line.setAttribute("x2", x1);
+      line.setAttribute("y1", yCP);
+      line.setAttribute("y2", yCP);
+      line.setAttribute("stroke", curColor);
+      line.setAttribute("opacity", "1");
+      
+      const tagText = fmtMoney(cp);
+      tag.innerHTML = "";
+      
+      const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      t.setAttribute("class", "price-tag-text");
+      t.setAttribute("x", 0);
+      t.setAttribute("y", 0);
+      t.setAttribute("dominant-baseline", "middle");
+      t.textContent = tagText;
+      
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.appendChild(t);
+      tag.appendChild(g);
+      
+      const bb = g.getBBox();
+      const padX = 10;
+      const padY = 8;
+      const boxW = bb.width + padX * 2;
+      const boxH = 26 + padY;
+      
+      const insetRight = 10;
+      const bx = Math.max(x0 + 6, (x1 - insetRight) - boxW);
+      
+      let by = yCP - (boxH / 2);
+      by = Math.max(y0 + 6, Math.min(y1 - boxH - 6, by));
+      
+      const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      r.setAttribute("class", "price-tag-rect");
+      r.setAttribute("x", bx);
+      r.setAttribute("y", by);
+      r.setAttribute("width", boxW);
+      r.setAttribute("height", boxH);
+      r.setAttribute("rx", 10);
+      r.setAttribute("ry", 10);
+      r.setAttribute("stroke", curColor);
+      
+      t.setAttribute("x", bx + padX);
+      t.setAttribute("y", by + boxH / 2);
+      
+      tag.insertBefore(r, g);
+      tag.setAttribute("opacity", "1");
+      
+      const base = tagId.replace(/-curtag$/, "");
+      const crosshair = svgEl.querySelector("#" + base + "-crosshair");
+      const tip = svgEl.querySelector("#" + base + "-tip");
+      const hit = svgEl.querySelector("#" + base + "-hit");
+      
+      if (crosshair) svgEl.appendChild(crosshair);
+      if (tip) svgEl.appendChild(tip);
+      if (hit) svgEl.appendChild(hit);
+      }
+      
+      function clearWeeklyChart() {
+        weeklyGridEl.innerHTML = "";
+        weeklyBarsEl.innerHTML = "";
+        weeklyXLabelsEl.innerHTML = "";
+        weeklyYLabelsEl.innerHTML = "";
+        weeklyBorderEl.setAttribute("d", "");
+        weeklyTipEl.innerHTML = "";
+        weeklyReflineEl.setAttribute("opacity", "0");
+        const svgEl = weeklyHitEl.ownerSVGElement;
+        hideLineAndTag(svgEl, "silver7d-curline", "silver7d-curtag");
+      }
+      
+      function clearMonthlyChart() {
+        monthlyGridEl.innerHTML = "";
+        monthlyBarsEl.innerHTML = "";
+        monthlyXLabelsEl.innerHTML = "";
+        monthlyYLabelsEl.innerHTML = "";
+        monthlyBorderEl.setAttribute("d", "");
+        monthlyTipEl.innerHTML = "";
+        monthlyReflineEl.setAttribute("opacity", "0");
+        const svgEl = monthlyHitEl.ownerSVGElement;
+        hideLineAndTag(svgEl, "silver1m-curline", "silver1m-curtag");
+      }
+      
+      function clearYearlyChart() {
+        yearlyDefsEl.innerHTML = "";
+        yearlyGridEl.innerHTML = "";
+        yearlyHazeEl.setAttribute("d", "");
+        yearlyAreaEl.setAttribute("d", "");
+        yearlyLineEl.setAttribute("d", "");
+        yearlyXLabelsEl.innerHTML = "";
+        yearlyYLabelsEl.innerHTML = "";
+        yearlyBorderEl.setAttribute("d", "");
+        yearlyTipEl.innerHTML = "";
+        yearlyCurLineEl.setAttribute("opacity", "0");
+        yearlyCurTagEl.setAttribute("opacity", "0");
+        yearlyCurTagEl.innerHTML = "";
+      }
+      
+            function clearDailyChart() {
+        dailyGridEl.innerHTML = "";
+        dailyBarsEl.innerHTML = "";
+        dailyXLabelsEl.innerHTML = "";
+        dailyYLabelsEl.innerHTML = "";
+        dailyBorderEl.setAttribute("d", "");
+        dailyTipEl.innerHTML = "";
+        dailyReflineEl.setAttribute("opacity", "0");
+        const svgEl = dailyHitEl.ownerSVGElement;
+        hideLineAndTag(svgEl, "silver1d-curline", "silver1d-curtag");
+      }
+
+      function fmtIntraday12h(t24) {
+        if (!t24 || typeof t24 !== "string") return "";
+        const m = /^(\d{2}):(\d{2})$/.exec(t24.trim());
+        if (!m) return t24;
+        const hh = Number(m[1]), mm = m[2];
+        const am = hh < 12;
+        let h12 = hh % 12;
+        if (h12 === 0) h12 = 12;
+        return `${h12}:${mm} ${am ? "AM" : "PM"}`;
+      }
+
+      function renderDailyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
+        clearDailyChart();
+        if (!Array.isArray(rows) || rows.length < 2) return;
+
+        const mobile = isMobileNow();
+        const { W, H } = chartSize(mobile);
+
+        const dailySvg = dailyHitEl.ownerSVGElement;
+        syncSvgBox(dailySvg, W, H);
+
+        dailyCrosshairEl.setAttribute("y2", String(H));
+        dailyHitEl.setAttribute("width", String(W));
+        dailyHitEl.setAttribute("height", String(H));
+
+        const { padL, padR, padT, padB } = getChartPads(mobile, "weekly"); // same geometry as 7d
+        const innerW = W - padL - padR;
+        const innerH = H - padT - padB;
+        const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
+
+        dailyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
+
+        // Build effective values with carry-forward for nulls.
+        const anchor = Number(currentPrice);
+        let last = Number.isFinite(anchor) ? anchor : null;
+
+        const pts = rows.map((r, idx) => {
+          const v = Number(r?.close);
+          const isOpenTick = Number.isFinite(v);
+          if (isOpenTick) last = v;
+          return {
+            i: idx,
+            t: r?.t,
+            close: isOpenTick ? v : null,
+            eff: (Number.isFinite(last) ? last : (isOpenTick ? v : null)),
+            isClosed: !isOpenTick
+          };
+        });
+
+        // If we still don't have any finite values, nothing to scale.
+        const effVals = pts.map(p => p.eff).filter(Number.isFinite);
+        if (effVals.length < 2) return;
+
+        let min = Infinity, max = -Infinity;
+        for (const v of effVals) { if (v < min) min = v; if (v > max) max = v; }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+
+        // Nice padding like weekly
+        const pad = (max - min) * 0.10 || 0.5;
+        let yMin = min - pad;
+        let yMax = max + pad;
+        if (yMax <= yMin) { yMax = yMin + 1; }
+
+        const yTicks = makeTicksCovering(yMin, yMax, mobile ? 3 : 5);
+
+        // Grid + Y labels
+        for (const t of yTicks) {
+          const yRaw = (function(v){
+            const tt = (v - yMin) / (yMax - yMin || 1);
+            return padT + innerH * (1 - tt);
+          })(t);
+
+          const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          gl.setAttribute("x1", x0);
+          gl.setAttribute("x2", x1);
+          gl.setAttribute("y1", yRaw);
+          gl.setAttribute("y2", yRaw);
+          gl.setAttribute("class", "gridline");
+          dailyGridEl.appendChild(gl);
+
+          const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", W - 6);
+          tx.setAttribute("text-anchor", "end");
+          tx.setAttribute("y", y);
+          tx.setAttribute("dominant-baseline", "middle");
+          tx.textContent = fmtAxisPrice(t);
+          dailyYLabelsEl.appendChild(tx);
+        }
+
+        const n = pts.length;
+        const slotW = innerW / n;
+        const gap = mobile ? 2.0 : 2.8;
+        const barW = Math.max(2, slotW - gap);
+        const barX = (i) => x0 + i * slotW + (gap / 2);
+        const barCenter = (i) => barX(i) + (barW / 2);
+
+        const yFor = (v) => {
+          const tt = (v - yMin) / (yMax - yMin || 1);
+          return padT + innerH * (1 - tt);
+        };
+
+        const yBase = y1;
+        dailyReflineEl.setAttribute("opacity", "0");
+
+        const bars = [];
+        for (let i = 0; i < n; i++) {
+          const vEff = pts[i].eff;
+          if (!Number.isFinite(vEff)) continue;
+
+          const yTop = yFor(vEff);
+          const h = Math.max(1, yBase - yTop);
+
+          const prevEff = (i > 0 && Number.isFinite(pts[i-1].eff)) ? pts[i-1].eff : vEff;
+          const isUp = vEff >= prevEff;
+          const isFlat = vEff === prevEff;
+
+          const isClosedSlot = pts[i].isClosed;
+          const fill = (isClosedSlot || !marketIsOpen)
+            ? "rgba(148,163,184,0.55)"
+            : (isFlat ? "rgba(148,163,184,0.62)" : (isUp ? "rgba(34,197,94,0.90)" : "rgba(239,68,68,0.90)"));
+
+          const x = barX(i);
+
+          const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          r.setAttribute("class", "bar");
+          r.setAttribute("x", x);
+          r.setAttribute("y", yTop);
+          r.setAttribute("width", barW);
+          r.setAttribute("height", h);
+          r.setAttribute("rx", mobile ? 6 : 3.0);
+          r.setAttribute("ry", mobile ? 6 : 3.0);
+          r.setAttribute("fill", fill);
+          dailyBarsEl.appendChild(r);
+
+          const s = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          s.setAttribute("class", "bar-stroke");
+          s.setAttribute("x", x);
+          s.setAttribute("y", yTop);
+          s.setAttribute("width", barW);
+          s.setAttribute("height", h);
+          s.setAttribute("rx", mobile ? 6 : 3.0);
+          s.setAttribute("ry", mobile ? 6 : 3.0);
+          s.setAttribute("fill", "none");
+          dailyBarsEl.appendChild(s);
+
+          bars.push({ i, x, yTop, h, vEff, t: pts[i].t, isClosed: isClosedSlot });
+        }
+
+        // X labels: 12 AM, 6 AM, 12 PM, 6 PM, 12 AM (end marker)
+        const tickIdx = [0, 12, 24, 36];
+        for (const i of tickIdx) {
+          if (i < 0 || i >= n) continue;
+          const t = pts[i]?.t || "";
+          const label = fmtIntraday12h(t).replace(":00 ", ":00").replace(" 0", " ");
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", String(barCenter(i)));
+          tx.setAttribute("y", String(H - 10));
+          tx.setAttribute("text-anchor", "middle");
+          tx.textContent = label;
+          dailyXLabelsEl.appendChild(tx);
+        }
+        // End-of-day marker label at right edge
+        {
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", String(x1));
+          tx.setAttribute("y", String(H - 10));
+          tx.setAttribute("text-anchor", "end");
+          tx.textContent = "12:00 AM";
+          dailyXLabelsEl.appendChild(tx);
+        }
+
+        // Current price line + tag
+        renderCurrentPriceLine({
+          svgEl: dailySvg,
+          lineId: "silver1d-curline",
+          tagId: "silver1d-curtag",
+          x0, x1, y0, y1, yFor,
+          currentPrice,
+          currentDir,
+          marketIsOpen
+        });
+// Hover / tooltip
+        const hit = dailyHitEl;
+        const crosshair = dailyCrosshairEl;
+        const tip = dailyTipEl;
+
+        function nearestIndex(evt) {
+          const pt = dailySvg.createSVGPoint();
+          pt.x = evt.clientX; pt.y = evt.clientY;
+          const ctm = hit.getScreenCTM();
+          if (!ctm) return null;
+          const inv = ctm.inverse();
+          const local = pt.matrixTransform(inv);
+          const lx = local.x;
+          const i = Math.max(0, Math.min(n - 1, Math.floor((lx - x0) / slotW)));
+          return i;
+        }
+
+        function setTipAt(i) {
+          const b = bars.find(bb => bb.i === i) || { i, x: barX(i), yTop: yFor(pts[i].eff), h: Math.max(1, yBase - yFor(pts[i].eff)), vEff: pts[i].eff, t: pts[i].t, isClosed: pts[i].isClosed };
+          const cx = barCenter(i);
+          crosshair.setAttribute("x1", String(cx));
+          crosshair.setAttribute("x2", String(cx));
+
+          const when = fmtIntraday12h(pts[i]?.t || "");
+          const msg = b.isClosed ? "Market Closed" : fmtMoney(b.vEff);
+          tip.innerHTML = "";
+          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+          const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          label.setAttribute("x", String(cx));
+          label.setAttribute("y", String(y0 + 16));
+          label.setAttribute("text-anchor", "middle");
+          label.textContent = `${when} • ${msg}`;
+          g.appendChild(label);
+          tip.appendChild(g);
+
+          // Ensure tooltip sits above current line/tag (paint last)
+          dailySvg.appendChild(tip);
+        }
+
+        hit.addEventListener("mousemove", (e) => {
+          const i = nearestIndex(e);
+          if (i === null) return;
+          setTipAt(i);
+        });
+
+        hit.addEventListener("mouseleave", () => {
+          tip.innerHTML = "";
+        });
+      }
+
+function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
+        clearWeeklyChart();
+        if (!Array.isArray(rows) || rows.length < 2) return;
+      
+        const pts = rows
+          .map((r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }))
+          .filter((p) => p?.xLabel && Number.isFinite(p.value));
+      
+        if (pts.length < 2) return;
+      
+        let min = Infinity, max = -Infinity;
+        for (const p of pts) { if (p.value < min) min = p.value; if (p.value > max) max = p.value; }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+      
+        const mobile = isMobileNow();
+        const { W, H } = chartSize(mobile);
+      
+        const weeklySvg = weeklyHitEl.ownerSVGElement;
+        syncSvgBox(weeklySvg, W, H);
+      
+        weeklyCrosshairEl.setAttribute("y2", String(H));
+        weeklyHitEl.setAttribute("width", String(W));
+        weeklyHitEl.setAttribute("height", String(H));
+      
+        const { padL, padR, padT, padB } = getChartPads(mobile, "weekly");
+      
+        const innerW = W - padL - padR;
+        const innerH = H - padT - padB;
+      
+        const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
+        weeklyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
+      
+        let range = max - min;
+        const minVisualRange = 0.9;
+        if (range < minVisualRange) range = minVisualRange;
+      
+        const head = range * 0.06;
+        const yMinData = min - head;
+        const yMaxData = max + head;
+      
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 3 : 5);
+        const yMin = Math.min(...yTicks);
+        const yMax = Math.max(...yTicks);
+      
+        const yFor = (v) => {
+          const t = (v - yMin) / (yMax - yMin || 1);
+          return padT + innerH * (1 - t);
+        };
+      
+        for (const t of yTicks) {
+          const yRaw = yFor(t);
+      
+          const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          gl.setAttribute("x1", x0);
+          gl.setAttribute("x2", x1);
+          gl.setAttribute("y1", yRaw);
+          gl.setAttribute("y2", yRaw);
+          gl.setAttribute("class", "gridline");
+          weeklyGridEl.appendChild(gl);
+      
+          const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", W - 6);
+          tx.setAttribute("text-anchor", "end");
+          tx.setAttribute("y", y);
+          tx.setAttribute("dominant-baseline", "middle");
+          tx.textContent = fmtAxisPrice(t);
+          weeklyYLabelsEl.appendChild(tx);
+        }
+      
+        const n = pts.length;
+        const slotW = innerW / n;
+      
+        const gap = mobile ? 2.0 : 2.8;
+        const barW = Math.max(2, slotW - gap);
+        const barX = (i) => x0 + i * slotW + (gap / 2);
+        const barCenter = (i) => barX(i) + (barW / 2);
+      
+        const yBase = y1;
+        weeklyReflineEl.setAttribute("opacity", "0");
+      
+        const bars = [];
+        for (let i = 0; i < n; i++) {
+          const v = pts[i].value;
+          const yTop = yFor(v);
+          const h = Math.max(1, yBase - yTop);
+      
+          const prev = (i > 0) ? pts[i - 1].value : v;
+          const isUp = v >= prev;
+          const isFlat = v === prev;
+      
+          const fill = (!marketIsOpen)
+            ? "rgba(148,163,184,0.55)"
+            : (isFlat ? "rgba(148,163,184,0.62)" : (isUp ? "rgba(34,197,94,0.90)" : "rgba(239,68,68,0.90)"));
+      
+          const x = barX(i);
+      
+          const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          r.setAttribute("class", "bar");
+          r.setAttribute("x", x);
+          r.setAttribute("y", yTop);
+          r.setAttribute("width", barW);
+          r.setAttribute("height", h);
+          r.setAttribute("rx", mobile ? 6 : 3.0);
+          r.setAttribute("ry", mobile ? 6 : 3.0);
+          r.setAttribute("fill", fill);
+          weeklyBarsEl.appendChild(r);
+      
+          const s = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          s.setAttribute("class", "bar-stroke");
+          s.setAttribute("x", x);
+          s.setAttribute("y", yTop);
+          s.setAttribute("width", barW);
+          s.setAttribute("height", h);
+          s.setAttribute("rx", mobile ? 6 : 3.0);
+          s.setAttribute("ry", mobile ? 6 : 3.0);
+          s.setAttribute("fill", "none");
+          weeklyBarsEl.appendChild(s);
+      
+          bars.push(r);
+        }
+      
+        const yLabelY = y1 + (mobile ? 26 : 30);
+      
+        const firstLbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        firstLbl.setAttribute("y", yLabelY);
+        firstLbl.textContent = fmtMMDD(pts[0].xLabel);
+        if (mobile) {
+          firstLbl.setAttribute("x", x0 + 2);
+          firstLbl.setAttribute("text-anchor", "start");
+        } else {
+          firstLbl.setAttribute("x", barCenter(0));
+          firstLbl.setAttribute("text-anchor", "middle");
+        }
+        weeklyXLabelsEl.appendChild(firstLbl);
+      
+        const midEvery = mobile ? 3 : 1;
+        for (let i = 1; i < n - 1; i++) {
+          if (i % midEvery !== 0) continue;
+          const xMid = barCenter(i);
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", xMid);
+          tx.setAttribute("y", yLabelY);
+          tx.setAttribute("text-anchor", "middle");
+          tx.textContent = fmtMMDD(pts[i].xLabel);
+          weeklyXLabelsEl.appendChild(tx);
+        }
+      
+        const lastLbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        lastLbl.setAttribute("y", yLabelY);
+        lastLbl.textContent = fmtMMDD(pts[n - 1].xLabel);
+        if (mobile) {
+          lastLbl.setAttribute("x", x1 - 2);
+          lastLbl.setAttribute("text-anchor", "end");
+        } else {
+          lastLbl.setAttribute("x", barCenter(n - 1));
+          lastLbl.setAttribute("text-anchor", "middle");
+        }
+        weeklyXLabelsEl.appendChild(lastLbl);
+      
+        renderCurrentPriceLine({
+          svgEl: weeklySvg,
+          lineId: "silver7d-curline",
+          tagId: "silver7d-curtag",
+          x0, x1, y0, y1, yFor,
+          currentPrice,
+          currentDir,
+          marketIsOpen
+        });
+      
+        function clearHover() { for (const b of bars) b.classList.remove("hover"); }
+      
+        function hideTip() {
+          weeklyCrosshairEl.style.opacity = "0";
+          weeklyTipEl.style.opacity = "0";
+          weeklyTipEl.innerHTML = "";
+          clearHover();
+        }
+      
+        function showTip(i) {
+          i = Math.max(0, Math.min(n - 1, i));
+      
+          clearHover();
+          if (bars[i]) bars[i].classList.add("hover");
+      
+          const v = pts[i].value;
+          const xCenter = barCenter(i);
+      
+          weeklyCrosshairEl.setAttribute("x1", xCenter);
+          weeklyCrosshairEl.setAttribute("x2", xCenter);
+          weeklyCrosshairEl.style.opacity = "1";
+      
+          const label = fmtMMDD(pts[i].xLabel);
+          const price = fmtMoney(v);
+      
+          weeklyTipEl.innerHTML = "";
+          weeklyTipEl.style.opacity = "1";
+      
+          const tipPaddingX = 12;
+          const tipPaddingY = 10;
+      
+          const tx1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx1.textContent = label;
+          tx1.setAttribute("x", 0);
+          tx1.setAttribute("y", 0);
+      
+          const tx2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx2.textContent = price;
+          tx2.setAttribute("x", 0);
+          tx2.setAttribute("y", 22);
+      
+          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          g.appendChild(tx1);
+          g.appendChild(tx2);
+          weeklyTipEl.appendChild(g);
+      
+          const bb = g.getBBox();
+          const boxW = bb.width + tipPaddingX * 2;
+          const boxH = bb.height + tipPaddingY * 2;
+      
+          let bx = xCenter - boxW / 2;
+          bx = Math.max(x0 + 6, Math.min(x1 - boxW - 6, bx));
+          const by = y0 + 8;
+      
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", bx);
+          rect.setAttribute("y", by);
+          rect.setAttribute("width", boxW);
+          rect.setAttribute("height", boxH);
+          rect.setAttribute("rx", 10);
+          rect.setAttribute("ry", 10);
+          rect.setAttribute("fill", "rgba(2,6,23,0.78)");
+          rect.setAttribute("stroke", "rgba(148,163,184,0.35)");
+          rect.setAttribute("stroke-width", "1");
+      
+          g.setAttribute("transform", `translate(${bx + tipPaddingX}, ${by + tipPaddingY + 14})`);
+          weeklyTipEl.insertBefore(rect, g);
+        }
+      
+        function indexFromClientX(clientX) {
+          const svg = weeklyHitEl.ownerSVGElement;
+          const pt = svg.createSVGPoint();
+          pt.x = clientX; pt.y = 0;
+          const ctm = svg.getScreenCTM();
+          if (!ctm) return 0;
+          const p = pt.matrixTransform(ctm.inverse());
+          const rel = Math.max(0, Math.min(innerW - 0.0001, p.x - x0));
+          return Math.floor(rel / slotW);
+        }
+      
+        weeklyHitEl.onpointerenter = (e) => { try { weeklyHitEl.setPointerCapture(e.pointerId); } catch (_) {} };
+        weeklyHitEl.onpointermove = (e) => showTip(indexFromClientX(e.clientX));
+        weeklyHitEl.onpointerleave = hideTip;
+        weeklyHitEl.onpointerup = hideTip;
+        weeklyHitEl.onpointercancel = hideTip;
+      
+        hideTip();
+      }
+      
+      function renderMonthlyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
+        clearMonthlyChart();
+        if (!Array.isArray(rows) || rows.length < 2) return;
+      
+        const pts = rows
+          .map((r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }))
+          .filter((p) => p?.xLabel && Number.isFinite(p.value));
+      
+        if (pts.length < 2) return;
+      
+        let min = Infinity, max = -Infinity;
+        for (const p of pts) { if (p.value < min) min = p.value; if (p.value > max) max = p.value; }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+      
+        const mobile = isMobileNow();
+        const { W, H } = chartSize(mobile);
+      
+        const monthlySvg = monthlyHitEl.ownerSVGElement;
+        syncSvgBox(monthlySvg, W, H);
+      
+        monthlyCrosshairEl.setAttribute("y2", String(H));
+        monthlyHitEl.setAttribute("width", String(W));
+        monthlyHitEl.setAttribute("height", String(H));
+      
+        const { padL, padR, padT, padB } = getChartPads(mobile, "monthly");
+      
+        const innerW = W - padL - padR;
+        const innerH = H - padT - padB;
+      
+        const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
+        monthlyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
+      
+        let range = max - min;
+        const minVisualRange = 1.2;
+        if (range < minVisualRange) range = minVisualRange;
+      
+        const head = range * (mobile ? 0.04 : 0.06);
+        const yMinData = min - head;
+        const yMaxData = max + head;
+      
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
+        const yMin = Math.min(...yTicks);
+        const yMax = Math.max(...yTicks);
+      
+        const yFor = (v) => {
+          const t = (v - yMin) / (yMax - yMin || 1);
+          return padT + innerH * (1 - t);
+        };
+      
+        for (const t of yTicks) {
+          const yRaw = yFor(t);
+      
+          const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          gl.setAttribute("x1", x0);
+          gl.setAttribute("x2", x1);
+          gl.setAttribute("y1", yRaw);
+          gl.setAttribute("y2", yRaw);
+          gl.setAttribute("class", "gridline");
+          monthlyGridEl.appendChild(gl);
+      
+          const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", W - 6);
+          tx.setAttribute("text-anchor", "end");
+          tx.setAttribute("y", y);
+          tx.setAttribute("dominant-baseline", "middle");
+          tx.textContent = fmtAxisPrice(t);
+          monthlyYLabelsEl.appendChild(tx);
+        }
+      
+        const n = pts.length;
+        const slotW = innerW / n;
+      
+        const gap = mobile ? 1.6 : 2.4;
+        const barW = Math.max(2, slotW - gap);
+        const barX = (i) => x0 + i * slotW + (gap / 2);
+        const barCenter = (i) => barX(i) + (barW / 2);
+      
+        const yBase = y1;
+        monthlyReflineEl.setAttribute("opacity", "0");
+      
+        const bars = [];
+        for (let i = 0; i < n; i++) {
+          const v = pts[i].value;
+          const yTop = yFor(v);
+          const h = Math.max(1, yBase - yTop);
+      
+          const prev = (i > 0) ? pts[i - 1].value : v;
+          const isUp = v >= prev;
+          const isFlat = v === prev;
+      
+          const fill = (!marketIsOpen)
+            ? "rgba(148,163,184,0.55)"
+            : (isFlat ? "rgba(148,163,184,0.62)" : (isUp ? "rgba(34,197,94,0.90)" : "rgba(239,68,68,0.90)"));
+      
+          const x = barX(i);
+      
+          const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          r.setAttribute("class", "bar");
+          r.setAttribute("x", x);
+          r.setAttribute("y", yTop);
+          r.setAttribute("width", barW);
+          r.setAttribute("height", h);
+          r.setAttribute("rx", mobile ? 6 : 3.0);
+          r.setAttribute("ry", mobile ? 6 : 3.0);
+          r.setAttribute("fill", fill);
+          monthlyBarsEl.appendChild(r);
+      
+          const s = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          s.setAttribute("class", "bar-stroke");
+          s.setAttribute("x", x);
+          s.setAttribute("y", yTop);
+          s.setAttribute("width", barW);
+          s.setAttribute("height", h);
+          s.setAttribute("rx", mobile ? 6 : 3.0);
+          s.setAttribute("ry", mobile ? 6 : 3.0);
+          s.setAttribute("fill", "none");
+          monthlyBarsEl.appendChild(s);
+      
+          bars.push(r);
+        }
+      
+        let midIdx = 0;
+        let best = Infinity;
+        for (let i = 0; i < n; i++) {
+          const d = dayOfMonthFromYYYYMMDD(pts[i].xLabel);
+          if (d == null) continue;
+          const diff = Math.abs(d - 15);
+          if (diff < best) { best = diff; midIdx = i; }
+        }
+      
+        const labelY = y1 + (mobile ? 26 : 30);
+        const labelIdxs = new Set([0, n - 1, midIdx]);
+        const ordered = Array.from(labelIdxs).filter((i) => i >= 0 && i < n).sort((a,b) => a-b);
+      
+        for (const i of ordered) {
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("y", labelY);
+          tx.textContent = fmtMMDD(pts[i].xLabel);
+      
+          if (mobile && i === 0) {
+            tx.setAttribute("x", x0 + 2);
+            tx.setAttribute("text-anchor", "start");
+          } else if (mobile && i === n - 1) {
+            tx.setAttribute("x", x1 - 2);
+            tx.setAttribute("text-anchor", "end");
+          } else {
+            tx.setAttribute("x", barCenter(i));
+            tx.setAttribute("text-anchor", "middle");
+          }
+      
+          monthlyXLabelsEl.appendChild(tx);
+        }
+      
+        renderCurrentPriceLine({
+          svgEl: monthlySvg,
+          lineId: "silver1m-curline",
+          tagId: "silver1m-curtag",
+          x0, x1, y0, y1, yFor,
+          currentPrice,
+          currentDir,
+          marketIsOpen
+        });
+      
+        function clearHover() { for (const b of bars) b.classList.remove("hover"); }
+      
+        function hideTip() {
+          monthlyCrosshairEl.style.opacity = "0";
+          monthlyTipEl.style.opacity = "0";
+          monthlyTipEl.innerHTML = "";
+          clearHover();
+        }
+      
+        function showTip(i) {
+          i = Math.max(0, Math.min(n - 1, i));
+      
+          clearHover();
+          if (bars[i]) bars[i].classList.add("hover");
+      
+          const v = pts[i].value;
+          const xCenter = barCenter(i);
+      
+          monthlyCrosshairEl.setAttribute("x1", xCenter);
+          monthlyCrosshairEl.setAttribute("x2", xCenter);
+          monthlyCrosshairEl.style.opacity = "1";
+      
+          const label = fmtMMDD(pts[i].xLabel);
+          const price = fmtMoney(v);
+      
+          monthlyTipEl.innerHTML = "";
+          monthlyTipEl.style.opacity = "1";
+      
+          const tipPaddingX = 12;
+          const tipPaddingY = 10;
+      
+          const tx1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx1.textContent = label;
+          tx1.setAttribute("x", 0);
+          tx1.setAttribute("y", 0);
+      
+          const tx2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx2.textContent = price;
+          tx2.setAttribute("x", 0);
+          tx2.setAttribute("y", 22);
+      
+          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          g.appendChild(tx1);
+          g.appendChild(tx2);
+          monthlyTipEl.appendChild(g);
+      
+          const bb = g.getBBox();
+          const boxW = bb.width + tipPaddingX * 2;
+          const boxH = bb.height + tipPaddingY * 2;
+      
+          let bx = xCenter - boxW / 2;
+          bx = Math.max(x0 + 6, Math.min(x1 - boxW - 6, bx));
+          const by = y0 + 8;
+      
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", bx);
+          rect.setAttribute("y", by);
+          rect.setAttribute("width", boxW);
+          rect.setAttribute("height", boxH);
+          rect.setAttribute("rx", 10);
+          rect.setAttribute("ry", 10);
+          rect.setAttribute("fill", "rgba(2,6,23,0.78)");
+          rect.setAttribute("stroke", "rgba(148,163,184,0.35)");
+          rect.setAttribute("stroke-width", "1");
+      
+          g.setAttribute("transform", `translate(${bx + tipPaddingX}, ${by + tipPaddingY + 14})`);
+          monthlyTipEl.insertBefore(rect, g);
+        }
+      
+        function indexFromClientX(clientX) {
+          const svg = monthlyHitEl.ownerSVGElement;
+          const pt = svg.createSVGPoint();
+          pt.x = clientX; pt.y = 0;
+          const ctm = svg.getScreenCTM();
+          if (!ctm) return 0;
+          const p = pt.matrixTransform(ctm.inverse());
+          const rel = Math.max(0, Math.min(innerW - 0.0001, p.x - x0));
+          return Math.floor(rel / slotW);
+        }
+      
+        monthlyHitEl.onpointerenter = (e) => { try { monthlyHitEl.setPointerCapture(e.pointerId); } catch (_) {} };
+        monthlyHitEl.onpointermove = (e) => showTip(indexFromClientX(e.clientX));
+        monthlyHitEl.onpointerleave = hideTip;
+        monthlyHitEl.onpointerup = hideTip;
+        monthlyHitEl.onpointercancel = hideTip;
+      
+        hideTip();
+      }
+      
+      function renderYearlyLine({ rows, marketIsOpen, currentPrice, currentDir }) {
+        clearYearlyChart();
+        if (!Array.isArray(rows) || rows.length < 2) return;
+      
+        const pts = rows
+          .map((r) => ({ xLabel: r?.ym, month: r?.month, value: Number(r?.close), raw: r }))
+          .filter((p) => p?.xLabel && Number.isFinite(p.value));
+      
+        if (pts.length < 2) return;
+      
+        let min = Infinity, max = -Infinity;
+        for (const p of pts) { if (p.value < min) min = p.value; if (p.value > max) max = p.value; }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+      
+        const mobile = isMobileNow();
+        const { W, H } = chartSize(mobile);
+      
+        const yearlySvg = yearlyHitEl.ownerSVGElement;
+        syncSvgBox(yearlySvg, W, H);
+      
+        yearlyCrosshairEl.setAttribute("y2", String(H));
+        yearlyHitEl.setAttribute("width", String(W));
+        yearlyHitEl.setAttribute("height", String(H));
+      
+        const { padL, padR, padT, padB } = getChartPads(mobile, "yearly");
+      
+        const innerW = W - padL - padR;
+        const innerH = H - padT - padB;
+      
+        const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
+        yearlyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
+      
+        let range = max - min;
+        const minVisualRange = 2.0;
+        if (range < minVisualRange) range = minVisualRange;
+      
+        const head = range * (mobile ? 0.06 : 0.10);
+        const yMinData = min - head;
+        const yMaxData = max + head;
+      
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
+        const yMin = Math.min(...yTicks);
+        const yMax = Math.max(...yTicks);
+      
+        const yFor = (v) => {
+          const t = (v - yMin) / (yMax - yMin || 1);
+          return padT + innerH * (1 - t);
+        };
+      
+        for (const t of yTicks) {
+          const yRaw = yFor(t);
+      
+          const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          gl.setAttribute("x1", x0);
+          gl.setAttribute("x2", x1);
+          gl.setAttribute("y1", yRaw);
+          gl.setAttribute("y2", yRaw);
+          gl.setAttribute("class", "gridline");
+          yearlyGridEl.appendChild(gl);
+      
+          const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", W - 6);
+          tx.setAttribute("text-anchor", "end");
+          tx.setAttribute("y", y);
+          tx.setAttribute("dominant-baseline", "middle");
+          tx.textContent = fmtAxisPrice(t);
+          yearlyYLabelsEl.appendChild(tx);
+        }
+      
+        const n = pts.length;
+        const stepX = innerW / (n - 1);
+        const xForIdx = (i) => padL + i * stepX;
+      
+        const upOverall = pts[n - 1].value >= pts[0].value;
+      
+        const lineColor = (!marketIsOpen)
+          ? "rgba(148,163,184,0.85)"
+          : (upOverall ? "rgba(34,197,94,0.95)" : "rgba(239,68,68,0.95)");
+      
+        const areaTop = (!marketIsOpen)
+          ? "rgba(148,163,184,0.26)"
+          : (upOverall ? "rgba(34,197,94,0.32)" : "rgba(239,68,68,0.32)");
+        const areaMid = (!marketIsOpen)
+          ? "rgba(148,163,184,0.16)"
+          : (upOverall ? "rgba(34,197,94,0.18)" : "rgba(239,68,68,0.18)");
+        const areaBot = "rgba(2,6,23,0.06)";
+      
+        const hazeTop = (!marketIsOpen)
+          ? "rgba(148,163,184,0.14)"
+          : (upOverall ? "rgba(34,197,94,0.14)" : "rgba(239,68,68,0.14)");
+        const hazeBot = "rgba(2,6,23,0.08)";
+      
+        const gid = "ygrad-" + (upOverall ? "up" : "down") + (marketIsOpen ? "" : "-closed");
+        const hid = "yhaze-" + (upOverall ? "up" : "down") + (marketIsOpen ? "" : "-closed");
+      
+        yearlyDefsEl.innerHTML = `
+          <linearGradient id="${hid}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${hazeTop}"></stop>
+            <stop offset="100%" stop-color="${hazeBot}"></stop>
+          </linearGradient>
+      
+          <linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${areaTop}"></stop>
+            <stop offset="48%" stop-color="${areaMid}"></stop>
+            <stop offset="100%" stop-color="${areaBot}"></stop>
+          </linearGradient>
+        `;
+      
+        let dLine = "";
+        for (let i = 0; i < n; i++) {
+          const x = xForIdx(i);
+          const yv = yFor(pts[i].value);
+          dLine += (i === 0) ? `M ${x} ${yv}` : ` L ${x} ${yv}`;
+        }
+      
+        const yBase = y1;
+        const xFirst = xForIdx(0);
+        const xLast = xForIdx(n - 1);
+      
+        const dArea = `${dLine} L ${xLast} ${yBase} L ${xFirst} ${yBase} Z`;
+      
+        const minFillPx = mobile ? 18 : 22;
+        let dLineHaze = "";
+        for (let i = 0; i < n; i++) {
+          const x = xForIdx(i);
+          const yRaw = yFor(pts[i].value);
+          const yv = Math.min(yRaw, yBase - minFillPx);
+          dLineHaze += (i === 0) ? `M ${x} ${yv}` : ` L ${x} ${yv}`;
+        }
+        const dHaze = `${dLineHaze} L ${xLast} ${yBase} L ${xFirst} ${yBase} Z`;
+      
+        yearlyHazeEl.setAttribute("d", dHaze);
+        yearlyHazeEl.setAttribute("fill", `url(#${hid})`);
+      
+        yearlyLineEl.setAttribute("d", dLine);
+        yearlyLineEl.setAttribute("stroke", lineColor);
+      
+        yearlyAreaEl.setAttribute("d", dArea);
+        yearlyAreaEl.setAttribute("fill", `url(#${gid})`);
+      
+        const labelY = y1 + (mobile ? 26 : 30);
+      
+        if (!mobile) {
+          for (let i = 0; i < n; i++) {
+            const x = xForIdx(i);
+            const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      
+            if (i === 0) { tx.setAttribute("x", x0); tx.setAttribute("text-anchor", "start"); }
+            else if (i === n - 1) { tx.setAttribute("x", x1); tx.setAttribute("text-anchor", "end"); }
+            else { tx.setAttribute("x", x); tx.setAttribute("text-anchor", "middle"); }
+      
+            tx.setAttribute("y", labelY);
+            tx.textContent = pts[i].month || monthNameFromYYYYMM(pts[i].xLabel);
+            yearlyXLabelsEl.appendChild(tx);
+          }
+        } else {
+          const idxs = new Set([0, n - 1]);
+          for (let i = 0; i < n; i++) {
+            if (i % 3 === 0) idxs.add(i);
+          }
+          const ordered = Array.from(idxs).sort((a,b)=>a-b);
+      
+          for (const i of ordered) {
+            const x = xForIdx(i);
+            const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      
+            if (i === 0) { tx.setAttribute("x", x0); tx.setAttribute("text-anchor", "start"); }
+            else if (i === n - 1) { tx.setAttribute("x", x1); tx.setAttribute("text-anchor", "end"); }
+            else { tx.setAttribute("x", x); tx.setAttribute("text-anchor", "middle"); }
+      
+            tx.setAttribute("y", labelY);
+            tx.setAttribute("opacity", "0.92");
+            tx.textContent = pts[i].month || monthNameFromYYYYMM(pts[i].xLabel);
+            yearlyXLabelsEl.appendChild(tx);
+          }
+        }
+      
+        const cp = Number(currentPrice);
+        const hasCP = Number.isFinite(cp);
+      
+        if (hasCP) {
+          const yCP = Math.max(y0 + 2, Math.min(y1 - 2, yFor(cp)));
+      
+          let curColor = "rgba(148,163,184,0.92)";
+          if (currentDir === "up") curColor = "rgba(34,197,94,0.95)";
+          else if (currentDir === "down") curColor = "rgba(239,68,68,0.95)";
+          if (!marketIsOpen) curColor = "rgba(148,163,184,0.70)";
+      
+          yearlyCurLineEl.setAttribute("x1", x0);
+          yearlyCurLineEl.setAttribute("x2", x1);
+          yearlyCurLineEl.setAttribute("y1", yCP);
+          yearlyCurLineEl.setAttribute("y2", yCP);
+          yearlyCurLineEl.setAttribute("stroke", curColor);
+          yearlyCurLineEl.setAttribute("opacity", "1");
+      
+          const tagText = fmtMoney(cp);
+      
+          yearlyCurTagEl.innerHTML = "";
+      
+          const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          t.setAttribute("class", "price-tag-text");
+          t.setAttribute("x", 0);
+          t.setAttribute("y", 0);
+          t.setAttribute("dominant-baseline", "middle");
+          t.textContent = tagText;
+      
+          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          g.appendChild(t);
+          yearlyCurTagEl.appendChild(g);
+      
+          const bb = g.getBBox();
+          const padX = 10;
+          const padY = 8;
+          const boxW = bb.width + padX * 2;
+          const boxH = 26 + padY;
+      
+          const insetRight = 10;
+          const bx = Math.max(x0 + 6, (x1 - insetRight) - boxW);
+      
+          let by = yCP - (boxH / 2);
+          by = Math.max(y0 + 6, Math.min(y1 - boxH - 6, by));
+      
+          const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          r.setAttribute("class", "price-tag-rect");
+          r.setAttribute("x", bx);
+          r.setAttribute("y", by);
+          r.setAttribute("width", boxW);
+          r.setAttribute("height", boxH);
+          r.setAttribute("rx", 10);
+          r.setAttribute("ry", 10);
+          r.setAttribute("stroke", curColor);
+      
+          t.setAttribute("x", bx + padX);
+          t.setAttribute("y", by + boxH / 2);
+      
+          yearlyCurTagEl.insertBefore(r, g);
+          yearlyCurTagEl.setAttribute("opacity", "1");
+        }
+      
+        function hideTip() {
+          yearlyCrosshairEl.style.opacity = "0";
+          yearlyTipEl.style.opacity = "0";
+          yearlyTipEl.innerHTML = "";
+        }
+      
+        function showTip(i) {
+          i = Math.max(0, Math.min(n - 1, i));
+          const v = pts[i].value;
+          const xCenter = xForIdx(i);
+      
+          yearlyCrosshairEl.setAttribute("x1", xCenter);
+          yearlyCrosshairEl.setAttribute("x2", xCenter);
+          yearlyCrosshairEl.style.opacity = "1";
+      
+          const label = pts[i].month || monthNameFromYYYYMM(pts[i].xLabel);
+          const price = fmtMoney(v);
+      
+          yearlyTipEl.innerHTML = "";
+          yearlyTipEl.style.opacity = "1";
+      
+          const tipPaddingX = 12;
+          const tipPaddingY = 10;
+      
+          const tx1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx1.textContent = label;
+          tx1.setAttribute("x", 0);
+          tx1.setAttribute("y", 0);
+      
+          const tx2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx2.textContent = price;
+          tx2.setAttribute("x", 0);
+          tx2.setAttribute("y", 22);
+      
+          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          g.appendChild(tx1);
+          g.appendChild(tx2);
+          yearlyTipEl.appendChild(g);
+      
+          const bb = g.getBBox();
+          const boxW = bb.width + tipPaddingX * 2;
+          const boxH = bb.height + tipPaddingY * 2;
+      
+          let bx = xCenter - boxW / 2;
+          bx = Math.max(x0 + 6, Math.min(x1 - boxW - 6, bx));
+          const by = y0 + 8;
+      
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", bx);
+          rect.setAttribute("y", by);
+          rect.setAttribute("width", boxW);
+          rect.setAttribute("height", boxH);
+          rect.setAttribute("rx", 10);
+          rect.setAttribute("ry", 10);
+          rect.setAttribute("fill", "rgba(2,6,23,0.78)");
+          rect.setAttribute("stroke", "rgba(148,163,184,0.35)");
+          rect.setAttribute("stroke-width", "1");
+      
+          g.setAttribute("transform", `translate(${bx + tipPaddingX}, ${by + tipPaddingY + 14})`);
+          yearlyTipEl.insertBefore(rect, g);
+        }
+      
+        function indexFromClientX(clientX) {
+          const svg = yearlyHitEl.ownerSVGElement;
+          const pt = svg.createSVGPoint();
+          pt.x = clientX; pt.y = 0;
+          const ctm = svg.getScreenCTM();
+          if (!ctm) return 0;
+          const p = pt.matrixTransform(ctm.inverse());
+          const rel = Math.max(0, Math.min(innerW, p.x - padL));
+          return Math.round(rel / stepX);
+        }
+      
+        yearlyHitEl.onpointerenter = (e) => { try { yearlyHitEl.setPointerCapture(e.pointerId); } catch (_) {} };
+        yearlyHitEl.onpointermove = (e) => showTip(indexFromClientX(e.clientX));
+        yearlyHitEl.onpointerleave = hideTip;
+        yearlyHitEl.onpointerup = hideTip;
+        yearlyHitEl.onpointercancel = hideTip;
+      
+        hideTip();
+      }
+      
+      function renderChartsFromData(data) {
+        const market = data?.market || null;
+        const marketIsOpen = !(market && market.isOpen === false);
+        const dailyRows = data?.intraday?.silver || [];
+      
+        const weeklyRows = data?.weekly?.silver || [];
+        const monthlyRows = data?.monthly?.silver || [];
+        const yearlyRows = data?.yearly?.silver12m || [];
+      
+        const silver = data?.metals?.silver || {};
+        const currentPrice = silver?.price;
+      
+        const d = (silver?.direction || "same");
+        const currentDir = (d === "same" ? "neutral" : d);
+      
+        renderDailyBars({ rows: dailyRows, marketIsOpen, currentPrice, currentDir });
+        renderWeeklyBars({ rows: weeklyRows, marketIsOpen, currentPrice, currentDir });
+        renderMonthlyBars({ rows: monthlyRows, marketIsOpen, currentPrice, currentDir });
+        renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir });
+      }
+      
+      function renderMetalsTable(metals) {
+        metalsTbodyEl.innerHTML = "";
+      
+        function safeNumber(x) {
+          const n = Number(x);
+          return Number.isFinite(n) ? n : null;
+        }
+      
+        function format24hParts(m) {
+          const price = safeNumber(m?.price);
+          const chg = safeNumber(m?.change);
+          if (price == null || chg == null) return null;
+      
+          const base = price - chg;
+          const pct = (base && Math.abs(base) > 0.000001) ? (chg / base) * 100 : null;
+      
+          const cls = chg > 0 ? "up" : (chg < 0 ? "down" : "neutral");
+          const arrow = chg > 0 ? "↑" : (chg < 0 ? "↓" : "↔");
+      
+          const money = `${chg > 0 ? "+" : (chg < 0 ? "−" : "")}$${Math.abs(chg).toFixed(2)}`;
+          const pctText = (pct == null || !Number.isFinite(pct))
+            ? "—"
+            : `${arrow}${Math.abs(pct).toFixed(2)}%`;
+      
+          return { cls, money, pctText };
+        }
+      
+        function addRow(key, label) {
+          const m = metals?.[key] || null;
+      
+          const tr = document.createElement("tr");
+      
+          const tdName = document.createElement("td");
+          tdName.className = "metal-name";
+          tdName.textContent = label;
+      
+          const tdPrice = document.createElement("td");
+          tdPrice.className = "price-cell";
+          tdPrice.textContent = fmtMoney(m?.price);
+      
+          const tdTrend = document.createElement("td");
+          tdTrend.className = "change-cell";
+      
+          const parts = format24hParts(m);
+      
+          const spanTrend = document.createElement("span");
+          spanTrend.className = "metal-trend " + (parts ? parts.cls : "neutral");
+      
+          const moneySpan = document.createElement("span");
+          moneySpan.className = "mt-money";
+          moneySpan.textContent = parts ? parts.money : "—";
+      
+          const pctSpan = document.createElement("span");
+          pctSpan.className = "mt-pct";
+          pctSpan.textContent = parts ? parts.pctText : "—";
+      
+          spanTrend.appendChild(moneySpan);
+          spanTrend.appendChild(pctSpan);
+      
+          tdTrend.appendChild(spanTrend);
+      
+          tr.appendChild(tdName);
+          tr.appendChild(tdPrice);
+          tr.appendChild(tdTrend);
+      
+          metalsTbodyEl.appendChild(tr);
+        }
+      
+        addRow("gold", "Gold");
+        addRow("silver", "Silver");
+        addRow("platinum", "Platinum");
+        addRow("palladium", "Palladium");
+      }
+      
+      function updateUI(data) {
+        const metals = data?.metals || {};
+        const silver = metals.silver || {};
+        const updatedAt = data?.updatedAt || null;
+        const market = data?.market || null;
+      
+        lastUpdatedEl.textContent = fmtUpdatedAt(updatedAt);
+        headlinePriceEl.textContent = fmtMoney(silver.price);
+      
+        renderSinceLastUpdateFromAPI(silver);
+        renderSilverSummary(data);
+      
+        const marketIsOpen = !(market && market.isOpen === false);
+      
+        if (!marketIsOpen) {
+          setHeadlinePriceColor("same", false);
+          setMarketClosedPill(market);
+          renderMetalsTable(metals);
+          renderChartsFromData(data);
+          return;
+        }
+      
+        setHeadlinePriceColor(silver.direction || "same", true);
+        setTrendPill(silver.direction || "same");
+        renderMetalsTable(metals);
+        renderChartsFromData(data);
+      }
+      
+      function applyForcedModeIfAny() {
+        const params = new URLSearchParams(window.location.search);
+        const mode = (params.get("mode") || "").toLowerCase();
+        if (!mode) return false;
+      
+        const fakeWeekly = [
+          { date: "2025-12-23", close: 74.2 },
+          { date: "2025-12-24", close: 75.1 },
+          { date: "2025-12-26", close: 73.9 },
+          { date: "2025-12-29", close: 76.0 },
+          { date: "2025-12-30", close: 75.4 },
+          { date: "2025-12-31", close: 72.27 },
+          { date: "2026-01-01", close: 73.10 }
+        ];
+      
+        const fakeMonthly = [
+          { date: "2025-12-06", close: 70.35 },
+          { date: "2025-12-09", close: 71.10 },
+          { date: "2025-12-10", close: 70.82 },
+          { date: "2025-12-11", close: 71.55 },
+          { date: "2025-12-12", close: 71.05 },
+          { date: "2025-12-16", close: 72.40 },
+          { date: "2025-12-17", close: 72.10 },
+          { date: "2025-12-18", close: 72.95 },
+          { date: "2025-12-19", close: 72.20 },
+          { date: "2025-12-23", close: 73.15 },
+          { date: "2025-12-24", close: 72.70 },
+          { date: "2025-12-26", close: 78.54 },
+          { date: "2025-12-29", close: 83.96 },
+          { date: "2025-12-30", close: 78.06 },
+          { date: "2025-12-31", close: 73.29 },
+          { date: "2026-01-01", close: 72.70 }
+        ];
+      
+        const fakeYearly = [
+          { ym: "2025-01", month: "Jan", close: 31.7335 },
+          { ym: "2025-02", month: "Feb", close: 33.391 },
+          { ym: "2025-03", month: "Mar", close: 34.576 },
+          { ym: "2025-04", month: "Apr", close: 34.209 },
+          { ym: "2025-05", month: "May", close: 33.775 },
+          { ym: "2025-06", month: "Jun", close: 37.3155 },
+          { ym: "2025-07", month: "Jul", close: 39.5305 },
+          { ym: "2025-08", month: "Aug", close: 39.969 },
+          { ym: "2025-09", month: "Sep", close: 47.178 },
+          { ym: "2025-10", month: "Oct", close: 54.481 },
+          { ym: "2025-11", month: "Nov", close: 56.5255 },
+          { ym: "2025-12", month: "Dec", close: 83.959 }
+        ];
+      
+        const fake = {
+          updatedAt: new Date().toISOString(),
+          metals: {
+            silver: {
+              price: 72.27,
+              direction: "down",
+              change: -4.12,
+              high24h: 83.96,
+              low24h: 72.27,
+              tickChange: -0.64,
+              tickPct: -0.89,
+              deltaSinceLast: -0.64,
+              pctSinceLast: -0.89
+            },
+            gold: { price: 4326.15, direction: "down", change: -4.94, tickChange: -12.3, tickPct: -0.28 },
+            platinum: { price: 1012.40, direction: "same", change: 0.0, tickChange: 0.0, tickPct: 0.0 },
+            palladium: { price: 967.35, direction: "same", change: 0.0, tickChange: 0.0, tickPct: 0.0 }
+          },
+          weekly: { silver: fakeWeekly },
+          monthly: { silver: fakeMonthly },
+          yearly: { silver12m: fakeYearly },
+          market: { isOpen: true, reason: "Open", closedType: null }
+        };
+      
+        if (mode === "up") fake.metals.silver.direction = "up";
+        if (mode === "down") fake.metals.silver.direction = "down";
+      
+        if (mode === "flat" || mode === "neutral") {
+          fake.metals.silver.direction = "same";
+          fake.market.isOpen = true;
+          fake.market.closedType = null;
+          fake.metals.silver.deltaSinceLast = 0;
+          fake.metals.silver.pctSinceLast = 0;
+          fake.metals.silver.change = 0;
+        }
+      
+        if (mode === "closed") {
+          fake.market.isOpen = false;
+          fake.market.reason = "Daily maintenance break (4–5 PM CT)";
+          fake.market.closedType = "maintenance";
+        }
+      
+        if (mode === "weekend") {
+          fake.market.isOpen = false;
+          fake.market.reason = "Weekend close";
+          fake.market.closedType = "weekend";
+        }
+      
+        window.__LAST_DATA__ = fake;
+        updateUI(fake);
+        return true;
+      }
+      
+      async function refreshAllOnce() {
+        try {
+          trendTextEl.textContent = "Loading…";
+          const res = await fetch(BACKEND_URL + "?t=" + Date.now(), { cache: "no-store" });
+          if (!res.ok) throw new Error("Backend HTTP error " + res.status);
+          const data = await res.json();
+      
+          window.__LAST_DATA__ = data;
+          updateUI(data);
+        } catch {
+          trendPillEl.className = "quirk-badge flat";
+          trendTextEl.textContent = "Error fetching prices";
+          setTrendMode("neutral");
+          headlinePriceEl.style.color = "var(--text-main)";
+          characterImgEl.src = IMAGE_CLOSED;
+      
+          sinceRowEl.className = "since-row flat";
+          sinceMoneyEl.textContent = "—";
+          sincePctComboEl.textContent = "—";
+      
+          setText(sumDayHiEl, "—"); setText(sumDayLoEl, "—"); sumDayRangeEl.textContent = "—";
+          setText(sumWeekHiEl, "—"); setText(sumWeekLoEl, "—"); sumWeekRangeEl.textContent = "—";
+          setText(sum1mHiEl, "—"); setText(sum1mLoEl, "—"); sum1mRangeEl.textContent = "—";
+          setText(sum12mHiEl, "—"); setText(sum12mLoEl, "—"); sum12mRangeEl.textContent = "—";
+      
+          clearWeeklyChart();
+          clearMonthlyChart();
+          clearYearlyChart();
+        }
+      }
+      
+      let _lastIsMobile = isMobileNow();
+      
+      function rerenderChartsOnly() {
+        if (window.__LAST_DATA__) renderChartsFromData(window.__LAST_DATA__);
+      }
+      
+      const mq = window.matchMedia("(max-width: 600px)");
+      if (mq && mq.addEventListener) {
+        mq.addEventListener("change", () => {
+          const nowMobile = isMobileNow();
+          if (nowMobile !== _lastIsMobile) {
+            _lastIsMobile = nowMobile;
+            rerenderChartsOnly();
+          }
+        });
+      }
+      
+      window.addEventListener("orientationchange", () => {
+        setTimeout(() => rerenderChartsOnly(), 250);
+      });
+      
+      (async () => {
+        await loadImageLists();
+        if (!applyForcedModeIfAny()) refreshAllOnce();
+      })();
+    </script>
+  </body>
+</html>
