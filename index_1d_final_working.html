@@ -656,7 +656,10 @@
       }
       .page-footer > div:first-child { margin-bottom: 6px; }
       .page-footer .muted { color: rgba(148,163,184,0.88); }
-    </style>
+    
+    #character-img{opacity:0;transition:opacity .18s ease;}
+    body.ready #character-img{opacity:1;}
+</style>
   </head>
   <body class="trend-neutral">
     <div class="bg-layer bg-stars"></div>
@@ -1464,7 +1467,8 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
         let last = Number.isFinite(anchor) ? anchor : null;
 
         const pts = rows.map((r, idx) => {
-          const v = Number(r?.close);
+          const raw = r?.close;
+          const v = (raw === null || raw === undefined) ? NaN : Number(raw);
           const isOpenTick = Number.isFinite(v);
           if (isOpenTick) last = v;
           return {
@@ -1583,8 +1587,8 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
           const t = pts[i]?.t || "";
           const label = fmtIntraday12h(t).replace(":00 ", ":00").replace(" 0", " ");
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", String(barCenter(i)));
-          tx.setAttribute("y", String(H - 10));
+          tx.setAttribute("x", String(Math.max(x0 + 10, Math.min(x1 - 10, barCenter(i)))));
+          tx.setAttribute("y", String(y1 + 18));
           tx.setAttribute("text-anchor", "middle");
           tx.textContent = label;
           dailyXLabelsEl.appendChild(tx);
@@ -1592,8 +1596,8 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
         // End-of-day marker label at right edge
         {
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", String(x1));
-          tx.setAttribute("y", String(H - 10));
+          tx.setAttribute("x", String(x1 - 10));
+          tx.setAttribute("y", String(y1 + 18));
           tx.setAttribute("text-anchor", "end");
           tx.textContent = "12:00 AM";
           dailyXLabelsEl.appendChild(tx);
@@ -1609,56 +1613,83 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
           currentDir,
           marketIsOpen
         });
-// Hover / tooltip
-        const hit = dailyHitEl;
-        const crosshair = dailyCrosshairEl;
-        const tip = dailyTipEl;
+// Hover / tooltip (match other charts)
+        function clearHover() { /* no hover class on daily bars */ }
 
-        function nearestIndex(evt) {
-          const pt = dailySvg.createSVGPoint();
-          pt.x = evt.clientX; pt.y = evt.clientY;
-          const ctm = hit.getScreenCTM();
-          if (!ctm) return null;
-          const inv = ctm.inverse();
-          const local = pt.matrixTransform(inv);
-          const lx = local.x;
-          const i = Math.max(0, Math.min(n - 1, Math.floor((lx - x0) / slotW)));
-          return i;
+        function hideTip() {
+          dailyCrosshairEl.style.opacity = "0";
+          dailyTipEl.style.opacity = "0";
+          dailyTipEl.innerHTML = "";
+          clearHover();
         }
 
-        function setTipAt(i) {
-          const b = bars.find(bb => bb.i === i) || { i, x: barX(i), yTop: yFor(pts[i].eff), h: Math.max(1, yBase - yFor(pts[i].eff)), vEff: pts[i].eff, t: pts[i].t, isClosed: pts[i].isClosed };
-          const cx = barCenter(i);
-          crosshair.setAttribute("x1", String(cx));
-          crosshair.setAttribute("x2", String(cx));
+        function showTip(i) {
+          i = Math.max(0, Math.min(n - 1, i));
+
+          const xCenter = barCenter(i);
+          dailyCrosshairEl.style.opacity = "1";
+          dailyCrosshairEl.setAttribute("x1", String(xCenter));
+          dailyCrosshairEl.setAttribute("x2", String(xCenter));
 
           const when = fmtIntraday12h(pts[i]?.t || "");
-          const msg = b.isClosed ? "Market Closed" : fmtMoney(b.vEff);
-          tip.innerHTML = "";
+          const msg = pts[i]?.isClosed ? "Market Closed" : fmtMoney(pts[i].eff);
+
+          dailyTipEl.innerHTML = "";
+          dailyTipEl.style.opacity = "1";
+
           const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          const tipText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tipText.textContent = `${when} • ${msg}`;
+          tipText.setAttribute("class", "tiptext");
+          g.appendChild(tipText);
+          dailyTipEl.appendChild(g);
 
-          const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          label.setAttribute("x", String(cx));
-          label.setAttribute("y", String(y0 + 16));
-          label.setAttribute("text-anchor", "middle");
-          label.textContent = `${when} • ${msg}`;
-          g.appendChild(label);
-          tip.appendChild(g);
+          // place near top like other charts
+          const tipPaddingX = 14;
+          const tipPaddingY = 10;
 
-          // Ensure tooltip sits above current line/tag (paint last)
-          dailySvg.appendChild(tip);
+          // compute bbox after append
+          const bb = g.getBBox();
+          const boxW = bb.width + tipPaddingX * 2;
+          const boxH = bb.height + tipPaddingY * 2;
+
+          const bx = Math.max(x0 + 10, Math.min(x1 - boxW - 10, xCenter - boxW / 2));
+          const by = y0 + 10;
+
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", bx);
+          rect.setAttribute("y", by);
+          rect.setAttribute("width", boxW);
+          rect.setAttribute("height", boxH);
+          rect.setAttribute("rx", 10);
+          rect.setAttribute("ry", 10);
+          rect.setAttribute("fill", "rgba(2,6,23,0.78)");
+          rect.setAttribute("stroke", "rgba(148,163,184,0.35)");
+          rect.setAttribute("stroke-width", "1");
+
+          g.setAttribute("transform", `translate(${bx + tipPaddingX}, ${by + tipPaddingY + 14})`);
+          dailyTipEl.insertBefore(rect, g);
         }
 
-        hit.addEventListener("mousemove", (e) => {
-          const i = nearestIndex(e);
-          if (i === null) return;
-          setTipAt(i);
-        });
+        function indexFromClientX(clientX) {
+          const svg = dailyHitEl.ownerSVGElement;
+          const pt = svg.createSVGPoint();
+          pt.x = clientX; pt.y = 0;
+          const ctm = svg.getScreenCTM();
+          if (!ctm) return 0;
+          const p = pt.matrixTransform(ctm.inverse());
+          const rel = Math.max(0, Math.min(innerW - 0.0001, p.x - x0));
+          return Math.floor(rel / slotW);
+        }
 
-        hit.addEventListener("mouseleave", () => {
-          tip.innerHTML = "";
-        });
-      }
+        dailyHitEl.onpointerenter = (e) => { try { dailyHitEl.setPointerCapture(e.pointerId); } catch (_) {} };
+        dailyHitEl.onpointermove = (e) => showTip(indexFromClientX(e.clientX));
+        dailyHitEl.onpointerleave = hideTip;
+        dailyHitEl.onpointerup = hideTip;
+        dailyHitEl.onpointercancel = hideTip;
+
+        hideTip();
+}
 
 function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
         clearWeeklyChart();
@@ -2608,7 +2639,9 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
           setMarketClosedPill(market);
           renderMetalsTable(metals);
           renderChartsFromData(data);
-          return;
+          
+        document.body.classList.add(\"ready\");
+return;
         }
       
         setHeadlinePriceColor(silver.direction || "same", true);
