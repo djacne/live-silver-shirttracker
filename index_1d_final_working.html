@@ -657,7 +657,10 @@
       }
       .page-footer > div:first-child { margin-bottom: 6px; }
       .page-footer .muted { color: rgba(148,163,184,0.88); }
-    </style>
+    
+    #character-img{opacity:0;transition:opacity .18s ease;}
+    body.hero-ready #character-img{opacity:1;}
+</style>
   </head>
   <body class="trend-neutral">
     <div class="bg-layer bg-stars"></div>
@@ -874,7 +877,28 @@
       
       const bodyEl = document.body;
       const characterImgEl = document.getElementById("character-img");
-      const headlinePriceEl = document.getElementById("headline-price");
+      
+
+    function setHeroImagePreloaded(src) {
+      if (!src) return;
+      if (characterImgEl.dataset.desiredSrc === src) return;
+      characterImgEl.dataset.desiredSrc = src;
+
+      const im = new Image();
+      im.onload = () => {
+        // Only apply if still desired
+        if (characterImgEl.dataset.desiredSrc !== src) return;
+        setHeroImagePreloaded(src);
+        document.body.classList.add("hero-ready");
+      };
+      im.onerror = () => {
+        // Fallback: show whatever is there
+        document.body.classList.add("hero-ready");
+      };
+      im.src = src;
+    }
+
+const headlinePriceEl = document.getElementById("headline-price");
       const trendPillEl = document.getElementById("trend-pill");
       const trendTextEl = document.getElementById("trend-text");
       const lastUpdatedEl = document.getElementById("last-updated");
@@ -1037,7 +1061,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
       
         _currentDirection = "closed";
         _currentImageSrc = IMAGE_CLOSED;
-        characterImgEl.src = _currentImageSrc;
+        setHeroImagePreloaded(_currentImageSrc);
       }
       
       function setTrendPill(direction) {
@@ -1051,7 +1075,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
             _currentImageSrc = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
             _currentDirection = "up";
           }
-          characterImgEl.src = _currentImageSrc || IMAGE_CLOSED;
+          setHeroImagePreloaded(_currentImageSrc || IMAGE_CLOSED);
           return;
         }
       
@@ -1063,7 +1087,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
             _currentImageSrc = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
             _currentDirection = "down";
           }
-          characterImgEl.src = _currentImageSrc || IMAGE_CLOSED;
+          setHeroImagePreloaded(_currentImageSrc || IMAGE_CLOSED);
           return;
         }
       
@@ -1072,7 +1096,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
         setTrendMode("neutral");
         _currentDirection = "neutral";
         _currentImageSrc = IMAGE_FLAT;
-        characterImgEl.src = _currentImageSrc;
+        setHeroImagePreloaded(_currentImageSrc);
       }
       
       function setHeadlinePriceColor(direction, marketIsOpen) {
@@ -1476,21 +1500,26 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
         const pts = rows.map((r, idx) => {
           const raw = r?.close;
           const v = (raw === null || raw === undefined) ? NaN : Number(raw);
-          const hasPrint = Number.isFinite(v);
-          if (hasPrint) last = v;
+          const isPrinted = Number.isFinite(v);
 
-          // "Market Closed" only when the series explicitly marks close:null
-          // *and* that slot is not a future/unprinted slot.
-          const isClosed = (raw === null) && (idx <= lastFiniteIdx);
+          // Determine last printed index in a second pass; for now track last price
+          if (isPrinted) last = v;
 
           return {
             i: idx,
             t: r?.t,
-            close: hasPrint ? v : null,
-            eff: Number.isFinite(last) ? last : (hasPrint ? v : null),
-            isClosed
+            close: isPrinted ? v : null,
+            eff: Number.isFinite(last) ? last : (Number.isFinite(anchor) ? anchor : null),
+            isClosed: !isPrinted, // may be future or true closed
+            isFuture: false
           };
         });
+
+        // Mark future slots: anything after the last printed value today
+        let lastPrintIdx = -1;
+        for (let k = 0; k < pts.length; k++) if (Number.isFinite(pts[k].close)) lastPrintIdx = k;
+        for (let k = 0; k < pts.length; k++) pts[k].isFuture = (lastPrintIdx >= 0 && k > lastPrintIdx);
+
 
         // If we still don't have any finite values, nothing to scale.
         const effVals = pts.map(p => p.eff).filter(Number.isFinite);
@@ -1572,7 +1601,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-          tx.textContent = fmtAxisPrice(t);
+          tx.textContent = fmtDailyAxis(t);
           dailyYLabelsEl.appendChild(tx);
         }
 
@@ -1759,7 +1788,7 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 3 : 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -2792,7 +2821,7 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
           trendTextEl.textContent = "Error fetching prices";
           setTrendMode("neutral");
           headlinePriceEl.style.color = "var(--text-main)";
-          characterImgEl.src = IMAGE_CLOSED;
+          setHeroImagePreloaded(IMAGE_CLOSED);
       
           sinceRowEl.className = "since-row flat";
           sinceMoneyEl.textContent = "—";
