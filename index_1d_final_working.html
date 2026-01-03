@@ -1082,7 +1082,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
       
         _currentDirection = "closed";
         _currentImageSrc = IMAGE_CLOSED;
-        setHeroImagePreloaded(_currentImageSrc);
+        // hero image temporarily disabled
       }
       
       function setTrendPill(direction) {
@@ -1096,7 +1096,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
             _currentImageSrc = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
             _currentDirection = "up";
           }
-          setHeroImagePreloaded(_currentImageSrc || IMAGE_CLOSED);
+          // hero image temporarily disabled
           return;
         }
       
@@ -1108,7 +1108,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
             _currentImageSrc = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
             _currentDirection = "down";
           }
-          setHeroImagePreloaded(_currentImageSrc || IMAGE_CLOSED);
+          // hero image temporarily disabled
           return;
         }
       
@@ -1117,7 +1117,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
         setTrendMode("neutral");
         _currentDirection = "neutral";
         _currentImageSrc = IMAGE_FLAT;
-        setHeroImagePreloaded(_currentImageSrc);
+        // hero image temporarily disabled
       }
       
       function setHeadlinePriceColor(direction, marketIsOpen) {
@@ -2718,7 +2718,8 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
           renderMetalsTable(metals);
           renderChartsFromData(data);
           return;
-        }
+        dbgLog('updateUI finished');
+      }
       
         setHeadlinePriceColor(silver.direction || "same", true);
         setTrendPill(silver.direction || "same");
@@ -2845,7 +2846,7 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
           trendTextEl.textContent = "Error fetching prices";
           setTrendMode("neutral");
           headlinePriceEl.style.color = "var(--text-main)";
-          setHeroImagePreloaded(IMAGE_CLOSED);
+          // hero image temporarily disabled
       
           sinceRowEl.className = "since-row flat";
           sinceMoneyEl.textContent = "—";
