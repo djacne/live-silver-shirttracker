@@ -2501,7 +2501,7 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
         const d = (silver?.direction || "same");
         const currentDir = (d === "same" ? "neutral" : d);
       
-        renderDailyBars({ rows: dailyRows, marketIsOpen, currentPrice, currentDir });
+       // renderDailyBars({ rows: dailyRows, marketIsOpen, currentPrice, currentDir });
         renderWeeklyBars({ rows: weeklyRows, marketIsOpen, currentPrice, currentDir });
         renderMonthlyBars({ rows: monthlyRows, marketIsOpen, currentPrice, currentDir });
         renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir });
