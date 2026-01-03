@@ -1495,7 +1495,26 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
         let yMax = max + pad;
         if (yMax <= yMin) { yMax = yMin + 1; }
 
-        const yTicks = makeTicksCovering(yMin, yMax, mobile ? 3 : 5);
+        // Adaptive intraday ticks (aim for ~5 on both desktop/mobile)
+        const targetTicks = 5;
+        const range = (yMax - yMin) || 1;
+        const stepLadder = [0.10, 0.25, 0.50, 1.00, 2.00, 5.00, 10.00];
+        let step = stepLadder[stepLadder.length - 1];
+        for (const s of stepLadder) {
+          const count = Math.ceil(range / s) + 1;
+          if (count <= targetTicks + 1) { step = s; break; }
+        }
+        const yMinTick = Math.floor(yMin / step) * step;
+        const yMaxTick = Math.ceil(yMax / step) * step;
+        const yTicks = [];
+        for (let v = yMinTick; v <= yMaxTick + step * 0.5; v += step) yTicks.push(v);
+
+        function fmtAxisPriceDaily(v) {
+          const n = Number(v);
+          if (!Number.isFinite(n)) return "—";
+          // show cents for sub-dollar steps
+          return step < 1 ? n.toFixed(2) : n.toFixed(0);
+        }
 
         // Grid + Y labels
         for (const t of yTicks) {
@@ -1518,7 +1537,7 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-          tx.textContent = fmtAxisPrice(t);
+          tx.textContent = fmtAxisPriceDaily(t);
           dailyYLabelsEl.appendChild(tx);
         }
 
@@ -1732,7 +1751,7 @@ function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 3 : 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 5 : 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
