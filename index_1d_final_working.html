@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -1488,16 +1489,6 @@ const weeklyGridEl = document.getElementById("silver7d-grid");
             close: hasPrint ? v : null,
             eff: Number.isFinite(last) ? last : (hasPrint ? v : null),
             isClosed
-          };
-        });
-          const isOpenTick = Number.isFinite(v);
-          if (isOpenTick) last = v;
-          return {
-            i: idx,
-            t: r?.t,
-            close: isOpenTick ? v : null,
-            eff: (Number.isFinite(last) ? last : (isOpenTick ? v : null)),
-            isClosed: !isOpenTick
           };
         });
 
