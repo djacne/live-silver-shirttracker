@@ -1463,7 +1463,27 @@
         const yMaxData = max + head;
       
         const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
-        const yMin = Math.min(...yTicks);
+        
+        const axisCur = Number(currentPrice);
+        const axisCurY = Number.isFinite(axisCur) ? yFor(axisCur) : NaN;
+        const axisTolPx = mobile ? 10 : 12;
+        const axisMidVal = (yMin + yMax) / 2;
+
+        let axisReplaceVal = null;
+        if (Number.isFinite(axisCurY) && yTicks.length) {
+          let bestIdx = 0;
+          let bestDy = Infinity;
+          for (let i = 0; i < yTicks.length; i++) {
+            const dy = Math.abs(yFor(yTicks[i]) - axisCurY);
+            if (dy < bestDy) { bestDy = dy; bestIdx = i; }
+          }
+          if (bestDy <= axisTolPx) {
+            axisReplaceVal = yTicks[bestIdx];
+          } else {
+            axisReplaceVal = axisCur < axisMidVal ? Math.min(...yTicks) : Math.max(...yTicks);
+          }
+        }
+const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
         const yFor = (v) => {
@@ -1488,8 +1508,16 @@
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-          tx.textContent = fmtAxisPrice(t);
-          weeklyYLabelsEl.appendChild(tx);
+          if (axisReplaceVal != null && t === axisReplaceVal && Number.isFinite(axisCur)) {
+            tx.textContent = axisCur.toFixed(2);
+            tx.setAttribute("font-size", mobile ? "12" : "13");
+            const dir = String(currentDir || "");
+            tx.setAttribute("fill", dir === "up" ? "#22c55e" : (dir === "down" ? "#ef4444" : "#64748b"));
+          } else {
+            tx.textContent = fmtAxisPrice(t);
+            tx.setAttribute("font-size", mobile ? "10" : "11");
+          }
+weeklyYLabelsEl.appendChild(tx);
         }
       
         const n = pts.length;
@@ -1722,7 +1750,27 @@
         const yMaxData = max + head;
       
         const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
-        const yMin = Math.min(...yTicks);
+        
+        const axisCur = Number(currentPrice);
+        const axisCurY = Number.isFinite(axisCur) ? yFor(axisCur) : NaN;
+        const axisTolPx = mobile ? 10 : 12;
+        const axisMidVal = (yMin + yMax) / 2;
+
+        let axisReplaceVal = null;
+        if (Number.isFinite(axisCurY) && yTicks.length) {
+          let bestIdx = 0;
+          let bestDy = Infinity;
+          for (let i = 0; i < yTicks.length; i++) {
+            const dy = Math.abs(yFor(yTicks[i]) - axisCurY);
+            if (dy < bestDy) { bestDy = dy; bestIdx = i; }
+          }
+          if (bestDy <= axisTolPx) {
+            axisReplaceVal = yTicks[bestIdx];
+          } else {
+            axisReplaceVal = axisCur < axisMidVal ? Math.min(...yTicks) : Math.max(...yTicks);
+          }
+        }
+const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
         const yFor = (v) => {
@@ -1747,8 +1795,16 @@
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-          tx.textContent = fmtAxisPrice(t);
-          monthlyYLabelsEl.appendChild(tx);
+          if (axisReplaceVal != null && t === axisReplaceVal && Number.isFinite(axisCur)) {
+            tx.textContent = axisCur.toFixed(2);
+            tx.setAttribute("font-size", mobile ? "12" : "13");
+            const dir = String(currentDir || "");
+            tx.setAttribute("fill", dir === "up" ? "#22c55e" : (dir === "down" ? "#ef4444" : "#64748b"));
+          } else {
+            tx.textContent = fmtAxisPrice(t);
+            tx.setAttribute("font-size", mobile ? "10" : "11");
+          }
+monthlyYLabelsEl.appendChild(tx);
         }
       
         const n = pts.length;
@@ -1975,7 +2031,27 @@
         const yMaxData = max + head;
       
         const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
-        const yMin = Math.min(...yTicks);
+        
+        const axisCur = Number(currentPrice);
+        const axisCurY = Number.isFinite(axisCur) ? yFor(axisCur) : NaN;
+        const axisTolPx = mobile ? 10 : 12;
+        const axisMidVal = (yMin + yMax) / 2;
+
+        let axisReplaceVal = null;
+        if (Number.isFinite(axisCurY) && yTicks.length) {
+          let bestIdx = 0;
+          let bestDy = Infinity;
+          for (let i = 0; i < yTicks.length; i++) {
+            const dy = Math.abs(yFor(yTicks[i]) - axisCurY);
+            if (dy < bestDy) { bestDy = dy; bestIdx = i; }
+          }
+          if (bestDy <= axisTolPx) {
+            axisReplaceVal = yTicks[bestIdx];
+          } else {
+            axisReplaceVal = axisCur < axisMidVal ? Math.min(...yTicks) : Math.max(...yTicks);
+          }
+        }
+const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
         const yFor = (v) => {
@@ -2000,8 +2076,16 @@
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-          tx.textContent = fmtAxisPrice(t);
-          yearlyYLabelsEl.appendChild(tx);
+          if (axisReplaceVal != null && t === axisReplaceVal && Number.isFinite(axisCur)) {
+            tx.textContent = axisCur.toFixed(2);
+            tx.setAttribute("font-size", mobile ? "12" : "13");
+            const dir = String(currentDir || "");
+            tx.setAttribute("fill", dir === "up" ? "#22c55e" : (dir === "down" ? "#ef4444" : "#64748b"));
+          } else {
+            tx.textContent = fmtAxisPrice(t);
+            tx.setAttribute("font-size", mobile ? "10" : "11");
+          }
+yearlyYLabelsEl.appendChild(tx);
         }
       
         const n = pts.length;
