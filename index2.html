@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -1462,6 +1463,14 @@
         const yMaxData = max + head;
       
         const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
+        const yMin = Math.min(...yTicks);
+        const yMax = Math.max(...yTicks);
+      
+        const yFor = (v) => {
+          const t = (v - yMin) / (yMax - yMin || 1);
+          return padT + innerH * (1 - t);
+        };
+      
         
         // STEP3_REPLACE_TICK: current price becomes one of the 5 axis labels (no extra label)
         const _cp = Number(currentPrice);
@@ -1481,15 +1490,7 @@
             _replaceVal = _cp < mid ? Math.min(...yTicks) : Math.max(...yTicks);
           }
         }
-const yMin = Math.min(...yTicks);
-        const yMax = Math.max(...yTicks);
-      
-        const yFor = (v) => {
-          const t = (v - yMin) / (yMax - yMin || 1);
-          return padT + innerH * (1 - t);
-        };
-      
-        for (const t of yTicks) {
+for (const t of yTicks) {
           const yRaw = yFor(t);
       
           const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -1504,7 +1505,7 @@ const yMin = Math.min(...yTicks);
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
           tx.setAttribute("font-weight","400");
           tx.setAttribute("font-size", mobile ? "10" : "11");
-tx.setAttribute("x", W - 6);
+          tx.setAttribute("x", W - 6);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
@@ -1749,6 +1750,14 @@ weeklyYLabelsEl.appendChild(tx);
         const yMaxData = max + head;
       
         const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
+        const yMin = Math.min(...yTicks);
+        const yMax = Math.max(...yTicks);
+      
+        const yFor = (v) => {
+          const t = (v - yMin) / (yMax - yMin || 1);
+          return padT + innerH * (1 - t);
+        };
+      
         
         // STEP3_REPLACE_TICK: current price becomes one of the 5 axis labels (no extra label)
         const _cp = Number(currentPrice);
@@ -1768,15 +1777,7 @@ weeklyYLabelsEl.appendChild(tx);
             _replaceVal = _cp < mid ? Math.min(...yTicks) : Math.max(...yTicks);
           }
         }
-const yMin = Math.min(...yTicks);
-        const yMax = Math.max(...yTicks);
-      
-        const yFor = (v) => {
-          const t = (v - yMin) / (yMax - yMin || 1);
-          return padT + innerH * (1 - t);
-        };
-      
-        for (const t of yTicks) {
+for (const t of yTicks) {
           const yRaw = yFor(t);
       
           const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -1791,7 +1792,7 @@ const yMin = Math.min(...yTicks);
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
           tx.setAttribute("font-weight","400");
           tx.setAttribute("font-size", mobile ? "10" : "11");
-tx.setAttribute("x", W - 6);
+          tx.setAttribute("x", W - 6);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
@@ -2030,6 +2031,14 @@ monthlyYLabelsEl.appendChild(tx);
         const yMaxData = max + head;
       
         const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
+        const yMin = Math.min(...yTicks);
+        const yMax = Math.max(...yTicks);
+      
+        const yFor = (v) => {
+          const t = (v - yMin) / (yMax - yMin || 1);
+          return padT + innerH * (1 - t);
+        };
+      
         
         // STEP3_REPLACE_TICK: current price becomes one of the 5 axis labels (no extra label)
         const _cp = Number(currentPrice);
@@ -2049,15 +2058,7 @@ monthlyYLabelsEl.appendChild(tx);
             _replaceVal = _cp < mid ? Math.min(...yTicks) : Math.max(...yTicks);
           }
         }
-const yMin = Math.min(...yTicks);
-        const yMax = Math.max(...yTicks);
-      
-        const yFor = (v) => {
-          const t = (v - yMin) / (yMax - yMin || 1);
-          return padT + innerH * (1 - t);
-        };
-      
-        for (const t of yTicks) {
+for (const t of yTicks) {
           const yRaw = yFor(t);
       
           const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -2072,7 +2073,7 @@ const yMin = Math.min(...yTicks);
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
           tx.setAttribute("font-weight","400");
           tx.setAttribute("font-size", mobile ? "10" : "11");
-tx.setAttribute("x", W - 6);
+          tx.setAttribute("x", W - 6);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
