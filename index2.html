@@ -1431,7 +1431,7 @@
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 3 : 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -1690,7 +1690,7 @@
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -1943,7 +1943,7 @@
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
