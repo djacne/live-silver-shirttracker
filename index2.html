@@ -1219,58 +1219,64 @@
         if (!Number.isFinite(minVal) || !Number.isFinite(maxVal) || count < 2) return [];
         if (minVal === maxVal) {
           const base = minVal;
-          const step = base === 0 ? 1 : Math.abs(base) * 0.05;
+          const step = base === 0 ? 1 : niceNumber(Math.abs(base) * 0.05);
           const span = step * (count - 1);
           const start = base - span / 2;
-          const ticks = [];
-          for (let i = 0; i < count; i++) ticks.push(start + i * step);
-          return ticks;
+          const out = [];
+          for (let i = 0; i < count; i++) out.push(start + i * step);
+          return out;
         }
 
+        // Choose a "nice" uniform step, then build EXACTLY `count` ticks with equal spacing,
+        // while ensuring the full [minVal, maxVal] range is covered.
         const span = maxVal - minVal;
         const step = niceNumber(span / Math.max(1, count - 1));
-        const start = Math.floor(minVal / step) * step;
-        const end = Math.ceil(maxVal / step) * step;
 
-        let ticks = [];
-        for (let v = start; v <= end + step / 2; v += step) ticks.push(v);
-
-        // Downsample/upsample to EXACT count while keeping endpoints and monotonicity.
-        const target = count;
-
-        if (ticks.length > target) {
-          const out = [];
-          const stride = (ticks.length - 1) / (target - 1);
-          for (let i = 0; i < target; i++) {
-            const idx = Math.round(i * stride);
-            out.push(ticks[Math.min(ticks.length - 1, Math.max(0, idx))]);
-          }
-          // ensure strictly increasing (dedupe)
-          const dedup = [];
-          for (let i = 0; i < out.length; i++) {
-            if (i === 0 || out[i] > out[i - 1]) dedup.push(out[i]);
-          }
-          // if dedupe reduced count, fall back to linear spacing within [start,end]
-          if (dedup.length !== target) {
-            const lin = [];
-            const linStep = (end - start) / (target - 1);
-            for (let i = 0; i < target; i++) lin.push(start + i * linStep);
-            return lin;
-          }
-          return out;
+        let start = Math.floor(minVal / step) * step;
+        let end = start + step * (count - 1);
+        if (end < maxVal) {
+          end = Math.ceil(maxVal / step) * step;
+          start = end - step * (count - 1);
+        }
+        if (start > minVal) {
+          start = Math.floor(minVal / step) * step;
+          end = start + step * (count - 1);
         }
 
-        if (ticks.length < target) {
-          const out = [];
-          const linStep = (end - start) / (target - 1);
-          for (let i = 0; i < target; i++) out.push(start + i * linStep);
-          return out;
-        }
-
+        const ticks = [];
+        for (let i = 0; i < count; i++) ticks.push(start + i * step);
         return ticks;
       }
 
-      function getChartPads(mobile, kind) {
+      function injectCurrentIntoTicks(ticks, currentPrice, currentDir, mobile) {
+        const cp = Number(currentPrice);
+        if (!Number.isFinite(cp) || !Array.isArray(ticks) || ticks.length === 0) return { ticks, curIdx: -1 };
+
+        // Find nearest tick by VALUE (axis is linear so value distance matches pixel distance up to scale).
+        let bestIdx = 0;
+        let bestDv = Infinity;
+        for (let i = 0; i < ticks.length; i++) {
+          const dv = Math.abs(ticks[i] - cp);
+          if (dv < bestDv) { bestDv = dv; bestIdx = i; }
+        }
+
+        // Replace that tick's VALUE with the current price so it lands at the correct Y position.
+        const out = ticks.slice();
+        out[bestIdx] = cp;
+
+        // Sort ascending for consistent bottom->top ordering.
+        out.sort((a, b) => a - b);
+
+        // Re-find index of cp in sorted list (handle duplicates with epsilon)
+        let curIdx = -1;
+        for (let i = 0; i < out.length; i++) {
+          if (Math.abs(out[i] - cp) < 1e-9) { curIdx = i; break; }
+        }
+
+        // If cp ended up duplicated (rare), keep first occurrence as current.
+        return { ticks: out, curIdx };
+      }
+function getChartPads(mobile, kind) {
         if (mobile) {
           if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
           if (kind === "monthly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
@@ -1462,9 +1468,13 @@
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
-        const yMin = Math.min(...yTicks);
-        const yMax = Math.max(...yTicks);
+        const yTicks2 = makeTicksCovering(yMinData, yMaxData, 5);
+        
+        const injected = injectCurrentIntoTicks(yTicks2, currentPrice, currentDir, mobile);
+        const yTicks2 = injected.ticks;
+        const curTickIdx = injected.curIdx;
+const yMin = Math.min(...yTicks2);
+        const yMax = Math.max(...yTicks2);
       
         const yFor = (v) => {
           const t = (v - yMin) / (yMax - yMin || 1);
@@ -1477,20 +1487,20 @@
         const _cpY = Number.isFinite(_cp) ? yFor(_cp) : NaN;
         const _tolPx = mobile ? 10 : 12;
         let _replaceVal = null;
-        if (Number.isFinite(_cpY) && yTicks.length) {
+        if (Number.isFinite(_cpY) && yTicks2.length) {
           let bi = 0, bdy = Infinity;
-          for (let i = 0; i < yTicks.length; i++) {
-            const dy = Math.abs(yFor(yTicks[i]) - _cpY);
+          for (let i = 0; i < yTicks2.length; i++) {
+            const dy = Math.abs(yFor(yTicks2[i]) - _cpY);
             if (dy < bdy) { bdy = dy; bi = i; }
           }
           if (bdy <= _tolPx) {
-            _replaceVal = yTicks[bi];
+            _replaceVal = yTicks2[bi];
           } else {
             const mid = (yMin + yMax) / 2;
-            _replaceVal = _cp < mid ? Math.min(...yTicks) : Math.max(...yTicks);
+            _replaceVal = _cp < mid ? Math.min(...yTicks2) : Math.max(...yTicks2);
           }
         }
-for (const t of yTicks) {
+for (let i = 0; i < yTicks2.length; i++) { const t = yTicks2[i];
           const yRaw = yFor(t);
       
           const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -1505,6 +1515,8 @@ for (const t of yTicks) {
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
           tx.setAttribute("font-weight","400");
           tx.setAttribute("font-size", mobile ? "10" : "11");
+          tx.setAttribute("font-weight","400");
+          tx.setAttribute("font-size", mobile ? "10" : "11");
           tx.setAttribute("x", W - 6);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
@@ -1515,8 +1527,15 @@ for (const t of yTicks) {
             const _d = String(currentDir || "");
             tx.setAttribute("fill", _d === "up" ? "#22c55e" : (_d === "down" ? "#ef4444" : "#64748b"));
           } else {
+            if (curTickIdx !== -1 && i === curTickIdx) {
+            tx.textContent = Number(currentPrice).toFixed(2);
+            tx.setAttribute("font-size", mobile ? "12" : "13");
+            const _d = String(currentDir || "");
+            tx.setAttribute("fill", _d === "up" ? "#22c55e" : (_d === "down" ? "#ef4444" : "#64748b"));
+          } else {
             tx.textContent = fmtAxisPrice(t);
           }
+}
 weeklyYLabelsEl.appendChild(tx);
         }
       
@@ -1749,9 +1768,9 @@ weeklyYLabelsEl.appendChild(tx);
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
-        const yMin = Math.min(...yTicks);
-        const yMax = Math.max(...yTicks);
+        const yTicks2 = makeTicksCovering(yMinData, yMaxData, 5);
+        const yMin = Math.min(...yTicks2);
+        const yMax = Math.max(...yTicks2);
       
         const yFor = (v) => {
           const t = (v - yMin) / (yMax - yMin || 1);
@@ -1764,20 +1783,20 @@ weeklyYLabelsEl.appendChild(tx);
         const _cpY = Number.isFinite(_cp) ? yFor(_cp) : NaN;
         const _tolPx = mobile ? 10 : 12;
         let _replaceVal = null;
-        if (Number.isFinite(_cpY) && yTicks.length) {
+        if (Number.isFinite(_cpY) && yTicks2.length) {
           let bi = 0, bdy = Infinity;
-          for (let i = 0; i < yTicks.length; i++) {
-            const dy = Math.abs(yFor(yTicks[i]) - _cpY);
+          for (let i = 0; i < yTicks2.length; i++) {
+            const dy = Math.abs(yFor(yTicks2[i]) - _cpY);
             if (dy < bdy) { bdy = dy; bi = i; }
           }
           if (bdy <= _tolPx) {
-            _replaceVal = yTicks[bi];
+            _replaceVal = yTicks2[bi];
           } else {
             const mid = (yMin + yMax) / 2;
-            _replaceVal = _cp < mid ? Math.min(...yTicks) : Math.max(...yTicks);
+            _replaceVal = _cp < mid ? Math.min(...yTicks2) : Math.max(...yTicks2);
           }
         }
-for (const t of yTicks) {
+for (const t of yTicks2) {
           const yRaw = yFor(t);
       
           const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -2030,9 +2049,9 @@ monthlyYLabelsEl.appendChild(tx);
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
-        const yMin = Math.min(...yTicks);
-        const yMax = Math.max(...yTicks);
+        const yTicks2 = makeTicksCovering(yMinData, yMaxData, 5);
+        const yMin = Math.min(...yTicks2);
+        const yMax = Math.max(...yTicks2);
       
         const yFor = (v) => {
           const t = (v - yMin) / (yMax - yMin || 1);
@@ -2045,20 +2064,20 @@ monthlyYLabelsEl.appendChild(tx);
         const _cpY = Number.isFinite(_cp) ? yFor(_cp) : NaN;
         const _tolPx = mobile ? 10 : 12;
         let _replaceVal = null;
-        if (Number.isFinite(_cpY) && yTicks.length) {
+        if (Number.isFinite(_cpY) && yTicks2.length) {
           let bi = 0, bdy = Infinity;
-          for (let i = 0; i < yTicks.length; i++) {
-            const dy = Math.abs(yFor(yTicks[i]) - _cpY);
+          for (let i = 0; i < yTicks2.length; i++) {
+            const dy = Math.abs(yFor(yTicks2[i]) - _cpY);
             if (dy < bdy) { bdy = dy; bi = i; }
           }
           if (bdy <= _tolPx) {
-            _replaceVal = yTicks[bi];
+            _replaceVal = yTicks2[bi];
           } else {
             const mid = (yMin + yMax) / 2;
-            _replaceVal = _cp < mid ? Math.min(...yTicks) : Math.max(...yTicks);
+            _replaceVal = _cp < mid ? Math.min(...yTicks2) : Math.max(...yTicks2);
           }
         }
-for (const t of yTicks) {
+for (const t of yTicks2) {
           const yRaw = yFor(t);
       
           const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
