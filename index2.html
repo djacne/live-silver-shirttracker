@@ -1216,29 +1216,60 @@
       }
       
       function makeTicksCovering(minVal, maxVal, count = 5) {
-        if (!Number.isFinite(minVal) || !Number.isFinite(maxVal)) return [];
+        if (!Number.isFinite(minVal) || !Number.isFinite(maxVal) || count < 2) return [];
         if (minVal === maxVal) {
-          const step = minVal === 0 ? 1 : Math.abs(minVal) * 0.05;
-          return [minVal - step, minVal, minVal + step];
+          const base = minVal;
+          const step = base === 0 ? 1 : Math.abs(base) * 0.05;
+          const span = step * (count - 1);
+          const start = base - span / 2;
+          const ticks = [];
+          for (let i = 0; i < count; i++) ticks.push(start + i * step);
+          return ticks;
         }
+
         const span = maxVal - minVal;
         const step = niceNumber(span / Math.max(1, count - 1));
         const start = Math.floor(minVal / step) * step;
         const end = Math.ceil(maxVal / step) * step;
-      
-        const ticks = [];
+
+        let ticks = [];
         for (let v = start; v <= end + step / 2; v += step) ticks.push(v);
-      
-        if (ticks.length > 7) {
-          const stride = Math.ceil(ticks.length / 6);
-          const compact = [];
-          for (let i = 0; i < ticks.length; i += stride) compact.push(ticks[i]);
-          if (compact[compact.length - 1] !== ticks[ticks.length - 1]) compact.push(ticks[ticks.length - 1]);
-          return compact;
+
+        // Downsample/upsample to EXACT count while keeping endpoints and monotonicity.
+        const target = count;
+
+        if (ticks.length > target) {
+          const out = [];
+          const stride = (ticks.length - 1) / (target - 1);
+          for (let i = 0; i < target; i++) {
+            const idx = Math.round(i * stride);
+            out.push(ticks[Math.min(ticks.length - 1, Math.max(0, idx))]);
+          }
+          // ensure strictly increasing (dedupe)
+          const dedup = [];
+          for (let i = 0; i < out.length; i++) {
+            if (i === 0 || out[i] > out[i - 1]) dedup.push(out[i]);
+          }
+          // if dedupe reduced count, fall back to linear spacing within [start,end]
+          if (dedup.length !== target) {
+            const lin = [];
+            const linStep = (end - start) / (target - 1);
+            for (let i = 0; i < target; i++) lin.push(start + i * linStep);
+            return lin;
+          }
+          return out;
         }
+
+        if (ticks.length < target) {
+          const out = [];
+          const linStep = (end - start) / (target - 1);
+          for (let i = 0; i < target; i++) out.push(start + i * linStep);
+          return out;
+        }
+
         return ticks;
       }
-      
+
       function getChartPads(mobile, kind) {
         if (mobile) {
           if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
