@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -656,10 +657,7 @@
       }
       .page-footer > div:first-child { margin-bottom: 6px; }
       .page-footer .muted { color: rgba(148,163,184,0.88); }
-    
-    #character-img{opacity:0;transition:opacity .18s ease;}
-    body.hero-ready #character-img{opacity:1;}
-</style>
+    </style>
   </head>
   <body class="trend-neutral">
     <div class="bg-layer bg-stars"></div>
@@ -716,7 +714,7 @@
       <div class="layout">
         <section class="card hero-image-card">
           <div class="hero-image-wrapper">
-            <img id="character-img" alt="Silver price character" />
+            <img id="character-img" src="/img/guy-up.png" alt="Silver price character" />
           </div>
         </section>
         <div class="hero-right">
@@ -858,25 +856,7 @@
       
       const bodyEl = document.body;
       const characterImgEl = document.getElementById("character-img");
-      
-      function setHeroImagePreloaded(src) {
-        if (!src) return;
-        if (characterImgEl.dataset.desiredSrc === src) return;
-        characterImgEl.dataset.desiredSrc = src;
-        const im = new Image();
-        im.onload = () => {
-          if (characterImgEl.dataset.desiredSrc !== src) return;
-          setHeroImagePreloaded(src);
-          document.body.classList.add("hero-ready");
-        };
-        im.onerror = () => {
-          if (!characterImgEl.src && src) setHeroImagePreloaded(src);
-          document.body.classList.add("hero-ready");
-        };
-        im.src = src;
-      }
-
-const headlinePriceEl = document.getElementById("headline-price");
+      const headlinePriceEl = document.getElementById("headline-price");
       const trendPillEl = document.getElementById("trend-pill");
       const trendTextEl = document.getElementById("trend-text");
       const lastUpdatedEl = document.getElementById("last-updated");
@@ -1029,7 +1009,7 @@ const headlinePriceEl = document.getElementById("headline-price");
       
         _currentDirection = "closed";
         _currentImageSrc = IMAGE_CLOSED;
-        setHeroImagePreloaded(_currentImageSrc);
+        characterImgEl.src = _currentImageSrc;
       }
       
       function setTrendPill(direction) {
@@ -1043,7 +1023,7 @@ const headlinePriceEl = document.getElementById("headline-price");
             _currentImageSrc = pickRandom(IMAGE_LISTS.up) || IMAGE_CLOSED;
             _currentDirection = "up";
           }
-          setHeroImagePreloaded(_currentImageSrc || IMAGE_CLOSED);
+          characterImgEl.src = _currentImageSrc || IMAGE_CLOSED;
           return;
         }
       
@@ -1055,7 +1035,7 @@ const headlinePriceEl = document.getElementById("headline-price");
             _currentImageSrc = pickRandom(IMAGE_LISTS.down) || IMAGE_CLOSED;
             _currentDirection = "down";
           }
-          setHeroImagePreloaded(_currentImageSrc || IMAGE_CLOSED);
+          characterImgEl.src = _currentImageSrc || IMAGE_CLOSED;
           return;
         }
       
@@ -1064,7 +1044,7 @@ const headlinePriceEl = document.getElementById("headline-price");
         setTrendMode("neutral");
         _currentDirection = "neutral";
         _currentImageSrc = IMAGE_FLAT;
-        setHeroImagePreloaded(_currentImageSrc);
+        characterImgEl.src = _currentImageSrc;
       }
       
       function setHeadlinePriceColor(direction, marketIsOpen) {
@@ -1317,47 +1297,10 @@ const headlinePriceEl = document.getElementById("headline-price");
       line.setAttribute("opacity", "1");
       
       const tagText = fmtMoney(cp);
+      // Step 1: remove the current-price pill/tag (keep only the line)
       tag.innerHTML = "";
-      
-      const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      t.setAttribute("class", "price-tag-text");
-      t.setAttribute("x", 0);
-      t.setAttribute("y", 0);
-      t.setAttribute("dominant-baseline", "middle");
-      t.textContent = tagText;
-      
-      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.appendChild(t);
-      tag.appendChild(g);
-      
-      const bb = g.getBBox();
-      const padX = 10;
-      const padY = 8;
-      const boxW = bb.width + padX * 2;
-      const boxH = 26 + padY;
-      
-      const insetRight = 10;
-      const bx = Math.max(x0 + 6, (x1 - insetRight) - boxW);
-      
-      let by = yCP - (boxH / 2);
-      by = Math.max(y0 + 6, Math.min(y1 - boxH - 6, by));
-      
-      const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      r.setAttribute("class", "price-tag-rect");
-      r.setAttribute("x", bx);
-      r.setAttribute("y", by);
-      r.setAttribute("width", boxW);
-      r.setAttribute("height", boxH);
-      r.setAttribute("rx", 10);
-      r.setAttribute("ry", 10);
-      r.setAttribute("stroke", curColor);
-      
-      t.setAttribute("x", bx + padX);
-      t.setAttribute("y", by + boxH / 2);
-      
-      tag.insertBefore(r, g);
-      tag.setAttribute("opacity", "1");
-      
+      tag.setAttribute("opacity", "0");
+
       const base = tagId.replace(/-curtag$/, "");
       const crosshair = svgEl.querySelector("#" + base + "-crosshair");
       const tip = svgEl.querySelector("#" + base + "-tip");
@@ -1447,7 +1390,7 @@ const headlinePriceEl = document.getElementById("headline-price");
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 3 : 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -1455,27 +1398,6 @@ const headlinePriceEl = document.getElementById("headline-price");
           const t = (v - yMin) / (yMax - yMin || 1);
           return padT + innerH * (1 - t);
         };
-
-        const axisCur = Number(currentPrice);
-        const axisTolPx = mobile ? 10 : 12;
-        const axisMidVal = (yMin + yMax) / 2;
-        let axisTargetVal = null;
-
-        if (Number.isFinite(axisCur)) {
-          const axisCurY = yFor(axisCur);
-          let bestIdx = -1;
-          let bestDy = Infinity;
-          for (let i = 0; i < yTicks.length; i++) {
-            const dy = Math.abs(yFor(yTicks[i]) - axisCurY);
-            if (dy < bestDy) { bestDy = dy; bestIdx = i; }
-          }
-          if (bestIdx >= 0 && bestDy <= axisTolPx) {
-            axisTargetVal = yTicks[bestIdx];
-          } else {
-            axisTargetVal = axisCur < axisMidVal ? Math.min(...yTicks) : Math.max(...yTicks);
-          }
-        }
-
       
         for (const t of yTicks) {
           const yRaw = yFor(t);
@@ -1494,16 +1416,8 @@ const headlinePriceEl = document.getElementById("headline-price");
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-                    if (axisTargetVal != null && t === axisTargetVal && Number.isFinite(axisCur)) {
-            tx.setAttribute("font-weight", "800");
-            tx.setAttribute("font-size", "11");
-            const dir = String(currentDir || "");
-            tx.setAttribute("fill", dir === "up" ? "#22c55e" : (dir === "down" ? "#ef4444" : "#64748b"));
-          }
-tx.textContent = (axisTargetVal != null && t === axisTargetVal && Number.isFinite(axisCur))
-            ? fmtMoney(axisCur).replace(/^\$/, "")
-            : fmtAxisPrice(t);
-weeklyYLabelsEl.appendChild(tx);
+          tx.textContent = fmtAxisPrice(t);
+          weeklyYLabelsEl.appendChild(tx);
         }
       
         const n = pts.length;
@@ -1735,7 +1649,7 @@ weeklyYLabelsEl.appendChild(tx);
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -1743,27 +1657,6 @@ weeklyYLabelsEl.appendChild(tx);
           const t = (v - yMin) / (yMax - yMin || 1);
           return padT + innerH * (1 - t);
         };
-
-        const axisCur = Number(currentPrice);
-        const axisTolPx = mobile ? 10 : 12;
-        const axisMidVal = (yMin + yMax) / 2;
-        let axisTargetVal = null;
-
-        if (Number.isFinite(axisCur)) {
-          const axisCurY = yFor(axisCur);
-          let bestIdx = -1;
-          let bestDy = Infinity;
-          for (let i = 0; i < yTicks.length; i++) {
-            const dy = Math.abs(yFor(yTicks[i]) - axisCurY);
-            if (dy < bestDy) { bestDy = dy; bestIdx = i; }
-          }
-          if (bestIdx >= 0 && bestDy <= axisTolPx) {
-            axisTargetVal = yTicks[bestIdx];
-          } else {
-            axisTargetVal = axisCur < axisMidVal ? Math.min(...yTicks) : Math.max(...yTicks);
-          }
-        }
-
       
         for (const t of yTicks) {
           const yRaw = yFor(t);
@@ -1782,16 +1675,8 @@ weeklyYLabelsEl.appendChild(tx);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-                    if (axisTargetVal != null && t === axisTargetVal && Number.isFinite(axisCur)) {
-            tx.setAttribute("font-weight", "800");
-            tx.setAttribute("font-size", "11");
-            const dir = String(currentDir || "");
-            tx.setAttribute("fill", dir === "up" ? "#22c55e" : (dir === "down" ? "#ef4444" : "#64748b"));
-          }
-tx.textContent = (axisTargetVal != null && t === axisTargetVal && Number.isFinite(axisCur))
-            ? fmtMoney(axisCur).replace(/^\$/, "")
-            : fmtAxisPrice(t);
-monthlyYLabelsEl.appendChild(tx);
+          tx.textContent = fmtAxisPrice(t);
+          monthlyYLabelsEl.appendChild(tx);
         }
       
         const n = pts.length;
@@ -2017,7 +1902,7 @@ monthlyYLabelsEl.appendChild(tx);
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -2025,27 +1910,6 @@ monthlyYLabelsEl.appendChild(tx);
           const t = (v - yMin) / (yMax - yMin || 1);
           return padT + innerH * (1 - t);
         };
-
-        const axisCur = Number(currentPrice);
-        const axisTolPx = mobile ? 10 : 12;
-        const axisMidVal = (yMin + yMax) / 2;
-        let axisTargetVal = null;
-
-        if (Number.isFinite(axisCur)) {
-          const axisCurY = yFor(axisCur);
-          let bestIdx = -1;
-          let bestDy = Infinity;
-          for (let i = 0; i < yTicks.length; i++) {
-            const dy = Math.abs(yFor(yTicks[i]) - axisCurY);
-            if (dy < bestDy) { bestDy = dy; bestIdx = i; }
-          }
-          if (bestIdx >= 0 && bestDy <= axisTolPx) {
-            axisTargetVal = yTicks[bestIdx];
-          } else {
-            axisTargetVal = axisCur < axisMidVal ? Math.min(...yTicks) : Math.max(...yTicks);
-          }
-        }
-
       
         for (const t of yTicks) {
           const yRaw = yFor(t);
@@ -2064,16 +1928,8 @@ monthlyYLabelsEl.appendChild(tx);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-                    if (axisTargetVal != null && t === axisTargetVal && Number.isFinite(axisCur)) {
-            tx.setAttribute("font-weight", "800");
-            tx.setAttribute("font-size", "11");
-            const dir = String(currentDir || "");
-            tx.setAttribute("fill", dir === "up" ? "#22c55e" : (dir === "down" ? "#ef4444" : "#64748b"));
-          }
-tx.textContent = (axisTargetVal != null && t === axisTargetVal && Number.isFinite(axisCur))
-            ? fmtMoney(axisCur).replace(/^\$/, "")
-            : fmtAxisPrice(t);
-yearlyYLabelsEl.appendChild(tx);
+          tx.textContent = fmtAxisPrice(t);
+          yearlyYLabelsEl.appendChild(tx);
         }
       
         const n = pts.length;
@@ -2565,7 +2421,7 @@ yearlyYLabelsEl.appendChild(tx);
           trendTextEl.textContent = "Error fetching prices";
           setTrendMode("neutral");
           headlinePriceEl.style.color = "var(--text-main)";
-          setHeroImagePreloaded(IMAGE_CLOSED);
+          characterImgEl.src = IMAGE_CLOSED;
       
           sinceRowEl.className = "since-row flat";
           sinceMoneyEl.textContent = "—";
