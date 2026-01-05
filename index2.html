@@ -1317,7 +1317,7 @@ function fmtAxisPrice(v) {
         return nf * Math.pow(10, exp);
       }
 
-      function makeYahooTicks(values, currentPrice, count = 5, opts = {}) {
+            function makeYahooTicks(values, currentPrice, count = 5, opts = {}) {
         const {
           topPadFrac = 0.02,
           botPadFrac = 0.005,
@@ -1340,42 +1340,71 @@ function fmtAxisPrice(v) {
         }
         if (!Number.isFinite(minVal) || !Number.isFinite(maxVal) || count < 2) return [];
 
-        // If the range is tiny, expand it so ticks don't collapse.
         let range = maxVal - minVal;
         const minRange = Math.max(Math.abs(maxVal) * minRangeFrac, minRangeAbs);
         if (!Number.isFinite(range) || range < minRange) range = minRange;
 
-        // Yahoo-like: keep the top gridline near the peak with minimal headroom.
         const topPad = range * topPadFrac;
         const botPad = range * botPadFrac;
 
-        let rawMin = minVal - botPad;
-        let rawMax = maxVal + topPad;
-
-        // Never raise the bottom above the true minimum.
-        rawMin = Math.min(rawMin, minVal);
-        rawMax = Math.max(rawMax, maxVal);
+        let rawMin = Math.min(minVal - botPad, minVal);
+        let rawMax = Math.max(maxVal + topPad, maxVal);
 
         const roughStep = (rawMax - rawMin) / (count - 1);
-        const step = niceStep(roughStep);
+        const baseStep = niceStep(roughStep);
 
-        // Snap outward and keep exactly `count` ticks.
-        let start = Math.floor(rawMin / step) * step;
-        let end = start + (count - 1) * step;
-        if (end < rawMax) {
-          end = Math.ceil(rawMax / step) * step;
-          start = end - (count - 1) * step;
-          start = Math.floor(start / step) * step;
-          end = start + (count - 1) * step;
+        const stepCandidates = (() => {
+          const steps = new Set();
+          const exps = [];
+          if (Number.isFinite(roughStep) && roughStep > 0) {
+            const e = Math.floor(Math.log10(roughStep));
+            exps.push(e - 1, e, e + 1);
+          } else {
+            exps.push(0);
+          }
+          const mults = [1, 2, 2.5, 5, 10];
+          for (const e of exps) {
+            const pow = Math.pow(10, e);
+            for (const m of mults) steps.add(m * pow);
+          }
+          steps.add(baseStep);
+          return Array.from(steps).filter(s => Number.isFinite(s) && s > 0).sort((a, b) => a - b);
+        })();
+
+        const snapWithStep = (step) => {
+          let start = Math.floor(rawMin / step) * step;
+          let end = start + (count - 1) * step;
+          if (end < rawMax) {
+            end = Math.ceil(rawMax / step) * step;
+            start = end - (count - 1) * step;
+            start = Math.floor(start / step) * step;
+            end = start + (count - 1) * step;
+          }
+          return { start, end };
+        };
+
+        let bestStep = baseStep;
+        let best = snapWithStep(baseStep);
+        let bestGap = (best.end - best.start) - (rawMax - rawMin);
+
+        for (const step of stepCandidates) {
+          const { start, end } = snapWithStep(step);
+          if (start > rawMin + 1e-12) continue;
+          if (end < rawMax - 1e-12) continue;
+          const gap = (end - start) - (rawMax - rawMin);
+          if (gap < bestGap - 1e-9 || (Math.abs(gap - bestGap) <= 1e-9 && step < bestStep)) {
+            bestGap = gap;
+            bestStep = step;
+            best = { start, end };
+          }
         }
 
-        const ticks = Array.from({ length: count }, (_, i) => start + i * step);
+        const ticks = Array.from({ length: count }, (_, i) => best.start + i * bestStep);
         for (let i = 0; i < ticks.length; i++) {
           if (Object.is(ticks[i], -0)) ticks[i] = 0;
         }
         return ticks;
       }
-
 
 
       function getChartPads(mobile, kind) {
