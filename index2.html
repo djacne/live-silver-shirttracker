@@ -1409,16 +1409,16 @@ function fmtAxisPrice(v) {
       t.setAttribute("y", String(yCP));
       t.setAttribute("text-anchor", "end");
       t.setAttribute("dominant-baseline", "middle");
-      t.setAttribute("fill", "rgba(255,255,255,0.96)");
+      t.setAttribute("fill", "#ffffff");
       t.textContent = tagText;
 
       tag.appendChild(t);
 
       // Subtle pill behind the text (prevents ambiguity when it aligns near a tick label).
-      let pillFill = "rgba(148,163,184,1)";
-      if (currentDir === "up") pillFill = "rgba(34,197,94,1)";
-      else if (currentDir === "down") pillFill = "rgba(239,68,68,1)";
-      if (!marketIsOpen) pillFill = "rgba(148,163,184,1)";
+      let pillFill = "rgb(148,163,184)";
+      if (currentDir === "up") pillFill = "rgb(34,197,94)";
+      else if (currentDir === "down") pillFill = "rgb(239,68,68)";
+      if (!marketIsOpen) pillFill = "rgb(148,163,184)";
 
       try {
         const bb = t.getBBox();
@@ -1432,8 +1432,8 @@ function fmtAxisPrice(v) {
         r.setAttribute("rx", "6");
         r.setAttribute("ry", "6");
         r.setAttribute("fill", pillFill);
-        r.setAttribute("stroke", "rgba(0,0,0,0.22)");
-        r.setAttribute("stroke-width", "1");
+        r.setAttribute("stroke", "none");
+        r.setAttribute("stroke-width", "0");
         tag.insertBefore(r, t);
       } catch (e) {
         // If bbox fails for any reason, just keep the text.
@@ -2209,16 +2209,16 @@ function fmtAxisPrice(v) {
           t.setAttribute("y", String(yCP));
           t.setAttribute("text-anchor", "end");
           t.setAttribute("dominant-baseline", "middle");
-          t.setAttribute("fill", "rgba(255,255,255,0.96)");
+          t.setAttribute("fill", "#ffffff");
           t.textContent = tagText;
 
           yearlyCurTagEl.appendChild(t);
 
           // Subtle pill behind the text (prevents ambiguity when it aligns near a tick label).
-          let pillFill = "rgba(148,163,184,1)";
-          if (currentDir === "up") pillFill = "rgba(34,197,94,1)";
-          else if (currentDir === "down") pillFill = "rgba(239,68,68,1)";
-          if (!marketIsOpen) pillFill = "rgba(148,163,184,1)";
+          let pillFill = "rgb(148,163,184)";
+      if (currentDir === "up") pillFill = "rgb(34,197,94)";
+      else if (currentDir === "down") pillFill = "rgb(239,68,68)";
+      if (!marketIsOpen) pillFill = "rgb(148,163,184)";
 
           try {
             const bb = t.getBBox();
@@ -2232,8 +2232,8 @@ function fmtAxisPrice(v) {
             r.setAttribute("rx", "6");
             r.setAttribute("ry", "6");
             r.setAttribute("fill", pillFill);
-            r.setAttribute("stroke", "rgba(0,0,0,0.22)");
-            r.setAttribute("stroke-width", "1");
+            r.setAttribute("stroke", "none");
+            r.setAttribute("stroke-width", "0");
             yearlyCurTagEl.insertBefore(r, t);
           } catch (e) {
             // If bbox fails for any reason, just keep the text.
