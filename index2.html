@@ -512,7 +512,19 @@
       font-variant-numeric: tabular-nums lining-nums;
       text-shadow: 0 1px 2px rgba(2,6,23,0.85);
       }
-      body.market-maintenance .chart-wrap svg text,
+      
+      .chart-wrap svg text.y-tick {
+        font-size: 13px;
+        font-weight: 400;
+        fill: rgba(170,180,195,0.72);
+        text-shadow: none;
+      }
+      .chart-wrap svg text.price-tag-text {
+        font-size: 14px;
+        font-weight: 600;
+        text-shadow: none;
+      }
+body.market-maintenance .chart-wrap svg text,
       body.market-weekend .chart-wrap svg text {
       fill: rgba(186,196,210,0.95);
       }
@@ -1481,6 +1493,7 @@ function fmtAxisPrice(v) {
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
+          tx.setAttribute("class", "y-tick");
           tx.textContent = fmtAxisPrice(t);
           weeklyYLabelsEl.appendChild(tx);
         }
@@ -1743,6 +1756,7 @@ function fmtAxisPrice(v) {
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
+          tx.setAttribute("class", "y-tick");
           tx.textContent = fmtAxisPrice(t);
           monthlyYLabelsEl.appendChild(tx);
         }
@@ -1999,6 +2013,7 @@ function fmtAxisPrice(v) {
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
+          tx.setAttribute("class", "y-tick");
           tx.textContent = fmtAxisPrice(t);
           yearlyYLabelsEl.appendChild(tx);
         }
