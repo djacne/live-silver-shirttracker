@@ -517,6 +517,8 @@
       fill: rgba(186,196,210,0.95);
       }
       .chart-wrap svg .gridline { stroke: rgba(148,163,184,0.12); stroke-width: 1; }
+      .chart-wrap svg path[id$="-border"] { display: none; }
+
       .chart-wrap svg .crosshair { stroke: rgba(226,232,240,0.70); stroke-width: 2; stroke-dasharray: 4 4; opacity: 0; }
       .chart-wrap svg .tipbox { opacity: 0; }
       .chart-wrap svg .bar {
@@ -657,11 +659,7 @@
       }
       .page-footer > div:first-child { margin-bottom: 6px; }
       .page-footer .muted { color: rgba(148,163,184,0.88); }
-    
-    /* Step 1: Hide current-price pill tags on all charts (keep dotted line) */
-    [id$="-curtag"] { display: none !important; }
-    .curtag { display: none !important; }
-</style>
+    </style>
   </head>
   <body class="trend-neutral">
     <div class="bg-layer bg-stars"></div>
@@ -1216,38 +1214,29 @@
       }
       
       function makeTicksCovering(minVal, maxVal, count = 5) {
-        if (!Number.isFinite(minVal) || !Number.isFinite(maxVal) || count < 2) return [];
+        if (!Number.isFinite(minVal) || !Number.isFinite(maxVal)) return [];
         if (minVal === maxVal) {
-          const base = minVal;
-          const step = base === 0 ? 1 : niceNumber(Math.abs(base) * 0.05);
-          const span = step * (count - 1);
-          const start = base - span / 2;
-          const out = [];
-          for (let i = 0; i < count; i++) out.push(start + i * step);
-          return out;
+          const step = minVal === 0 ? 1 : Math.abs(minVal) * 0.05;
+          return [minVal - step, minVal, minVal + step];
         }
-
-        // Step 4: uniform spacing (5 ticks) with a nice step, while covering [minVal, maxVal]
         const span = maxVal - minVal;
         const step = niceNumber(span / Math.max(1, count - 1));
-
-        let start = Math.floor(minVal / step) * step;
-        let end = start + step * (count - 1);
-
-        if (end < maxVal) {
-          end = Math.ceil(maxVal / step) * step;
-          start = end - step * (count - 1);
-        }
-        if (start > minVal) {
-          start = Math.floor(minVal / step) * step;
-          end = start + step * (count - 1);
-        }
-
+        const start = Math.floor(minVal / step) * step;
+        const end = Math.ceil(maxVal / step) * step;
+      
         const ticks = [];
-        for (let i = 0; i < count; i++) ticks.push(start + i * step);
+        for (let v = start; v <= end + step / 2; v += step) ticks.push(v);
+      
+        if (ticks.length > 7) {
+          const stride = Math.ceil(ticks.length / 6);
+          const compact = [];
+          for (let i = 0; i < ticks.length; i += stride) compact.push(ticks[i]);
+          if (compact[compact.length - 1] !== ticks[ticks.length - 1]) compact.push(ticks[ticks.length - 1]);
+          return compact;
+        }
         return ticks;
       }
-
+      
       function getChartPads(mobile, kind) {
         if (mobile) {
           if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
@@ -1440,53 +1429,16 @@
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const _ticks = makeTicksCovering(yMinData, yMaxData, 5);
-        
-        // STEP4_AXIS_REPLACE: replace nearest tick VALUE with current price (keeps 5 labels, correct Y position)
-        const _cp = Number(currentPrice);
-        const _ticks = _ticks.slice();
-        let _cpIdx = -1;
-        if (Number.isFinite(_cp) && _ticks.length) {
-          let bestIdx = 0;
-          let bestDv = Infinity;
-          for (let i = 0; i < _ticks.length; i++) {
-            const dv = Math.abs(_ticks[i] - _cp);
-            if (dv < bestDv) { bestDv = dv; bestIdx = i; }
-          }
-          _ticks[bestIdx] = _cp;
-          _ticks.sort((a,b)=>a-b);
-          for (let i = 0; i < _ticks.length; i++) {
-            if (Math.abs(_ticks[i] - _cp) < 1e-9) { _cpIdx = i; break; }
-          }
-        }
-const yMin = Math.min(..._ticks);
-        const yMax = Math.max(..._ticks);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 3 : 5);
+        const yMin = Math.min(...yTicks);
+        const yMax = Math.max(...yTicks);
       
         const yFor = (v) => {
           const t = (v - yMin) / (yMax - yMin || 1);
           return padT + innerH * (1 - t);
         };
       
-        
-        // STEP3_REPLACE_TICK: current price becomes one of the 5 axis labels (no extra label)
-        const _cp = Number(currentPrice);
-        const _cpY = Number.isFinite(_cp) ? yFor(_cp) : NaN;
-        const _tolPx = mobile ? 10 : 12;
-        let _replaceVal = null;
-        if (Number.isFinite(_cpY) && _ticks.length) {
-          let bi = 0, bdy = Infinity;
-          for (let i = 0; i < _ticks.length; i++) {
-            const dy = Math.abs(yFor(_ticks[i]) - _cpY);
-            if (dy < bdy) { bdy = dy; bi = i; }
-          }
-          if (bdy <= _tolPx) {
-            _replaceVal = _ticks[bi];
-          } else {
-            const mid = (yMin + yMax) / 2;
-            _replaceVal = _cp < mid ? Math.min(..._ticks) : Math.max(..._ticks);
-          }
-        }
-for (const t of _ticks) {
+        for (const t of yTicks) {
           const yRaw = yFor(t);
       
           const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -1499,30 +1451,12 @@ for (const t of _ticks) {
       
           const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("font-weight","400");
-          tx.setAttribute("font-size", mobile ? "10" : "11");
-          tx.setAttribute("font-weight","400");
-          tx.setAttribute("font-size", mobile ? "10" : "11");
           tx.setAttribute("x", W - 6);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-          if (_replaceVal != null && t === _replaceVal && Number.isFinite(_cp)) {
-            tx.textContent = _cp.toFixed(2);
-            tx.setAttribute("font-size", mobile ? "12" : "13");
-            const _d = String(currentDir || "");
-            tx.setAttribute("fill", _d === "up" ? "#22c55e" : (_d === "down" ? "#ef4444" : "#64748b"));
-          } else {
-            if (_cpIdx !== -1 && Number.isFinite(_cp) && Math.abs(t - _cp) < 1e-9) {
-            tx.textContent = _cp.toFixed(2);
-            tx.setAttribute("font-size", mobile ? "12" : "13");
-            const _d = String(currentDir || "");
-            tx.setAttribute("fill", _d === "up" ? "#22c55e" : (_d === "down" ? "#ef4444" : "#64748b"));
-          } else {
-            tx.textContent = fmtAxisPrice(t);
-          }
-}
-weeklyYLabelsEl.appendChild(tx);
+          tx.textContent = fmtAxisPrice(t);
+          weeklyYLabelsEl.appendChild(tx);
         }
       
         const n = pts.length;
@@ -1754,35 +1688,16 @@ weeklyYLabelsEl.appendChild(tx);
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const _ticks = makeTicksCovering(yMinData, yMaxData, 5);
-        const yMin = Math.min(..._ticks);
-        const yMax = Math.max(..._ticks);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
+        const yMin = Math.min(...yTicks);
+        const yMax = Math.max(...yTicks);
       
         const yFor = (v) => {
           const t = (v - yMin) / (yMax - yMin || 1);
           return padT + innerH * (1 - t);
         };
       
-        
-        // STEP3_REPLACE_TICK: current price becomes one of the 5 axis labels (no extra label)
-        const _cp = Number(currentPrice);
-        const _cpY = Number.isFinite(_cp) ? yFor(_cp) : NaN;
-        const _tolPx = mobile ? 10 : 12;
-        let _replaceVal = null;
-        if (Number.isFinite(_cpY) && _ticks.length) {
-          let bi = 0, bdy = Infinity;
-          for (let i = 0; i < _ticks.length; i++) {
-            const dy = Math.abs(yFor(_ticks[i]) - _cpY);
-            if (dy < bdy) { bdy = dy; bi = i; }
-          }
-          if (bdy <= _tolPx) {
-            _replaceVal = _ticks[bi];
-          } else {
-            const mid = (yMin + yMax) / 2;
-            _replaceVal = _cp < mid ? Math.min(..._ticks) : Math.max(..._ticks);
-          }
-        }
-for (const t of _ticks) {
+        for (const t of yTicks) {
           const yRaw = yFor(t);
       
           const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -1795,21 +1710,12 @@ for (const t of _ticks) {
       
           const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("font-weight","400");
-          tx.setAttribute("font-size", mobile ? "10" : "11");
           tx.setAttribute("x", W - 6);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-          if (_replaceVal != null && t === _replaceVal && Number.isFinite(_cp)) {
-            tx.textContent = _cp.toFixed(2);
-            tx.setAttribute("font-size", mobile ? "12" : "13");
-            const _d = String(currentDir || "");
-            tx.setAttribute("fill", _d === "up" ? "#22c55e" : (_d === "down" ? "#ef4444" : "#64748b"));
-          } else {
-            tx.textContent = fmtAxisPrice(t);
-          }
-monthlyYLabelsEl.appendChild(tx);
+          tx.textContent = fmtAxisPrice(t);
+          monthlyYLabelsEl.appendChild(tx);
         }
       
         const n = pts.length;
@@ -2035,35 +1941,16 @@ monthlyYLabelsEl.appendChild(tx);
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const _ticks = makeTicksCovering(yMinData, yMaxData, 5);
-        const yMin = Math.min(..._ticks);
-        const yMax = Math.max(..._ticks);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
+        const yMin = Math.min(...yTicks);
+        const yMax = Math.max(...yTicks);
       
         const yFor = (v) => {
           const t = (v - yMin) / (yMax - yMin || 1);
           return padT + innerH * (1 - t);
         };
       
-        
-        // STEP3_REPLACE_TICK: current price becomes one of the 5 axis labels (no extra label)
-        const _cp = Number(currentPrice);
-        const _cpY = Number.isFinite(_cp) ? yFor(_cp) : NaN;
-        const _tolPx = mobile ? 10 : 12;
-        let _replaceVal = null;
-        if (Number.isFinite(_cpY) && _ticks.length) {
-          let bi = 0, bdy = Infinity;
-          for (let i = 0; i < _ticks.length; i++) {
-            const dy = Math.abs(yFor(_ticks[i]) - _cpY);
-            if (dy < bdy) { bdy = dy; bi = i; }
-          }
-          if (bdy <= _tolPx) {
-            _replaceVal = _ticks[bi];
-          } else {
-            const mid = (yMin + yMax) / 2;
-            _replaceVal = _cp < mid ? Math.min(..._ticks) : Math.max(..._ticks);
-          }
-        }
-for (const t of _ticks) {
+        for (const t of yTicks) {
           const yRaw = yFor(t);
       
           const gl = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -2076,21 +1963,12 @@ for (const t of _ticks) {
       
           const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("font-weight","400");
-          tx.setAttribute("font-size", mobile ? "10" : "11");
           tx.setAttribute("x", W - 6);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
-          if (_replaceVal != null && t === _replaceVal && Number.isFinite(_cp)) {
-            tx.textContent = _cp.toFixed(2);
-            tx.setAttribute("font-size", mobile ? "12" : "13");
-            const _d = String(currentDir || "");
-            tx.setAttribute("fill", _d === "up" ? "#22c55e" : (_d === "down" ? "#ef4444" : "#64748b"));
-          } else {
-            tx.textContent = fmtAxisPrice(t);
-          }
-yearlyYLabelsEl.appendChild(tx);
+          tx.textContent = fmtAxisPrice(t);
+          yearlyYLabelsEl.appendChild(tx);
         }
       
         const n = pts.length;
