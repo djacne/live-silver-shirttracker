@@ -2094,7 +2094,7 @@
           // Yahoo-style: current price label in the right-side axis lane.
           const vb = (yearlyCurLineEl.ownerSVGElement.getAttribute("viewBox") || "").trim().split(/\s+/);
           const svgW = (vb.length === 4 && Number.isFinite(Number(vb[2]))) ? Number(vb[2]) : (Number(yearlyCurLineEl.ownerSVGElement.getAttribute("width")) || (x1 + 56));
-          const labelXResolved = Number.isFinite(labelX) ? labelX : Math.max(x1 + 8, (Number.isFinite(svgW) ? (svgW - 10) : (x1 + 46)));
+          const labelXResolved = Math.max(x1 + 8, (Number.isFinite(svgW) ? (svgW - 10) : (x1 + 46)));
 
           const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
           t.setAttribute("class", "price-tag-text");
