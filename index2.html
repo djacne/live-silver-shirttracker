@@ -1016,7 +1016,14 @@
         return `$${n.toFixed(2)}`;
       }
       
-      function fmtAxisPrice(v) {
+      function fmtChartPrice(v) {
+        if (v == null) return "—";
+        const n = Number(v);
+        if (!Number.isFinite(n)) return "—";
+        return n.toFixed(2);
+      }
+
+function fmtAxisPrice(v) {
         const n = Number(v);
         if (!Number.isFinite(n)) return "—";
         return n.toFixed(0);
@@ -1340,7 +1347,7 @@
       line.setAttribute("stroke", curColor);
       line.setAttribute("opacity", "1");
       
-      const tagText = fmtMoney(cp);
+      const tagText = fmtChartPrice(cp);
       tag.innerHTML = "";
 
       // Yahoo-style: show current price as a right-side axis label (no pill inside plot).
@@ -1602,7 +1609,7 @@
           weeklyCrosshairEl.style.opacity = "1";
       
           const label = fmtMMDD(pts[i].xLabel);
-          const price = fmtMoney(v);
+          const price = fmtChartPrice(v);
       
           weeklyTipEl.innerHTML = "";
           weeklyTipEl.style.opacity = "1";
@@ -1858,7 +1865,7 @@
           monthlyCrosshairEl.style.opacity = "1";
       
           const label = fmtMMDD(pts[i].xLabel);
-          const price = fmtMoney(v);
+          const price = fmtChartPrice(v);
       
           monthlyTipEl.innerHTML = "";
           monthlyTipEl.style.opacity = "1";
@@ -2122,7 +2129,7 @@
           yearlyCurLineEl.setAttribute("stroke", curColor);
           yearlyCurLineEl.setAttribute("opacity", "1");
       
-          const tagText = fmtMoney(cp);
+          const tagText = fmtChartPrice(cp);
 
           yearlyCurTagEl.innerHTML = "";
 
@@ -2160,7 +2167,7 @@
           yearlyCrosshairEl.style.opacity = "1";
       
           const label = pts[i].month || monthNameFromYYYYMM(pts[i].xLabel);
-          const price = fmtMoney(v);
+          const price = fmtChartPrice(v);
       
           yearlyTipEl.innerHTML = "";
           yearlyTipEl.style.opacity = "1";
