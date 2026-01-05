@@ -1344,9 +1344,6 @@
       tag.innerHTML = "";
 
       // Yahoo-style: show current price as a right-side axis label (no pill inside plot).
-      const vb = (svgEl.getAttribute("viewBox") || "").trim().split(/\s+/);
-      const svgW = (vb.length === 4 && Number.isFinite(Number(vb[2]))) ? Number(vb[2]) : (Number(svgEl.getAttribute("width")) || (x1 + 56));
-      const labelXResolved = Number.isFinite(labelX) ? labelX : Math.max(x1 + 8, (Number.isFinite(svgW) ? (svgW - 10) : (x1 + 46)));
 
       const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
       t.setAttribute("class", "price-tag-text");
@@ -1437,6 +1434,7 @@
         const axisLane = mobile ? 44 : 52;
         const innerW = W - padL - padR - axisLane;
         const labelX = W - padR;
+        const labelXResolved = labelX;
         const innerH = H - padT - padB;
       
         const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
@@ -1472,7 +1470,7 @@
       
           const y = yRaw;
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", labelXResolved);
+          tx.setAttribute("x", labelX);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
@@ -1734,7 +1732,7 @@
       
           const y = yRaw;
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", labelXResolved);
+          tx.setAttribute("x", labelX);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
@@ -1990,7 +1988,7 @@
       
           const y = yRaw;
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", labelXResolved);
+          tx.setAttribute("x", labelX);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
