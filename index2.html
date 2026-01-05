@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
   <head>
@@ -1214,29 +1213,34 @@
       }
       
       function makeTicksCovering(minVal, maxVal, count = 5) {
-        if (!Number.isFinite(minVal) || !Number.isFinite(maxVal)) return [];
+        if (!Number.isFinite(minVal) || !Number.isFinite(maxVal) || count < 2) return [];
         if (minVal === maxVal) {
-          const step = minVal === 0 ? 1 : Math.abs(minVal) * 0.05;
-          return [minVal - step, minVal, minVal + step];
+          const base = minVal;
+          const step = base === 0 ? 1 : Math.abs(base) * 0.05;
+          const start = base - step * Math.floor((count - 1) / 2);
+          return Array.from({ length: count }, (_, i) => start + i * step);
         }
+
         const span = maxVal - minVal;
-        const step = niceNumber(span / Math.max(1, count - 1));
-        const start = Math.floor(minVal / step) * step;
-        const end = Math.ceil(maxVal / step) * step;
-      
-        const ticks = [];
-        for (let v = start; v <= end + step / 2; v += step) ticks.push(v);
-      
-        if (ticks.length > 7) {
-          const stride = Math.ceil(ticks.length / 6);
-          const compact = [];
-          for (let i = 0; i < ticks.length; i += stride) compact.push(ticks[i]);
-          if (compact[compact.length - 1] !== ticks[ticks.length - 1]) compact.push(ticks[ticks.length - 1]);
-          return compact;
+        const step = niceNumber(span / (count - 1));
+
+        // Pick a start on the step grid such that [start, start+(count-1)*step] covers [minVal, maxVal].
+        let start = Math.floor(minVal / step) * step;
+        let end = start + (count - 1) * step;
+        if (end < maxVal) {
+          start = Math.ceil((maxVal - (count - 1) * step) / step) * step;
+          end = start + (count - 1) * step;
+        }
+
+        const ticks = Array.from({ length: count }, (_, i) => start + i * step);
+
+        // Normalize -0 to 0 to avoid "-0" labels.
+        for (let i = 0; i < ticks.length; i++) {
+          if (Object.is(ticks[i], -0)) ticks[i] = 0;
         }
         return ticks;
       }
-      
+
       function getChartPads(mobile, kind) {
         if (mobile) {
           if (kind === "weekly") return { padL: 10, padR: 56, padT: 8,  padB: 46 };
@@ -1429,7 +1433,7 @@
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 3 : 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -1688,7 +1692,7 @@
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -1941,7 +1945,7 @@
         const yMinData = min - head;
         const yMaxData = max + head;
       
-        const yTicks = makeTicksCovering(yMinData, yMaxData, mobile ? 6 : 5);
+        const yTicks = makeTicksCovering(yMinData, yMaxData, 5);
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
