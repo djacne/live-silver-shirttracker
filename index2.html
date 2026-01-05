@@ -1839,11 +1839,13 @@ function fmtAxisPrice(v) {
         clearMonthlyChart();
         if (!Array.isArray(rows) || rows.length < 2) return;
       
-        const pts = rows
+        let pts = rows
           .map((r) => ({ xLabel: r?.date, value: Number(r?.close), raw: r }))
           .filter((p) => p?.xLabel && Number.isFinite(p.value));
       
         if (pts.length < 2) return;
+
+        if (pts.length > 30) pts = pts.slice(pts.length - 30);
       
         let min = Infinity, max = -Infinity;
         for (const p of pts) { if (p.value < min) min = p.value; if (p.value > max) max = p.value; }
@@ -1955,17 +1957,13 @@ function fmtAxisPrice(v) {
           bars.push(r);
         }
       
-        let midIdx = 0;
-        let best = Infinity;
-        for (let i = 0; i < n; i++) {
-          const d = dayOfMonthFromYYYYMMDD(pts[i].xLabel);
-          if (d == null) continue;
-          const diff = Math.abs(d - 15);
-          if (diff < best) { best = diff; midIdx = i; }
-        }
-      
         const labelY = y1 + (mobile ? 26 : 30);
-        const labelIdxs = new Set([0, n - 1, midIdx]);
+        const i0 = 0;
+        const i1 = Math.round((n - 1) * 0.25);
+        const i2 = Math.round((n - 1) * 0.50);
+        const i3 = Math.round((n - 1) * 0.75);
+        const i4 = n - 1;
+        const labelIdxs = new Set([i0, i1, i2, i3, i4]);
         const ordered = Array.from(labelIdxs).filter((i) => i >= 0 && i < n).sort((a,b) => a-b);
       
         for (const i of ordered) {
