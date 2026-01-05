@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -2389,6 +2390,27 @@ function fmtAxisPrice(v) {
         hideTip();
       }
       
+      function computeChartDirFromSeries(rows, currentPrice) {
+        if (!Array.isArray(rows) || rows.length < 1) return "neutral";
+        let start = null;
+        for (let i = 0; i < rows.length; i++) {
+          const v = Number(rows[i]?.close);
+          if (Number.isFinite(v)) { start = v; break; }
+        }
+        const cp = Number(currentPrice);
+        let end = Number.isFinite(cp) ? cp : null;
+        if (end == null) {
+          for (let i = rows.length - 1; i >= 0; i--) {
+            const v = Number(rows[i]?.close);
+            if (Number.isFinite(v)) { end = v; break; }
+          }
+        }
+        if (!Number.isFinite(start) || !Number.isFinite(end)) return "neutral";
+        const delta = end - start;
+        if (Math.abs(delta) < 1e-6) return "neutral";
+        return delta > 0 ? "up" : "down";
+      }
+
       function renderChartsFromData(data) {
         const market = data?.market || null;
         const marketIsOpen = !(market && market.isOpen === false);
@@ -2401,12 +2423,19 @@ function fmtAxisPrice(v) {
         const currentPrice = silver?.price;
       
         const d = (silver?.direction || "same");
-        const currentDir = (d === "same" ? "neutral" : d);
-      
-        try { renderWeeklyBars({ rows: weeklyRows, marketIsOpen, currentPrice, currentDir }); } catch (err) { __DBG__.show(err, "renderWeeklyBars"); }
-        try { renderMonthlyBars({ rows: monthlyRows, marketIsOpen, currentPrice, currentDir }); } catch (err) { __DBG__.show(err, "renderMonthlyBars"); }
-        try { renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir }); } catch (err) { __DBG__.show(err, "renderYearlyLine"); }
-      }
+        const currentDirLive = (d === "same" ? "neutral" : d);
+
+        const weeklyDir = computeChartDirFromSeries(weeklyRows, currentPrice);
+        const monthlyDir = computeChartDirFromSeries(monthlyRows, currentPrice);
+        const yearlyDir = computeChartDirFromSeries(yearlyRows, currentPrice);
+
+        try { renderWeeklyBars({ rows: weeklyRows, marketIsOpen, currentPrice, currentDir: weeklyDir }); } catch (err) { __DBG__.show(err, "renderWeeklyBars"); }
+        try { renderMonthlyBars({ rows: monthlyRows, marketIsOpen, currentPrice, currentDir: monthlyDir }); } catch (err) { __DBG__.show(err, "renderMonthlyBars"); }
+        try { renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir: yearlyDir }); } catch (err) { __DBG__.show(err, "renderYearlyLine"); }
+
+        // keep the site-level theme (background + headline pill) based on live movement
+        window.__CHART_DIRS__ = { weeklyDir, monthlyDir, yearlyDir, currentDirLive };
+}
       
       function renderMetalsTable(metals) {
         metalsTbodyEl.innerHTML = "";
