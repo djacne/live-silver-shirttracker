@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -1419,7 +1420,9 @@
       
         const { padL, padR, padT, padB } = getChartPads(mobile, "weekly");
       
-        const innerW = W - padL - padR;
+        const axisLane = mobile ? 44 : 52;
+        const innerW = W - padL - padR - axisLane;
+        const labelX = W - padR;
         const innerH = H - padT - padB;
       
         const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
@@ -1453,9 +1456,9 @@
           gl.setAttribute("class", "gridline");
           weeklyGridEl.appendChild(gl);
       
-          const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
+          const y = yRaw;
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", W - 6);
+          tx.setAttribute("x", labelX);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
@@ -1678,7 +1681,9 @@
       
         const { padL, padR, padT, padB } = getChartPads(mobile, "monthly");
       
-        const innerW = W - padL - padR;
+        const axisLane = mobile ? 44 : 52;
+        const innerW = W - padL - padR - axisLane;
+        const labelX = W - padR;
         const innerH = H - padT - padB;
       
         const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
@@ -1712,9 +1717,9 @@
           gl.setAttribute("class", "gridline");
           monthlyGridEl.appendChild(gl);
       
-          const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
+          const y = yRaw;
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", W - 6);
+          tx.setAttribute("x", labelX);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
@@ -1931,7 +1936,9 @@
       
         const { padL, padR, padT, padB } = getChartPads(mobile, "yearly");
       
-        const innerW = W - padL - padR;
+        const axisLane = mobile ? 44 : 52;
+        const innerW = W - padL - padR - axisLane;
+        const labelX = W - padR;
         const innerH = H - padT - padB;
       
         const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
@@ -1965,9 +1972,9 @@
           gl.setAttribute("class", "gridline");
           yearlyGridEl.appendChild(gl);
       
-          const y = Math.max(y0 + 10, Math.min(y1 - 10, yRaw));
+          const y = yRaw;
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", W - 6);
+          tx.setAttribute("x", labelX);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
