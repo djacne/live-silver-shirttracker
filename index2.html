@@ -522,6 +522,15 @@
       
         font-variant-numeric: tabular-nums;
       }
+
+      .chart-wrap svg g[id$="-xlabels"] text {
+        font-size: 13px;
+        font-weight: 400;
+        fill: rgba(170,180,195,0.72);
+        text-shadow: none;
+        font-variant-numeric: tabular-nums;
+      }
+
       .chart-wrap svg text.price-tag-text {
         font-size: 14px;
         font-weight: 600;
@@ -2390,28 +2399,25 @@ function fmtAxisPrice(v) {
         hideTip();
       }
       
-      function computeChartDirFromSeries(rows, currentPrice) {
-        if (!Array.isArray(rows) || rows.length < 1) return "neutral";
-        let start = null;
-        for (let i = 0; i < rows.length; i++) {
-          const v = Number(rows[i]?.close);
-          if (Number.isFinite(v)) { start = v; break; }
-        }
+      
+      function dirFromChartRange(rows, currentPrice) {
         const cp = Number(currentPrice);
-        let end = Number.isFinite(cp) ? cp : null;
-        if (end == null) {
-          for (let i = rows.length - 1; i >= 0; i--) {
-            const v = Number(rows[i]?.close);
-            if (Number.isFinite(v)) { end = v; break; }
-          }
+        if (!Number.isFinite(cp) || !Array.isArray(rows) || rows.length === 0) return "neutral";
+
+        let base = null;
+        for (const r of rows) {
+          const v = Number(r?.close);
+          if (Number.isFinite(v)) { base = v; break; }
         }
-        if (!Number.isFinite(start) || !Number.isFinite(end)) return "neutral";
-        const delta = end - start;
-        if (Math.abs(delta) < 1e-6) return "neutral";
+        if (base == null) return "neutral";
+
+        const delta = cp - base;
+        const eps = Math.max(0.000001, Math.abs(base) * 1e-6);
+        if (Math.abs(delta) <= eps) return "neutral";
         return delta > 0 ? "up" : "down";
       }
 
-      function renderChartsFromData(data) {
+function renderChartsFromData(data) {
         const market = data?.market || null;
         const marketIsOpen = !(market && market.isOpen === false);
       
@@ -2423,19 +2429,17 @@ function fmtAxisPrice(v) {
         const currentPrice = silver?.price;
       
         const d = (silver?.direction || "same");
-        const currentDirLive = (d === "same" ? "neutral" : d);
+        const currentDir = (d === "same" ? "neutral" : d);
 
-        const weeklyDir = computeChartDirFromSeries(weeklyRows, currentPrice);
-        const monthlyDir = computeChartDirFromSeries(monthlyRows, currentPrice);
-        const yearlyDir = computeChartDirFromSeries(yearlyRows, currentPrice);
+        const weeklyDir = dirFromChartRange(weeklyRows, currentPrice);
+        const monthlyDir = dirFromChartRange(monthlyRows, currentPrice);
+        const yearlyDir = dirFromChartRange(yearlyRows, currentPrice);
 
+      
         try { renderWeeklyBars({ rows: weeklyRows, marketIsOpen, currentPrice, currentDir: weeklyDir }); } catch (err) { __DBG__.show(err, "renderWeeklyBars"); }
         try { renderMonthlyBars({ rows: monthlyRows, marketIsOpen, currentPrice, currentDir: monthlyDir }); } catch (err) { __DBG__.show(err, "renderMonthlyBars"); }
         try { renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir: yearlyDir }); } catch (err) { __DBG__.show(err, "renderYearlyLine"); }
-
-        // keep the site-level theme (background + headline pill) based on live movement
-        window.__CHART_DIRS__ = { weeklyDir, monthlyDir, yearlyDir, currentDirLive };
-}
+      }
       
       function renderMetalsTable(metals) {
         metalsTbodyEl.innerHTML = "";
