@@ -1450,9 +1450,9 @@ function fmtAxisPrice(v) {
       
         const { padL, padR, padT, padB } = getChartPads(mobile, "weekly");
       
-        const axisLane = mobile ? 44 : 52;
+        const axisLane = mobile ? 46 : 58;
         const innerW = W - padL - padR - axisLane;
-        const labelX = W - padR;
+        const labelX = W - padR - 4;
         const labelXResolved = labelX;
         const innerH = H - padT - padB;
       
@@ -1714,9 +1714,9 @@ function fmtAxisPrice(v) {
       
         const { padL, padR, padT, padB } = getChartPads(mobile, "monthly");
       
-        const axisLane = mobile ? 44 : 52;
+        const axisLane = mobile ? 46 : 58;
         const innerW = W - padL - padR - axisLane;
-        const labelX = W - padR;
+        const labelX = W - padR - 4;
         const innerH = H - padT - padB;
       
         const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
@@ -1971,9 +1971,9 @@ function fmtAxisPrice(v) {
       
         const { padL, padR, padT, padB } = getChartPads(mobile, "yearly");
       
-        const axisLane = mobile ? 44 : 52;
+        const axisLane = mobile ? 46 : 58;
         const innerW = W - padL - padR - axisLane;
-        const labelX = W - padR;
+        const labelX = W - padR - 4;
         const innerH = H - padT - padB;
       
         const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
