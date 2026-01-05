@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
   <head>
@@ -484,6 +483,7 @@
       .summary-range.down { color: var(--accent-down); }
       .summary-range.neutral { color: rgba(226,232,240,0.88); }
       .chart-wrap {
+      position: relative;
       width: 100%;
       overflow: hidden;
       border-radius: 16px;
@@ -528,6 +528,33 @@
       
         font-variant-numeric: tabular-nums;
       }
+
+      .cp-pill {
+        position: absolute;
+        pointer-events: none;
+        z-index: 5;
+        padding: 2px 7px;
+        border-radius: 8px;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        font-size: 13px;
+        font-weight: 400;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1; 
+        letter-spacing: 0;
+        white-space: nowrap;
+        transform: translate(-100%, -50%);
+        font-variant-numeric: tabular-nums lining-nums;
+        font-feature-settings: "tnum" 1, "lnum" 1;
+        text-shadow: none;
+      }
+      body.market-maintenance .cp-pill,
+      body.market-weekend .cp-pill {
+        filter: saturate(0.2);
+      }
+
 body.market-maintenance .chart-wrap svg text,
       body.market-weekend .chart-wrap svg text {
       fill: rgba(186,196,210,0.95);
@@ -806,6 +833,7 @@ body.market-maintenance .chart-wrap svg text,
             <path id="silver7d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
             <rect id="silver7d-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
           </svg>
+          <div class="cp-pill" id="silver7d-cpill" style="display:none;"></div>
           <div class="chart-meta" aria-hidden="true"></div>
         </div>
       </section>
@@ -823,6 +851,7 @@ body.market-maintenance .chart-wrap svg text,
             <path id="silver1m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
             <rect id="silver1m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
           </svg>
+          <div class="cp-pill" id="silver1m-cpill" style="display:none;"></div>
           <div class="chart-meta" aria-hidden="true"></div>
         </div>
       </section>
@@ -844,6 +873,7 @@ body.market-maintenance .chart-wrap svg text,
             <path id="silver12m-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
             <rect id="silver12m-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
           </svg>
+          <div class="cp-pill" id="silver12m-cpill" style="display:none;"></div>
           <div class="chart-meta" aria-hidden="true"></div>
         </div>
       </section>
@@ -1373,8 +1403,58 @@ function fmtAxisPrice(v) {
         const tag = svgEl.querySelector("#" + tagId);
         if (line) line.setAttribute("opacity", "0");
         if (tag) { tag.setAttribute("opacity", "0"); tag.innerHTML = ""; }
+
+        // Also hide any HTML overlay current-price pill for this chart.
+        if (svgEl && svgEl.id) {
+          const pillId = svgEl.id === "silver7d-svg" ? "silver7d-cpill"
+                        : (svgEl.id === "silver1m-svg" ? "silver1m-cpill"
+                        : (svgEl.id === "silver12m-svg" ? "silver12m-cpill" : null));
+          if (pillId) {
+            const pillEl = document.getElementById(pillId);
+            if (pillEl) pillEl.style.display = "none";
+          }
+        }
       }
       
+
+      function setCurrentPricePill({ svgEl, pillEl, xSvg, ySvg, xPx, yPx, text, fill, visible }) {
+        if (!pillEl) return;
+        if (!visible) {
+          pillEl.style.display = "none";
+          return;
+        }
+
+        // Prefer pixel anchoring (robust when SVG elements are inside transformed <g> groups).
+        const wrapEl = svgEl.closest(".chart-wrap") || svgEl.parentElement;
+        const wrapRect = wrapEl ? wrapEl.getBoundingClientRect() : null;
+        const svgRect = svgEl.getBoundingClientRect();
+
+        const vb = (svgEl.getAttribute("viewBox") || "").trim().split(/\s+/).map(Number);
+        const vbW = (vb.length === 4 && Number.isFinite(vb[2])) ? vb[2] : 1000;
+        const vbH = (vb.length === 4 && Number.isFinite(vb[3])) ? vb[3] : 290;
+
+        const sx = svgRect.width / vbW;
+        const sy = svgRect.height / vbH;
+
+        let topPx = (Number.isFinite(yPx) && wrapRect)
+          ? yPx
+          : ((wrapRect ? (svgRect.top - wrapRect.top) : 0) + (ySvg * sy));
+
+        let leftPx = (Number.isFinite(xPx) && wrapRect)
+          ? xPx
+          : ((wrapRect ? (svgRect.left - wrapRect.left) : 0) + (xSvg * sx));
+
+        // Align pill text with the y-axis tick text column by accounting for the pill's right padding.
+        // We anchor the pill's *text* right edge to the tick column, not the pill's outer edge.
+        leftPx += 7;
+
+        pillEl.textContent = text;
+        pillEl.style.background = fill;
+        pillEl.style.left = leftPx + "px";
+        pillEl.style.top  = topPx + "px";
+        pillEl.style.display = "block";
+      }
+
       function renderCurrentPriceLine({ svgEl, lineId, tagId, x0, x1, y0, y1, yFor, labelX, currentPrice, currentDir, marketIsOpen }) {
       const cp = Number(currentPrice);
       if (!Number.isFinite(cp)) {
@@ -1401,45 +1481,39 @@ function fmtAxisPrice(v) {
       const tagText = fmtChartPrice(cp);
       tag.innerHTML = "";
 
-      // Yahoo-style: show current price as a right-side axis label in the axis lane (subtle pill for readability).
+      // SVG tag group no longer renders the current price label; we use an HTML overlay pill for crisp edges.
+      tag.setAttribute("opacity", "0");
 
-      const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      t.setAttribute("class", "price-tag-text");
-      t.setAttribute("x", String(labelX));
-      t.setAttribute("y", String(yCP));
-      t.setAttribute("text-anchor", "end");
-      t.setAttribute("dominant-baseline", "middle");
-      t.setAttribute("fill", "#ffffff");
-      t.textContent = tagText;
+      const pillId = svgEl.id === "silver7d-svg" ? "silver7d-cpill"
+                    : (svgEl.id === "silver1m-svg" ? "silver1m-cpill" : null);
+      const pillEl = pillId ? document.getElementById(pillId) : null;
 
-      tag.appendChild(t);
-
-      // Subtle pill behind the text (prevents ambiguity when it aligns near a tick label).
       let pillFill = "rgb(148,163,184)";
       if (currentDir === "up") pillFill = "rgb(34,197,94)";
       else if (currentDir === "down") pillFill = "rgb(239,68,68)";
       if (!marketIsOpen) pillFill = "rgb(148,163,184)";
 
-      try {
-        const bb = t.getBBox();
-        const padX = 6;
-        const padY = 3;
-        const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        r.setAttribute("x", String(bb.x - padX));
-        r.setAttribute("y", String(bb.y - padY));
-        r.setAttribute("width", String(bb.width + padX * 2));
-        r.setAttribute("height", String(bb.height + padY * 2));
-        r.setAttribute("rx", "6");
-        r.setAttribute("ry", "6");
-        r.setAttribute("fill", pillFill);
-        r.setAttribute("stroke", "none");
-        r.setAttribute("stroke-width", "0");
-        tag.insertBefore(r, t);
-      } catch (e) {
-        // If bbox fails for any reason, just keep the text.
-      }
+      const axisTickXPx = (() => {
+        const wrapEl = svgEl.closest(".chart-wrap") || svgEl.parentElement;
+        const wrapRect = wrapEl ? wrapEl.getBoundingClientRect() : null;
+        const t = svgEl.querySelector("text.y-tick");
+        if (t && wrapRect) {
+          const r = t.getBoundingClientRect();
+          return r.right - wrapRect.left;
+        }
+        return NaN;
+      })();
 
-      tag.setAttribute("opacity", "1");
+      setCurrentPricePill({
+        svgEl,
+        pillEl,
+        xPx: axisTickXPx,
+        xSvg: labelX,
+        ySvg: yCP,
+        text: tagText,
+        fill: pillFill,
+        visible: true
+      });
       const base = tagId.replace(/-curtag$/, "");
       const crosshair = svgEl.querySelector("#" + base + "-crosshair");
       const tip = svgEl.querySelector("#" + base + "-tip");
@@ -1487,6 +1561,8 @@ function fmtAxisPrice(v) {
         yearlyCurLineEl.setAttribute("opacity", "0");
         yearlyCurTagEl.setAttribute("opacity", "0");
         yearlyCurTagEl.innerHTML = "";
+        const yPill = document.getElementById("silver12m-cpill");
+        if (yPill) yPill.style.display = "none";
       }
       
       function renderWeeklyBars({ rows, marketIsOpen, currentPrice, currentDir }) {
@@ -2198,47 +2274,37 @@ function fmtAxisPrice(v) {
 
           yearlyCurTagEl.innerHTML = "";
 
-          // Yahoo-style: current price label in the right-side axis lane.
-          const vb = (yearlyCurLineEl.ownerSVGElement.getAttribute("viewBox") || "").trim().split(/\s+/);
-          const svgW = (vb.length === 4 && Number.isFinite(Number(vb[2]))) ? Number(vb[2]) : (Number(yearlyCurLineEl.ownerSVGElement.getAttribute("width")) || (x1 + 56));
-          const labelXResolved = Math.max(x1 + 8, (Number.isFinite(svgW) ? (svgW - 10) : (x1 + 46)));
+          // SVG tag group no longer renders the current price label; we use an HTML overlay pill for crisp edges.
+          yearlyCurTagEl.setAttribute("opacity", "0");
 
-          const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          t.setAttribute("class", "price-tag-text");
-          t.setAttribute("x", String(labelX));
-          t.setAttribute("y", String(yCP));
-          t.setAttribute("text-anchor", "end");
-          t.setAttribute("dominant-baseline", "middle");
-          t.setAttribute("fill", "#ffffff");
-          t.textContent = tagText;
-
-          yearlyCurTagEl.appendChild(t);
-
-          // Subtle pill behind the text (prevents ambiguity when it aligns near a tick label).
           let pillFill = "rgb(148,163,184)";
-      if (currentDir === "up") pillFill = "rgb(34,197,94)";
-      else if (currentDir === "down") pillFill = "rgb(239,68,68)";
-      if (!marketIsOpen) pillFill = "rgb(148,163,184)";
+          if (currentDir === "up") pillFill = "rgb(34,197,94)";
+          else if (currentDir === "down") pillFill = "rgb(239,68,68)";
+          if (!marketIsOpen) pillFill = "rgb(148,163,184)";
 
-          try {
-            const bb = t.getBBox();
-            const padX = 6;
-            const padY = 3;
-            const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            r.setAttribute("x", String(bb.x - padX));
-            r.setAttribute("y", String(bb.y - padY));
-            r.setAttribute("width", String(bb.width + padX * 2));
-            r.setAttribute("height", String(bb.height + padY * 2));
-            r.setAttribute("rx", "6");
-            r.setAttribute("ry", "6");
-            r.setAttribute("fill", pillFill);
-            r.setAttribute("stroke", "none");
-            r.setAttribute("stroke-width", "0");
-            yearlyCurTagEl.insertBefore(r, t);
-          } catch (e) {
-            // If bbox fails for any reason, just keep the text.
-          };
-          yearlyCurTagEl.setAttribute("opacity", "1");
+          const pillEl = document.getElementById("silver12m-cpill");
+          const yearlySvg = yearlyCurLineEl.ownerSVGElement;
+          const axisTickXPx = (() => {
+            const wrapEl = yearlySvg.closest(".chart-wrap") || yearlySvg.parentElement;
+            const wrapRect = wrapEl ? wrapEl.getBoundingClientRect() : null;
+            const t = yearlySvg.querySelector("text.y-tick");
+            if (t && wrapRect) {
+              const r = t.getBoundingClientRect();
+              return r.right - wrapRect.left;
+            }
+            return NaN;
+          })();
+
+          setCurrentPricePill({
+            svgEl: yearlySvg,
+            pillEl,
+            xPx: axisTickXPx,
+        xSvg: labelX,
+            ySvg: yCP,
+            text: tagText,
+            fill: pillFill,
+            visible: true
+          });
 }
       
         function hideTip() {
