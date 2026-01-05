@@ -1280,7 +1280,7 @@
         if (tag) { tag.setAttribute("opacity", "0"); tag.innerHTML = ""; }
       }
       
-      function renderCurrentPriceLine({ svgEl, lineId, tagId, x0, x1, y0, y1, yFor, currentPrice, currentDir, marketIsOpen }) {
+      function renderCurrentPriceLine({ svgEl, lineId, tagId, x0, x1, y0, y1, yFor, labelX, currentPrice, currentDir, marketIsOpen }) {
       const cp = Number(currentPrice);
       if (!Number.isFinite(cp)) {
       hideLineAndTag(svgEl, lineId, tagId);
@@ -1309,11 +1309,11 @@
       // Yahoo-style: show current price as a right-side axis label (no pill inside plot).
       const vb = (svgEl.getAttribute("viewBox") || "").trim().split(/\s+/);
       const svgW = (vb.length === 4 && Number.isFinite(Number(vb[2]))) ? Number(vb[2]) : (Number(svgEl.getAttribute("width")) || (x1 + 56));
-      const labelX = Math.max(x1 + 8, (Number.isFinite(svgW) ? (svgW - 10) : (x1 + 46)));
+      const labelXResolved = Number.isFinite(labelX) ? labelX : Math.max(x1 + 8, (Number.isFinite(svgW) ? (svgW - 10) : (x1 + 46)));
 
       const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
       t.setAttribute("class", "price-tag-text");
-      t.setAttribute("x", String(labelX));
+      t.setAttribute("x", String(labelXResolved));
       t.setAttribute("y", String(yCP));
       t.setAttribute("text-anchor", "end");
       t.setAttribute("dominant-baseline", "middle");
@@ -1435,7 +1435,7 @@
       
           const y = yRaw;
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", labelX);
+          tx.setAttribute("x", labelXResolved);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
@@ -1538,6 +1538,7 @@
           lineId: "silver7d-curline",
           tagId: "silver7d-curtag",
           x0, x1, y0, y1, yFor,
+          labelX,
           currentPrice,
           currentDir,
           marketIsOpen
@@ -1696,7 +1697,7 @@
       
           const y = yRaw;
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", labelX);
+          tx.setAttribute("x", labelXResolved);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
@@ -1793,6 +1794,7 @@
           lineId: "silver1m-curline",
           tagId: "silver1m-curtag",
           x0, x1, y0, y1, yFor,
+          labelX,
           currentPrice,
           currentDir,
           marketIsOpen
@@ -1951,7 +1953,7 @@
       
           const y = yRaw;
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          tx.setAttribute("x", labelX);
+          tx.setAttribute("x", labelXResolved);
           tx.setAttribute("text-anchor", "end");
           tx.setAttribute("y", y);
           tx.setAttribute("dominant-baseline", "middle");
@@ -2092,11 +2094,11 @@
           // Yahoo-style: current price label in the right-side axis lane.
           const vb = (yearlyCurLineEl.ownerSVGElement.getAttribute("viewBox") || "").trim().split(/\s+/);
           const svgW = (vb.length === 4 && Number.isFinite(Number(vb[2]))) ? Number(vb[2]) : (Number(yearlyCurLineEl.ownerSVGElement.getAttribute("width")) || (x1 + 56));
-          const labelX = Math.max(x1 + 8, (Number.isFinite(svgW) ? (svgW - 10) : (x1 + 46)));
+          const labelXResolved = Number.isFinite(labelX) ? labelX : Math.max(x1 + 8, (Number.isFinite(svgW) ? (svgW - 10) : (x1 + 46)));
 
           const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
           t.setAttribute("class", "price-tag-text");
-          t.setAttribute("x", String(labelX));
+          t.setAttribute("x", String(labelXResolved));
           t.setAttribute("y", String(yCP));
           t.setAttribute("text-anchor", "end");
           t.setAttribute("dominant-baseline", "middle");
