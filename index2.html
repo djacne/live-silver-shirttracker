@@ -870,6 +870,7 @@ body.market-maintenance .chart-wrap svg text,
       </section>
     </div>
     <script>
+
       const BACKEND_URL = "https://api.dansretirement.com/";
 
       // Debug safety net: surface real JS errors even when UI shows "Error fetching prices"
@@ -1334,25 +1335,7 @@ function fmtAxisPrice(v) {
         return ticks;
       }
 
-        const span = maxVal - minVal;
-        const step = niceNumber(span / (count - 1));
 
-        // Pick a start on the step grid such that [start, start+(count-1)*step] covers [minVal, maxVal].
-        let start = Math.floor(minVal / step) * step;
-        let end = start + (count - 1) * step;
-        if (end < maxVal) {
-          start = Math.ceil((maxVal - (count - 1) * step) / step) * step;
-          end = start + (count - 1) * step;
-        }
-
-        const ticks = Array.from({ length: count }, (_, i) => start + i * step);
-
-        // Normalize -0 to 0 to avoid "-0" labels.
-        for (let i = 0; i < ticks.length; i++) {
-          if (Object.is(ticks[i], -0)) ticks[i] = 0;
-        }
-        return ticks;
-      }
 
       function getChartPads(mobile, kind) {
         if (mobile) {
@@ -2620,6 +2603,7 @@ function fmtAxisPrice(v) {
         await loadImageLists();
         if (!applyForcedModeIfAny()) refreshAllOnce();
       })();
-    </script>
+    
+</script>
   </body>
 </html>
