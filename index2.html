@@ -1353,6 +1353,40 @@ function fmtAxisPrice(v) {
         const rawMin = minVal - range * Math.max(0, bottomBias);
         const rawMax = maxVal + range * Math.max(0, topPadFrac);
 
+        const preferStep = Number.isFinite(opts.preferStep) && opts.preferStep > 0 ? opts.preferStep : 0;
+        if (preferStep > 0) {
+          const rawRange = rawMax - rawMin;
+          const span = (count - 1) * preferStep;
+          if (Number.isFinite(rawRange) && rawRange <= span + 1e-12) {
+            const bottomBias = Number.isFinite(opts.bottomBias) ? opts.bottomBias : 0.50;
+            let start = rawMin - (span - rawRange) * bottomBias;
+            start = Math.floor(start / preferStep) * preferStep;
+            let end = start + span;
+
+            if (end < rawMax - 1e-12) {
+              end = Math.ceil(rawMax / preferStep) * preferStep;
+              start = end - span;
+            }
+            if (start > rawMin + 1e-12) {
+              start = Math.floor(rawMin / preferStep) * preferStep;
+              end = start + span;
+            }
+
+            if (opts.hardZero && start < 0) {
+              start = 0;
+              end = start + span;
+              if (end < rawMax - 1e-12) {
+                end = Math.ceil(rawMax / preferStep) * preferStep;
+                start = Math.max(0, end - span);
+              }
+            }
+
+            const ticks = [];
+            for (let i = 0; i < count; i++) ticks.push(start + i * preferStep);
+            return ticks;
+          }
+        }
+
         const targetSpan = rawMax - rawMin;
         const roughStep = targetSpan / Math.max(1, (count - 1));
 
@@ -1380,16 +1414,10 @@ function fmtAxisPrice(v) {
         const baseNice = niceStep(roughStep);
         const probes = [0.25, 0.33, 0.5, 0.67, 0.8, 1, 1.25, 1.5, 2].map(k => baseNice * k);
         const steps = Array.from(new Set(probes.map(s => niceStep(s)))).filter(s => Number.isFinite(s) && s > 0).sort((a,b)=>a-b);
-        const minStep = Number.isFinite(opts.minStep) && opts.minStep > 0 ? opts.minStep : 0;
-        const stepsFiltered = minStep > 0 ? steps.filter(s => s >= minStep) : steps;
-        const stepsToTry = stepsFiltered.length ? stepsFiltered : steps;
-        const forceStep = Number.isFinite(opts.forceStep) && opts.forceStep > 0 ? opts.forceStep : 0;
-        const stepsFinal = forceStep > 0 ? [forceStep] : stepsToTry;
-
         const maxHeadroom = range * Math.max(0.0001, headroomCapFrac);
 
         let best = null;
-        for (const step of stepsFinal) {
+        for (const step of steps) {
           const ticks = buildTicks(step);
           const start = ticks[0];
           const end = ticks[ticks.length - 1];
@@ -1408,7 +1436,7 @@ function fmtAxisPrice(v) {
 
         if (!best) {
           let fallback = null;
-          for (const step of stepsToTry) {
+          for (const step of steps) {
             const ticks = buildTicks(step);
             const start = ticks[0];
             const end = ticks[ticks.length - 1];
@@ -1422,35 +1450,6 @@ function fmtAxisPrice(v) {
         }
 
         return best.ticks;
-      }
-
-
-      function tickCountForKind(kind) {
-        if (kind === "weekly") return 4;
-        if (kind === "monthly") return 4;
-        if (kind === "yearly") return 5;
-        return 5;
-      }
-
-      function adjustedTickCount(baseCount, innerH) {
-        const minBandPx = 44;
-        if (!Number.isFinite(innerH)) return baseCount;
-        if (innerH < (baseCount - 1) * minBandPx) return Math.max(3, baseCount - 1);
-        return baseCount;
-      }
-
-
-      function minStepForKind(kind) {
-        if (kind === "weekly") return 5;
-        if (kind === "monthly") return 5;
-        if (kind === "yearly") return 5;
-        return 0;
-      }
-
-      function forceStepForKind(kind) {
-        if (kind === "weekly") return 5;
-        if (kind === "monthly") return 5;
-        return 0;
       }
 
       function getChartPads(mobile, kind) {
@@ -1494,7 +1493,6 @@ function fmtAxisPrice(v) {
           const pillId = svgEl.id === "silver7d-svg" ? "silver7d-cpill"
                         : (svgEl.id === "silver1m-svg" ? "silver1m-cpill"
                         : (svgEl.id === "silver12m-svg" ? "silver12m-cpill" : null));
-
           if (pillId) {
             const pillEl = document.getElementById(pillId);
             if (pillEl) pillEl.style.display = "none";
@@ -1530,9 +1528,6 @@ function fmtAxisPrice(v) {
           : ((wrapRect ? (svgRect.left - wrapRect.left) : 0) + (xSvg * sx));
 
         leftPx += 7;
-
-        topPx = Math.round(topPx);
-        leftPx = Math.round(leftPx);
 
         pillEl.textContent = text;
         pillEl.style.background = fill;
@@ -1688,7 +1683,7 @@ function fmtAxisPrice(v) {
         const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
         weeklyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
       
-        const yTicks = makeYahooTicks(pts.map(p => p.value), currentPrice, adjustedTickCount(tickCountForKind("weekly"), innerH), { hardZero: false, minStep: minStepForKind("weekly"), forceStep: forceStepForKind("weekly"), topPadFrac: (mobile ? 0.040 : 0.030), bottomBias: (mobile ? 0.55 : 0.50), minRangeAbs: 0.5, headroomCapFrac: 0.12 });
+        const yTicks = makeYahooTicks(pts.map(p => p.value), currentPrice, 4, { preferStep: 5, topPadFrac: (mobile ? 0.040 : 0.030), bottomBias: (mobile ? 0.50 : 0.50), minRangeAbs: 0.5, headroomCapFrac: 0.12 });
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -1946,7 +1941,7 @@ function fmtAxisPrice(v) {
         const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
         monthlyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
       
-        const yTicks = makeYahooTicks(pts.map(p => p.value), currentPrice, adjustedTickCount(tickCountForKind("monthly"), innerH), { hardZero: false, minStep: minStepForKind("monthly"), forceStep: forceStepForKind("monthly"), topPadFrac: (mobile ? 0.040 : 0.030), bottomBias: (mobile ? 0.60 : 0.55), minRangeAbs: 0.5, headroomCapFrac: 0.12 });
+        const yTicks = makeYahooTicks(pts.map(p => p.value), currentPrice, 6, { topPadFrac: (mobile ? 0.040 : 0.030), bottomBias: (mobile ? 0.60 : 0.55), minRangeAbs: 0.5, headroomCapFrac: 0.12 });
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
@@ -2198,7 +2193,7 @@ function fmtAxisPrice(v) {
         const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
         yearlyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
       
-        const yTicks = makeYahooTicks(pts.map(p => p.value), currentPrice, adjustedTickCount(tickCountForKind("yearly"), innerH), { hardZero: true, minStep: minStepForKind("yearly"), topPadFrac: (mobile ? 0.035 : 0.030), bottomBias: (mobile ? 0.70 : 0.65), minRangeAbs: 0.5, headroomCapFrac: 0.15 });
+        const yTicks = makeYahooTicks(pts.map(p => p.value), currentPrice, 6, { topPadFrac: (mobile ? 0.035 : 0.030), bottomBias: (mobile ? 0.70 : 0.65), minRangeAbs: 0.5, headroomCapFrac: 0.15 });
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
