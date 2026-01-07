@@ -2022,7 +2022,9 @@ function clearWeeklyChart() {
           const yTop = yFor(v);
           const h = Math.max(1, yBase - yTop);
       
-          const prev = (i > 0) ? pts[i - 1].value : v;
+          const prev = (i > 0)
+            ? pts[i - 1].value
+            : (currentDir === "up" ? (v - 1e-9) : (currentDir === "down" ? (v + 1e-9) : v));
           const isUp = v >= prev;
           const isFlat = v === prev;
       
@@ -2280,7 +2282,9 @@ function clearWeeklyChart() {
           const yTop = yFor(v);
           const h = Math.max(1, yBase - yTop);
       
-          const prev = (i > 0) ? pts[i - 1].value : v;
+          const prev = (i > 0)
+            ? pts[i - 1].value
+            : (currentDir === "up" ? (v - 1e-9) : (currentDir === "down" ? (v + 1e-9) : v));
           const isUp = v >= prev;
           const isFlat = v === prev;
       
