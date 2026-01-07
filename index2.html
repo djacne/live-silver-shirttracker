@@ -835,6 +835,8 @@ body.market-maintenance .chart-wrap svg text,
         <div class="chart-wrap">
           <svg id="silver1d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 1-day intraday chart">
             <g id="silver1d-grid"></g>
+            <line id="silver1d-curline" class="curline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+            <g id="silver1d-curtag" opacity="0"></g>
             <line id="silver1d-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
             <line id="silver1d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
             <g id="silver1d-bars"></g>
@@ -844,6 +846,7 @@ body.market-maintenance .chart-wrap svg text,
             <path id="silver1d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
             <rect id="silver1d-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
           </svg>
+          <div class="cp-pill" id="silver1d-cpill" style="display:none;"></div>
           <div class="chart-meta" aria-hidden="true"></div>
         </div>
       </section>
@@ -1540,9 +1543,10 @@ function fmtAxisPrice(v) {
         if (tag) { tag.setAttribute("opacity", "0"); tag.innerHTML = ""; }
 
         if (svgEl && svgEl.id) {
-          const pillId = svgEl.id === "silver7d-svg" ? "silver7d-cpill"
+          const pillId = svgEl.id === "silver1d-svg" ? "silver1d-cpill"
+                        : (svgEl.id === "silver7d-svg" ? "silver7d-cpill"
                         : (svgEl.id === "silver1m-svg" ? "silver1m-cpill"
-                        : (svgEl.id === "silver12m-svg" ? "silver12m-cpill" : null));
+                        : (svgEl.id === "silver12m-svg" ? "silver12m-cpill" : null)));
           if (pillId) {
             const pillEl = document.getElementById(pillId);
             if (pillEl) pillEl.style.display = "none";
@@ -1614,8 +1618,10 @@ function fmtAxisPrice(v) {
 
       tag.setAttribute("opacity", "0");
 
-      const pillId = svgEl.id === "silver7d-svg" ? "silver7d-cpill"
-                    : (svgEl.id === "silver1m-svg" ? "silver1m-cpill" : null);
+      const pillId = svgEl.id === "silver1d-svg" ? "silver1d-cpill"
+                    : (svgEl.id === "silver7d-svg" ? "silver7d-cpill"
+                    : (svgEl.id === "silver1m-svg" ? "silver1m-cpill"
+                    : (svgEl.id === "silver12m-svg" ? "silver12m-cpill" : null)));
       const pillEl = pillId ? document.getElementById(pillId) : null;
 
       let pillFill = "rgb(148,163,184)";
@@ -1664,6 +1670,8 @@ function fmtAxisPrice(v) {
         intradayTipEl.innerHTML = "";
         intradayReflineEl.setAttribute("opacity", "0");
         intradayCrosshairEl.setAttribute("opacity", "0");
+        const svgEl = intradayHitEl.ownerSVGElement;
+        hideLineAndTag(svgEl, "silver1d-curline", "silver1d-curtag");
       }
 
       function pickIntradayStep(range) {
@@ -1864,6 +1872,25 @@ const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
           r.setAttribute("fill", fill);
           intradayBarsEl.appendChild(r);
         }
+
+        const currentDir = (Number.isFinite(Number(deltaSinceLast)) && Number(deltaSinceLast) !== 0)
+          ? (Number(deltaSinceLast) > 0 ? "up" : "down")
+          : "same";
+
+        renderCurrentPriceLine({
+          svgEl: svg,
+          lineId: "silver1d-curline",
+          tagId: "silver1d-curtag",
+          x0: String(x0),
+          x1: String(x0 + innerW),
+          y0: yTop,
+          y1: yBot,
+          yFor,
+          labelX: x0 + innerW,
+          currentPrice: (Number.isFinite(cp) ? cp : hold),
+          currentDir,
+          marketIsOpen
+        });
 
         intradayBorderEl.setAttribute("d", borderPath(padL, padT, W - padR - axisLane, H - padB));
       }
