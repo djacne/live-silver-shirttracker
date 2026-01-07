@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -1606,6 +1607,26 @@ function fmtUpdatedAt(updatedAt) {
         pillEl.style.display = "block";
       }
 
+// --- Current price pill/line relayout (mobile viewport changes) ---
+const __cpRelayoutState = new Map();
+let __cpRelayoutRAF = 0;
+function scheduleCurrentPriceRelayout() {
+  if (__cpRelayoutRAF) cancelAnimationFrame(__cpRelayoutRAF);
+  __cpRelayoutRAF = requestAnimationFrame(() => {
+    __cpRelayoutRAF = 0;
+    __cpRelayoutState.forEach((args) => {
+      try { renderCurrentPriceLine(args); } catch (e) {}
+    });
+  });
+}
+window.addEventListener("resize", scheduleCurrentPriceRelayout, { passive: true });
+window.addEventListener("orientationchange", scheduleCurrentPriceRelayout, { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", scheduleCurrentPriceRelayout, { passive: true });
+  window.visualViewport.addEventListener("scroll", scheduleCurrentPriceRelayout, { passive: true });
+}
+
+
       function renderCurrentPriceLine({ svgEl, lineId, tagId, x0, x1, y0, y1, yFor, labelX, currentPrice, currentDir, marketIsOpen }) {
       const cp = Number(currentPrice);
       if (!Number.isFinite(cp)) {
@@ -1615,7 +1636,23 @@ function fmtUpdatedAt(updatedAt) {
       
       const { line, tag } = ensureLineAndTag(svgEl, lineId, tagId);
       
-      let curColor = "rgba(148,163,184,0.92)";
+      
+
+__cpRelayoutState.set(lineId, {
+  svgEl,
+  lineId,
+  tagId,
+  x0,
+  x1,
+  y0,
+  y1,
+  yFor,
+  labelX,
+  currentPrice: cp,
+  currentDir,
+  marketIsOpen
+});
+let curColor = "rgba(148,163,184,0.92)";
       if (currentDir === "up") curColor = "rgba(34,197,94,0.95)";
       else if (currentDir === "down") curColor = "rgba(239,68,68,0.95)";
       if (!marketIsOpen) curColor = "rgba(148,163,184,0.70)";
