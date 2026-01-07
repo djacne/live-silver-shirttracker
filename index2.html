@@ -1353,6 +1353,23 @@ function fmtAxisPrice(v) {
         const rawMin = minVal - range * Math.max(0, bottomBias);
         const rawMax = maxVal + range * Math.max(0, topPadFrac);
 
+        if (opts.softTop && Number.isFinite(opts.softTopStep) && opts.softTopStep > 0) {
+          const step = opts.softTopStep;
+          const top = Math.ceil(maxVal / step) * step - (step / 2);
+          const span = (count - 1) * step;
+          let start = top - span;
+
+          if (start > minVal) {
+            start = Math.floor(minVal / step) * step;
+          }
+
+          const ticks = [];
+          for (let i = 0; i < count; i++) {
+            ticks.push(top - i * step);
+          }
+          return ticks;
+        }
+
         const preferStep = Number.isFinite(opts.preferStep) && opts.preferStep > 0 ? opts.preferStep : 0;
         if (preferStep > 0) {
           const dataMin = minVal;
@@ -2196,7 +2213,7 @@ function fmtAxisPrice(v) {
         const x0 = padL, y0 = padT, x1 = padL + innerW, y1 = padT + innerH;
         yearlyBorderEl.setAttribute("d", `M ${x0} ${y0} L ${x1} ${y0} L ${x1} ${y1} L ${x0} ${y1} Z`);
       
-        const yTicks = makeYahooTicks(pts.map(p => p.value), currentPrice, 7, { preferStep: 10, hardZero: false, topPadFrac: (mobile ? 0.035 : 0.030), bottomBias: (mobile ? 0.50 : 0.50), minRangeAbs: 0.5, headroomCapFrac: 0.15 });
+        const yTicks = makeYahooTicks(pts.map(p => p.value), currentPrice, 7, { softTop: true, softTopStep: 10, topPadFrac: (mobile ? 0.035 : 0.030), bottomBias: (mobile ? 0.50 : 0.50), minRangeAbs: 0.5, headroomCapFrac: 0.15 });
         const yMin = Math.min(...yTicks);
         const yMax = Math.max(...yTicks);
       
