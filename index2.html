@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
   <head>
@@ -2623,12 +2622,7 @@ function clearWeeklyChart() {
             yearlyXLabelsEl.appendChild(tx);
           }
         } else {
-          const idxs = new Set([0, n - 1]);
-          for (let i = 0; i < n; i++) {
-            if (i % 3 === 0) idxs.add(i);
-          }
-          const ordered = Array.from(idxs).sort((a,b)=>a-b);
-      
+          const ordered = pickEvenTickIndices(n, 4);
           for (const i of ordered) {
             const x = xForIdx(i);
             const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
