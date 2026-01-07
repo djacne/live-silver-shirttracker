@@ -1843,8 +1843,8 @@ function fmtAxisPrice(v) {
         const flatFill = "rgba(148,163,184,0.85)";
         const closedFill = "rgba(148,163,184,0.45)";
 
-        for (let k = 1; k < eff.length; k++) {
-          const prev = eff[k-1].effClose;
+        for (let k = 0; k < eff.length; k++) {
+          const prev = (k === 0 ? eff[0].effClose : eff[k-1].effClose);
           const cur = eff[k].effClose;
 
           const open = prev;
