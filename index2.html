@@ -1688,7 +1688,7 @@ function fmtAxisPrice(v) {
         return ticks;
       }
 
-      function renderIntradayCandles({ rows, market, currentPrice }) {
+      function renderIntradayCandles({ rows, market, currentPrice, deltaSinceLast }) {
         clearIntradayChart();
         if (!Array.isArray(rows) || rows.length < 2) return;
 
@@ -1701,8 +1701,10 @@ function fmtAxisPrice(v) {
 
         if (ptsAll.length < 2) return;
 
+        let seededFlat = false;
         let pts = ptsAll.filter((p) => p.ts <= nowMs + 1);
         if (pts.length < 2) {
+          seededFlat = true;
           const startTs = ptsAll[0].ts;
           const step = (ptsAll[1] && Number.isFinite(ptsAll[1].ts) ? (ptsAll[1].ts - ptsAll[0].ts) : (30 * 60 * 1000)) || (30 * 60 * 1000);
           const slotNowRaw = Math.floor((nowMs - startTs) / step);
@@ -1793,15 +1795,15 @@ function fmtAxisPrice(v) {
           ln.setAttribute("y2", String(y));
           ln.setAttribute("stroke", gridStroke);
           ln.setAttribute("stroke-width", "1");
-          ln.setAttribute("stroke-dasharray", "2 5");
           intradayGridEl.appendChild(ln);
 
           const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
           tx.setAttribute("x", String(W - padR - 4));
-          tx.setAttribute("y", String(y + 4));
+          tx.setAttribute("y", String(y));
+          tx.setAttribute("dominant-baseline", "middle");
           tx.setAttribute("text-anchor", "end");
-          tx.setAttribute("class", "yaxis");
-          tx.textContent = fmtMoney(yTicks[i]);
+          tx.setAttribute("class", "y-tick");
+          tx.textContent = fmtAxisPrice(yTicks[i]);
           intradayYLabelsEl.appendChild(tx);
         }
 
@@ -1855,6 +1857,7 @@ const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
           let fill = flatFill;
           if (!marketIsOpen) fill = closedFill;
           else if (!eff[k].isLive) fill = "rgba(148,163,184,0.35)";
+          else if (seededFlat && Number.isFinite(Number(deltaSinceLast)) && Number(deltaSinceLast) !== 0) fill = (Number(deltaSinceLast) > 0 ? upFill : downFill);
           else if (close > open) fill = upFill;
           else if (close < open) fill = downFill;
 
@@ -2763,6 +2766,7 @@ function renderChartsFromData(data) {
       
         const silver = data?.metals?.silver || {};
         const currentPrice = silver?.price;
+        const deltaSinceLast = silver?.deltaSinceLast;
       
         const d = (silver?.direction || "same");
         const currentDir = (d === "same" ? "neutral" : d);
@@ -2772,7 +2776,7 @@ function renderChartsFromData(data) {
         const yearlyDir = dirFromChartRange(yearlyRows, currentPrice);
 
       
-        try { renderIntradayCandles({ rows: intradayRows, market, currentPrice }); } catch (err) { __DBG__.show(err, "renderIntradayCandles"); }
+        try { renderIntradayCandles({ rows: intradayRows, market, currentPrice, deltaSinceLast }); } catch (err) { __DBG__.show(err, "renderIntradayCandles"); }
         try { renderWeeklyBars({ rows: weeklyRows, marketIsOpen, currentPrice, currentDir: weeklyDir }); } catch (err) { __DBG__.show(err, "renderWeeklyBars"); }
         try { renderMonthlyBars({ rows: monthlyRows, marketIsOpen, currentPrice, currentDir: monthlyDir }); } catch (err) { __DBG__.show(err, "renderMonthlyBars"); }
         try { renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir: yearlyDir }); } catch (err) { __DBG__.show(err, "renderYearlyLine"); }
