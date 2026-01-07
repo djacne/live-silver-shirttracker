@@ -1117,7 +1117,24 @@ function fmtAxisPrice(v) {
         return n.toFixed(2);
       }
       
-      function fmtUpdatedAt(updatedAt) {
+      
+function pickEvenTickIndices(n, k) {
+  if (!n || n <= 0) return [];
+  if (!k || k <= 0) return [];
+  if (k >= n) return Array.from({length:n}, (_,i)=>i);
+  const out = [];
+  for (let j = 0; j < k; j++) {
+    const idx = Math.round((j * (n - 1)) / (k - 1));
+    if (out.length === 0 || out[out.length - 1] !== idx) out.push(idx);
+  }
+  while (out.length < k) {
+    const cand = out[out.length - 1] + 1;
+    if (cand < n) out.push(cand);
+    else break;
+  }
+  return out.slice(0, k);
+}
+function fmtUpdatedAt(updatedAt) {
         if (!updatedAt) return "—";
         const dt = new Date(updatedAt);
         if (Number.isNaN(dt.getTime())) return "—";
