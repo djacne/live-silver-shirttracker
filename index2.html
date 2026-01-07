@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -1700,8 +1701,27 @@ function fmtAxisPrice(v) {
 
         if (ptsAll.length < 2) return;
 
-        const pts = ptsAll.filter((p) => p.ts <= nowMs + 1);
-        if (pts.length < 2) return;
+        let pts = ptsAll.filter((p) => p.ts <= nowMs + 1);
+        if (pts.length < 2) {
+          const startTs = ptsAll[0].ts;
+          const step = (ptsAll[1] && Number.isFinite(ptsAll[1].ts) ? (ptsAll[1].ts - ptsAll[0].ts) : (30 * 60 * 1000)) || (30 * 60 * 1000);
+          const slotNowRaw = Math.floor((nowMs - startTs) / step);
+          const slotNow = Math.max(1, Math.min(48, Number.isFinite(slotNowRaw) ? slotNowRaw : 1));
+
+          let base = null;
+          for (let k = ptsAll.length - 1; k >= 0; k--) {
+            const p = ptsAll[k];
+            if (p.ts <= nowMs + 1 && Number.isFinite(p.close)) { base = p.close; break; }
+          }
+          if (!Number.isFinite(base) && Number.isFinite(currentPrice)) base = Number(currentPrice);
+          if (!Number.isFinite(base)) return;
+
+          const ts2 = startTs + slotNow * step;
+          pts = [
+            { i: 0, ts: startTs, t: "00:00", close: base },
+            { i: slotNow, ts: ts2, t: "", close: base },
+          ];
+        }
 
         let hold = null;
         for (let k = pts.length - 1; k >= 0; k--) {
