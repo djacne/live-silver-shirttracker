@@ -1864,6 +1864,7 @@ const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
 
           let fill = flatFill;
           if (!marketIsOpen) fill = closedFill;
+          else if (k === 0 && Number.isFinite(Number(deltaSinceLast)) && Number(deltaSinceLast) !== 0) fill = (Number(deltaSinceLast) > 0 ? upFill : downFill);
           else if (!eff[k].isLive) fill = "rgba(148,163,184,0.35)";
           else if (seededFlat && Number.isFinite(Number(deltaSinceLast)) && Number(deltaSinceLast) !== 0) fill = (Number(deltaSinceLast) > 0 ? upFill : downFill);
           else if (close > open) fill = upFill;
