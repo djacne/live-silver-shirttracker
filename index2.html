@@ -828,7 +828,26 @@ body.market-maintenance .chart-wrap svg text,
           </section>
         </div>
       </div>
+      
       <section class="card" style="margin-top:18px;">
+        <div class="section-title">1-Day Trend</div>
+        <div class="chart-wrap">
+          <svg id="silver1d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 1-day intraday chart">
+            <g id="silver1d-grid"></g>
+            <line id="silver1d-refline" class="refline" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+            <line id="silver1d-crosshair" class="crosshair" x1="0" x2="0" y1="0" y2="0" opacity="0"></line>
+            <g id="silver1d-bars"></g>
+            <g id="silver1d-xlabels"></g>
+            <g id="silver1d-ylabels"></g>
+            <g id="silver1d-tip" class="tipbox"></g>
+            <path id="silver1d-border" d="" fill="none" stroke="rgba(148,163,184,0.25)" stroke-width="1"></path>
+            <rect id="silver1d-hit" x="0" y="0" width="1000" height="290" fill="transparent"></rect>
+          </svg>
+          <div class="chart-meta" aria-hidden="true"></div>
+        </div>
+      </section>
+
+<section class="card" style="margin-top:18px;">
         <div class="section-title">7-Day Trend</div>
         <div class="chart-wrap">
           <svg id="silver7d-svg" viewBox="0 0 1000 290" role="img" aria-label="Silver 7-day trend chart">
@@ -972,7 +991,17 @@ body.market-maintenance .chart-wrap svg text,
       const sum12mLoEl = document.getElementById("sum-12m-lo");
       const sum12mRangeEl = document.getElementById("sum-12m-range");
       
-      const weeklyGridEl = document.getElementById("silver7d-grid");
+      
+      const intradayGridEl = document.getElementById("silver1d-grid");
+      const intradayBarsEl = document.getElementById("silver1d-bars");
+      const intradayReflineEl = document.getElementById("silver1d-refline");
+      const intradayXLabelsEl = document.getElementById("silver1d-xlabels");
+      const intradayYLabelsEl = document.getElementById("silver1d-ylabels");
+      const intradayBorderEl = document.getElementById("silver1d-border");
+      const intradayHitEl = document.getElementById("silver1d-hit");
+      const intradayCrosshairEl = document.getElementById("silver1d-crosshair");
+      const intradayTipEl = document.getElementById("silver1d-tip");
+const weeklyGridEl = document.getElementById("silver7d-grid");
       const weeklyBarsEl = document.getElementById("silver7d-bars");
       const weeklyReflineEl = document.getElementById("silver7d-refline");
       const weeklyXLabelsEl = document.getElementById("silver7d-xlabels");
@@ -1476,6 +1505,7 @@ function fmtAxisPrice(v) {
           if (kind === "weekly") return { padL: 10, padR: 18, padT: 8,  padB: 46 };
           if (kind === "monthly") return { padL: 10, padR: 18, padT: 8,  padB: 46 };
           if (kind === "yearly") return { padL: 10, padR: 18, padT: 8,  padB: 46 };
+          if (kind === "intraday") return { padL: 10, padR: 18, padT: 8,  padB: 46 };
           return { padL: 10, padR: 18, padT: 8,  padB: 34 };
         }
         return { padL: 20, padR: 14, padT: 12, padB: 36 };
@@ -1623,7 +1653,198 @@ function fmtAxisPrice(v) {
       if (hit) svgEl.appendChild(hit);
       }
       
-      function clearWeeklyChart() {
+      
+      function clearIntradayChart() {
+        intradayGridEl.innerHTML = "";
+        intradayBarsEl.innerHTML = "";
+        intradayXLabelsEl.innerHTML = "";
+        intradayYLabelsEl.innerHTML = "";
+        intradayBorderEl.setAttribute("d", "");
+        intradayTipEl.innerHTML = "";
+        intradayReflineEl.setAttribute("opacity", "0");
+        intradayCrosshairEl.setAttribute("opacity", "0");
+      }
+
+      function pickIntradayStep(range) {
+        const steps = [0.1, 0.25, 0.5, 1, 2, 5, 10, 20];
+        if (!Number.isFinite(range) || range <= 0) return 1;
+        for (const s of steps) {
+          if ((5 - 1) * s >= range) return s;
+        }
+        return 20;
+      }
+
+      function makeTopAnchoredTicks(minVal, maxVal, tickCount, step) {
+        const span = (tickCount - 1) * step;
+        let top = Math.ceil(maxVal / step) * step;
+        let bottom = top - span;
+        if (bottom > minVal) {
+          top += step;
+          bottom = top - span;
+        }
+        const ticks = [];
+        for (let i = 0; i < tickCount; i++) ticks.push(bottom + i * step);
+        return ticks;
+      }
+
+      function renderIntradayCandles({ rows, market, currentPrice }) {
+        clearIntradayChart();
+        if (!Array.isArray(rows) || rows.length < 2) return;
+
+        const nowMs = Date.now();
+        const marketIsOpen = !(market && market.isOpen === false);
+
+        const ptsAll = rows
+          .map((r, i) => ({ i, ts: Number(r?.ts), t: r?.t, close: (r?.close == null ? null : Number(r.close)) }))
+          .filter((p) => Number.isFinite(p.ts));
+
+        if (ptsAll.length < 2) return;
+
+        const pts = ptsAll.filter((p) => p.ts <= nowMs + 1);
+        if (pts.length < 2) return;
+
+        let hold = null;
+        for (let k = pts.length - 1; k >= 0; k--) {
+          if (Number.isFinite(pts[k].close)) { hold = pts[k].close; break; }
+        }
+        const cp = Number(currentPrice);
+        if (!Number.isFinite(hold) && Number.isFinite(cp)) hold = cp;
+        if (!Number.isFinite(hold)) return;
+
+        let min = Infinity, max = -Infinity;
+
+        // Build series of "effective closes" (fill nulls)
+        const eff = [];
+        let last = null;
+        for (let k = 0; k < pts.length; k++) {
+          const c = pts[k].close;
+          if (Number.isFinite(c)) {
+            last = c;
+            eff.push({ ...pts[k], effClose: c, isLive: true });
+          } else {
+            const v = Number.isFinite(last) ? last : hold;
+            eff.push({ ...pts[k], effClose: v, isLive: false });
+          }
+          const v = eff[eff.length - 1].effClose;
+          if (v < min) min = v;
+          if (v > max) max = v;
+        }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+        if (min === max) { min -= 0.5; max += 0.5; }
+
+        const mobile = isMobileNow();
+        const { W, H } = chartSize(mobile);
+
+        const svg = intradayHitEl.ownerSVGElement;
+        syncSvgBox(svg, W, H);
+
+        intradayCrosshairEl.setAttribute("y2", String(H));
+        intradayHitEl.setAttribute("width", String(W));
+        intradayHitEl.setAttribute("height", String(H));
+
+        const { padL, padR, padT, padB } = getChartPads(mobile, "intraday");
+        const axisLane = mobile ? 56 : 74;
+        const innerW = W - padL - padR - axisLane;
+        const innerH = H - padT - padB;
+
+        const tickCount = 5;
+        const range = max - min;
+        const step = pickIntradayStep(range);
+        const yTicks = makeTopAnchoredTicks(min, max, tickCount, step);
+
+        const yMin = yTicks[0];
+        const yMax = yTicks[yTicks.length - 1];
+
+        const x0 = padL;
+        const yTop = padT;
+        const yBot = padT + innerH;
+
+        const xForSlot = (slotIndex) => x0 + (slotIndex / 48) * innerW;
+        const yFor = (v) => yTop + (1 - (v - yMin) / (yMax - yMin)) * innerH;
+
+        // Grid + Y labels
+        const gridStroke = "rgba(148,163,184,0.22)";
+        for (let i = 0; i < yTicks.length; i++) {
+          const y = yFor(yTicks[i]);
+          const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          ln.setAttribute("x1", String(x0));
+          ln.setAttribute("x2", String(x0 + innerW));
+          ln.setAttribute("y1", String(y));
+          ln.setAttribute("y2", String(y));
+          ln.setAttribute("stroke", gridStroke);
+          ln.setAttribute("stroke-width", "1");
+          ln.setAttribute("stroke-dasharray", "2 5");
+          intradayGridEl.appendChild(ln);
+
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", String(W - padR - 4));
+          tx.setAttribute("y", String(y + 4));
+          tx.setAttribute("text-anchor", "end");
+          tx.setAttribute("class", "yaxis");
+          tx.textContent = fmtMoney(yTicks[i]);
+          intradayYLabelsEl.appendChild(tx);
+        }
+
+        // X labels: 12am-6am-12pm-6pm-12am
+        const xMarks = [
+          { slot: 0, label: "12am" },
+          { slot: 12, label: "6am" },
+          { slot: 24, label: "12pm" },
+          { slot: 36, label: "6pm" },
+          { slot: 48, label: "12am" },
+        ];
+        for (const m of xMarks) {
+          if (m.slot > 48) continue;
+          const x = xForSlot(m.slot);
+          if (x < x0 - 1 || x > x0 + innerW + 1) continue;
+          const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          tx.setAttribute("x", String(x));
+          tx.setAttribute("y", String(yBot + (mobile ? 28 : 30)));
+          tx.setAttribute("text-anchor", m.slot === 0 ? "start" : (m.slot === 48 ? "end" : "middle"));
+          tx.setAttribute("class", "xaxis");
+          tx.textContent = m.label;
+          intradayXLabelsEl.appendChild(tx);
+        }
+
+        // Bars (candles bodies only)
+        const barW = Math.max(2, Math.floor((innerW / 48) * 0.62));
+        const upFill = "rgba(34,197,94,0.95)";
+        const downFill = "rgba(239,68,68,0.95)";
+        const flatFill = "rgba(148,163,184,0.85)";
+        const closedFill = "rgba(148,163,184,0.45)";
+
+        for (let k = 1; k < eff.length; k++) {
+          const prev = eff[k-1].effClose;
+          const cur = eff[k].effClose;
+
+          const open = prev;
+          const close = cur;
+
+                    const x = xForSlot(eff[k].i);
+          const price = close;
+          const topY = yFor(price);
+          const h = Math.max(2, yBot - topY);
+const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          r.setAttribute("x", String(Math.round(x - barW/2)));
+          r.setAttribute("y", String(Math.round(topY)));
+          r.setAttribute("width", String(barW));
+          r.setAttribute("height", String(Math.round(h)));
+          r.setAttribute("rx", "0");
+          r.setAttribute("ry", "0");
+
+          let fill = flatFill;
+          if (!marketIsOpen) fill = closedFill;
+          else if (!eff[k].isLive) fill = "rgba(148,163,184,0.35)";
+          else if (close > open) fill = upFill;
+          else if (close < open) fill = downFill;
+
+          r.setAttribute("fill", fill);
+          intradayBarsEl.appendChild(r);
+        }
+
+        intradayBorderEl.setAttribute("d", borderPath(padL, padT, W - padR - axisLane, H - padB));
+      }
+function clearWeeklyChart() {
         weeklyGridEl.innerHTML = "";
         weeklyBarsEl.innerHTML = "";
         weeklyXLabelsEl.innerHTML = "";
@@ -2488,7 +2709,13 @@ function fmtAxisPrice(v) {
       }
       
       
-      function dirFromChartRange(rows, currentPrice) {
+      
+      function borderPath(x0, y0, x1, y1) {
+        const w = x1 - x0;
+        const h = y1 - y0;
+        return "M " + x0 + " " + y0 + " H " + (x0 + w) + " V " + (y0 + h) + " H " + x0 + " Z";
+      }
+function dirFromChartRange(rows, currentPrice) {
         const cp = Number(currentPrice);
         if (!Number.isFinite(cp) || !Array.isArray(rows) || rows.length === 0) return "neutral";
 
@@ -2512,6 +2739,7 @@ function renderChartsFromData(data) {
         const weeklyRows = data?.weekly?.silver || [];
         const monthlyRows = data?.monthly?.silver || [];
         const yearlyRows = data?.yearly?.silver12m || [];
+        const intradayRows = data?.intraday?.silver || [];
       
         const silver = data?.metals?.silver || {};
         const currentPrice = silver?.price;
@@ -2524,6 +2752,7 @@ function renderChartsFromData(data) {
         const yearlyDir = dirFromChartRange(yearlyRows, currentPrice);
 
       
+        try { renderIntradayCandles({ rows: intradayRows, market, currentPrice }); } catch (err) { __DBG__.show(err, "renderIntradayCandles"); }
         try { renderWeeklyBars({ rows: weeklyRows, marketIsOpen, currentPrice, currentDir: weeklyDir }); } catch (err) { __DBG__.show(err, "renderWeeklyBars"); }
         try { renderMonthlyBars({ rows: monthlyRows, marketIsOpen, currentPrice, currentDir: monthlyDir }); } catch (err) { __DBG__.show(err, "renderMonthlyBars"); }
         try { renderYearlyLine({ rows: yearlyRows, marketIsOpen, currentPrice, currentDir: yearlyDir }); } catch (err) { __DBG__.show(err, "renderYearlyLine"); }
