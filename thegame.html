@@ -49,6 +49,15 @@
     width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
     background:rgba(20,20,40,.6);color:#fff;font-size:20px;cursor:pointer;}
 
+  #rotateHint{color:#ffd94a;font-size:13px;display:none;font-weight:bold;}
+  @media (orientation: portrait){
+    #rotateHint{display:block;}
+    .overlay{gap:9px;}
+    .overlay img{width:min(36vw,190px);}
+    .overlay h1{font-size:clamp(17px,5.6vw,26px);}
+    .btn{padding:12px 22px;font-size:15px;}
+  }
+
   #msg{position:fixed;top:18%;left:50%;transform:translateX(-50%);z-index:15;pointer-events:none;
     color:#fff;background:var(--red);padding:8px 16px;border-radius:8px;font-weight:bold;
     font-size:clamp(10px,2.9vw,20px);letter-spacing:1px;border:3px solid #fff;
@@ -68,7 +77,9 @@
   <div class="btnrow">
     <button class="btn" id="startBtn">Start Stacking</button>
     <button class="btn alt" id="helpBtn">Help</button>
+    <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
+  <p id="rotateHint">&#128241;&#8635; Rotate to landscape for the full Dan experience</p>
 </div>
 
 <div id="helpScreen" class="overlay hidden">
@@ -155,10 +166,10 @@ const Audio8 = (() => {
     level: { bpm:152,
       bass:[36,36,43,36,41,41,43,43, 36,36,43,36,45,45,43,41, 36,36,43,36,41,41,43,43, 33,33,40,33,43,43,47,48],
       lead:[60,-1,64,67,-1,64,60,-1, 65,-1,69,-1,67,-1,64,-1, 60,-1,64,67,-1,72,-1,71, 69,-1,65,69,67,-1,-1,-1] },
-    // skunk: absurdly dramatic march, as if the skunk is a final boss (he is)
-    skunk: { bpm:132,
-      bass:[33,-1,33,-1,33,33,-1,33, 32,-1,32,-1,32,32,-1,32, 33,-1,33,-1,33,33,-1,33, 36,-1,35,-1,34,-1,33,-1],
-      lead:[-1,-1,69,-1,68,-1,69,-1, 72,-1,-1,-1,68,69,68,64, -1,-1,69,72,69,72,75,-1, 74,73,72,71,70,69,68,-1] },
+    // skunk: an absurd oompah doom-march, the most serious music ever written about a skunk
+    skunk: { bpm:136,
+      bass:[33,-1,45,-1,33,-1,45,-1, 31,-1,43,-1,31,-1,43,-1, 33,-1,45,-1,33,-1,45,-1, 29,-1,41,-1,30,-1,42,-1],
+      lead:[69,-1,-1,69,-1,-1,68,-1, 69,-1,72,-1,69,-1,-1,-1, 76,77,76,77,76,77,74,-1, 72,-1,68,-1,69,-1,-1,-1] },
   };
   function play(name){ song=SONGS[name]; step=0; if(AC) nextT=AC.currentTime+0.06;
     if(!timer) timer=setInterval(sched, 30); }
@@ -190,6 +201,10 @@ const Audio8 = (() => {
     oneUp(){ [660,784,988,1319,1568].forEach((f,i)=>tone(f,t()+i*0.07,i===4?0.3:0.09,'square',0.16)); },
     bossHit(){ tone(700,t(),0.09,'square',0.18,null,300); nz(t(),0.04,0.15); },
     cackle(){ [740,660,590,520,740,660].forEach((f,i)=>{ tone(f,t()+i*0.09,0.07,'square',0.14); nz(t()+i*0.09,0.02,0.05); }); },
+    sadTrombone(){ [233,220,207,185].forEach((f,i)=>tone(f,t()+i*0.36,i===3?0.9:0.32,'sawtooth',0.17,null,f*0.93)); },
+    footstep(){ nz(t(),0.05,0.28); tone(85,t(),0.09,'sine',0.32,null,55); },
+    checkpoint(){ tone(880,t(),0.07,'square',0.11); tone(1175,t()+0.07,0.14,'square',0.11); },
+    star(){ [523,659,784,1047,1319].forEach((f,i)=>tone(f,t()+i*0.05,0.1,'square',0.13)); },
   };
   function toggleMute(){ muted=!muted; if(master) master.gain.value = muted?0:0.5; return muted; }
   return { init, resume, play, stop, S, toggleMute };
@@ -239,7 +254,7 @@ function mkTwitch(x, range){ return {type:'twitch', x, y:GROUND_Y-32, w:24, h:32
 const BRIDGE_Y = 282, WATER_L = 2500, WATER_R = 3050;
 
 function buildLevel(n){
-  level = n; pops = [];
+  level = n; pops = []; floatTexts = []; checkpointX = 60;
   if(n === 1){
     LEVEL_W = 4600; FLAG_X = 4430;
     plats = [
@@ -334,15 +349,26 @@ function buildLevel(n){
     L2S = {switchHit:false, fallT:0,
       skunk:{x:2720, y:BRIDGE_Y-22, w:34, h:22, dir:-1, spd:2.0, alive:true, falling:false, vy:0, sunk:false},
       splash:false, drownT:0, stink:null, windT:0, done:false,
-      wife:{x:3395, walking:false, arrived:false},
+      wife:{x:3395, walking:false, arrived:false, holdT:0},
       chickens:[{x0:3230,ph:0,r:26},{x0:3330,ph:2.2,r:20},{x0:3365,ph:4.1,r:30}]};
   }
 }
 
 // ================= player / state =================
-const dan = {x:60, y:0, w:26, h:40, vx:0, vy:0, onGround:false, face:1, walkT:0, inv:0, boost:0};
+const dan = {x:60, y:0, w:26, h:40, vx:0, vy:0, onGround:false, face:1, walkT:0, inv:0, boost:0, small:false, star:0};
 let oz = 0, lives = 3, camX = 0, time = 0, state = 'title', introT = 0;
-let spot = 61.40, spotT = 0, nextLifeAt = 100;
+let spot = 61.40, spotT = 0, nextLifeAt = 100, checkpointX = 60;
+let floatTexts = [];
+
+function riseText(x, y, txt, color){ floatTexts.push({x, y, txt, color:color||'#3fae2a', t:0}); }
+
+function setSize(small){
+  const feet = dan.y + dan.h;
+  dan.small = small;
+  dan.w = small ? 20 : 26;
+  dan.h = small ? 30 : 40;
+  dan.y = feet - dan.h;
+}
 
 function checkMilestone(){
   while(oz >= nextLifeAt){
@@ -354,8 +380,9 @@ function checkMilestone(){
 }
 
 function resetDan(){
-  dan.x=60; dan.y=GROUND_Y-dan.h; dan.vx=0; dan.vy=0; dan.inv=90; dan.boost=0;
-  camX = 0;
+  setSize(false);
+  dan.x=checkpointX; dan.y=GROUND_Y-dan.h; dan.vx=0; dan.vy=0; dan.inv=90; dan.boost=0; dan.star=0;
+  camX = Math.max(0, Math.min(LEVEL_W - VIEW_W, checkpointX - VIEW_W*0.38));
 }
 
 // ================= quips =================
@@ -369,6 +396,21 @@ const PETE_STOMPS = ['GET A JOB!', 'NO HANDOUTS TODAY!', 'PULL YOURSELF UP!'];
 const RED_STOMPS = ['DIE COMMIE!', 'NOT TODAY COMRADE!', 'BETTER DEAD THAN RED!'];
 const BOSS1_HITS = ['YOUR SILVER HAS BEEN UNBURDENED BY WHAT HAS BEEN!', 'NEW TAX JUST DROPPED!',
   'EXECUTIVE ORDER: -5 oz!'];
+const BOSS_SPEECHES = [null,
+  'CULTURE IS A REFLECTION OF OUR EXPRESSION AND OUR EXPRESSION IS A REFLECTION OF OUR CULTURE.',
+  null,
+  'WE KNOW COMMUNITY BANKS ARE IN THE COMMUNITY, AND FEED THE COMMUNITY, AND GROW THE COMMUNITY.',
+  null,
+  'YOU THINK YOU JUST FELL OUT OF A COCONUT TREE?'];
+function wrapText(str, maxChars){
+  const words = str.split(' '), lines = []; let cur = '';
+  for(const w of words){
+    if((cur+' '+w).trim().length > maxChars){ lines.push(cur.trim()); cur = w; }
+    else cur += ' '+w;
+  }
+  if(cur.trim()) lines.push(cur.trim());
+  return lines;
+}
 function pick(a){ return a[(Math.random()*a.length)|0]; }
 
 // ================= messages =================
@@ -390,6 +432,7 @@ function step(){
   if(++spotT > 30){ spotT=0; spot += (Math.random()-0.52)*0.8; spot=Math.max(42.0, spot); }
 
   if(dan.boost>0) dan.boost--;
+  if(dan.star>0) dan.star--;
   const acc = 0.5, max = dan.boost>0 ? 4.9 : 3.4, fr = 0.82;
   if(keys.left){ dan.vx -= acc; dan.face=-1; }
   if(keys.right){ dan.vx += acc; dan.face=1; }
@@ -444,7 +487,7 @@ function step(){
   }
   if(Math.abs(dan.vx)>0.4 && dan.onGround) dan.walkT++;
 
-  if(dan.y > VIEW_H + 60) return hurt('REALLY, DAN?');
+  if(dan.y > VIEW_H + 60) return hurt('REALLY, DAN?', true);
   if(dan.inv>0) dan.inv--;
 
   for(const c of coins){
@@ -459,10 +502,20 @@ function step(){
   }
   for(const s of subs){
     if(!s.got && Math.abs(dan.x+dan.w/2-s.x)<26 && Math.abs(dan.y+dan.h/2-s.y)<26){
-      s.got=true; dan.boost = 480;
-      if(lives<5) lives++;
-      flash('FREAKY FAST! +1 \u2665', '#3fae2a');
-      Audio8.S.munch();
+      s.got=true;
+      dan.boost = 450; dan.star = 450;   // 7.5 seconds of freaky fast invincibility
+      if(dan.small) setSize(false);
+      flash('FREAKY FAST!', '#e0a13a');
+      Audio8.S.munch(); Audio8.S.star();
+    }
+  }
+
+  // flock cameras double as checkpoints
+  for(const fx of cams){
+    if(dan.x > fx && checkpointX < fx){
+      checkpointX = fx;
+      Audio8.S.checkpoint();
+      riseText(dan.x+dan.w/2, dan.y-10, 'CHECKPOINT', '#4aa8d8');
     }
   }
 
@@ -482,12 +535,17 @@ function step(){
     }
     if(e.x<2){ e.dir=1; } if(e.x>LEVEL_W-e.w-2){ e.dir=-1; }
     if(rectHit(dan, e)){
-      if(dan.vy > 1.5 && dan.y + dan.h - e.y < 18){
-        e.dead=true; dan.vy = -7; oz += 2;
+      const stomp = dan.vy > 1.5 && dan.y + dan.h - e.y < 18;
+      if(stomp || dan.star>0){
+        e.dead=true; oz += 2;
+        riseText(e.x+e.w/2, e.y-6, '+2 oz');
+        if(stomp) dan.vy = -7;
         Audio8.S.stomp();
-        flash(e.type==='karen' ? 'TRIGGERED!' :
-              e.type==='twitch' ? pick(PETE_STOMPS) :
-              pick(RED_STOMPS), '#3fae2a');
+        if(stomp){
+          flash(e.type==='karen' ? 'TRIGGERED!' :
+                e.type==='twitch' ? pick(PETE_STOMPS) :
+                pick(RED_STOMPS), '#3fae2a');
+        }
       } else if(dan.inv<=0){
         return hurt(e.type==='karen' ? pick(KAREN_HITS) :
                     e.type==='twitch' ? pick(PETE_HITS) :
@@ -501,9 +559,8 @@ function step(){
 
   checkMilestone();
 
-  // flag
-  const flagReady = level===1 ? boss1.done : L2S.done;
-  if(flagReady && dan.x + dan.w > FLAG_X) return levelClear();
+  // flag (level 1 only; level 2 ends via the wife)
+  if(level===1 && boss1.done && dan.x + dan.w > FLAG_X) return levelClear();
 
   const target = dan.x - VIEW_W*0.38;
   camX += (target - camX)*0.12;
@@ -532,10 +589,11 @@ function stepBoss1(){
   if(b.y > GROUND_Y-b.h){ b.y = GROUND_Y-b.h; b.vy = 0; }
   // collision
   if(rectHit(dan, b)){
-    if(dan.vy > 1.5 && dan.y + dan.h - b.y < 20 && b.hurtT<=0){
+    const stomp = dan.vy > 1.5 && dan.y + dan.h - b.y < 20;
+    if((stomp || dan.star>0) && b.hurtT<=0){
       b.hp--; b.hurtT = 95;
-      dan.vy = -8;
-      dan.vx = dan.x < b.x ? -6 : 6;   // knocked clear, no head-camping
+      if(stomp){ dan.vy = -8; dan.vx = dan.x < b.x ? -6 : 6; }
+      dan.inv = Math.max(dan.inv, 70);
       Audio8.S.bossHit();
       if(b.hp <= 0){
         b.dead = true; b.done = true;
@@ -545,7 +603,7 @@ function stepBoss1(){
       } else {
         flash(b.hp===2 ? 'VETOED!' : 'POLL NUMBERS DROPPING!', '#3fae2a');
       }
-    } else if(dan.inv<=0){
+    } else if(dan.inv<=0 && dan.star<=0){
       return hurt(pick(BOSS1_HITS));
     }
   }
@@ -559,7 +617,7 @@ function stepLevel2(){
     sk.x += sk.dir * sk.spd;
     if(sk.x < WATER_L+30){ sk.dir = 1; }
     if(sk.x > WATER_R-60){ sk.dir = -1; }
-    if(rectHit(dan, sk) && dan.inv<=0){
+    if(rectHit(dan, sk) && dan.inv<=0 && dan.star<=0){
       return hurt('SKUNKED!');
     }
   }
@@ -590,12 +648,16 @@ function stepLevel2(){
     if(sk.falling && sk.alive){
       sk.vy += 0.5; sk.y += sk.vy;
       if(!S.splash && sk.y > 322){
-        S.splash = true; Audio8.S.splash();
+        S.splash = true;
+        Audio8.stop();               // kill the music, this is serious
+        Audio8.S.splash();
+        riseText(dan.x+dan.w/2, dan.y-12, '+$20', '#ffd94a');
       }
       if(sk.y > 345){ sk.alive = false; sk.sunk = true; S.drownT = 0; }
     }
     if(sk.sunk){
       S.drownT++;
+      if(S.drownT === 25) Audio8.S.sadTrombone();
       if(S.drownT === 70){
         S.stink = {x: sk.x+sk.w/2, y: 328, r: 8};
       }
@@ -620,16 +682,29 @@ function stepLevel2(){
   // the wife arrives to assess the situation
   if(S.wife.walking && !S.wife.arrived){
     S.wife.x -= 0.85;
+    if(time % 16 === 0) Audio8.S.footstep();   // pissed off footsteps in dead silence
     if(S.wife.x <= 3175) S.wife.arrived = true;
+  }
+  if(S.wife.arrived){
+    S.wife.holdT++;
+    if(S.wife.holdT > 220) return winGame();   // level ends after the ass-chewing
   }
 }
 
-function hurt(msg){
-  lives--;
-  const tax = Math.min(oz, 5); oz -= tax;
+function hurt(msg, forceLife){
+  if(dan.star>0 && !forceLife) return;
   Audio8.S.hurt();
+  const tax = Math.min(oz, 5); oz -= tax;
+  const suffix = (tax>0 && msg.indexOf('oz')===-1 ? ' -'+tax+' oz' : '');
+  if(!forceLife && !dan.small){
+    setSize(true);            // shrink instead of dying
+    dan.inv = 100;
+    flash(msg + suffix);
+    return;
+  }
+  lives--;
   if(lives <= 0){ return gameOver(); }
-  flash(msg + (tax>0 && msg.indexOf('oz')===-1 ? ' -'+tax+' oz' : ''));
+  flash(msg + suffix);
   resetDan();
 }
 
@@ -637,34 +712,63 @@ function hurt(msg){
 function px(n){ return Math.round(n - camX); }
 
 function drawBg(){
+  const night = level===2;
   const g = ctx.createLinearGradient(0,0,0,VIEW_H);
-  g.addColorStop(0,'#2f6fd0'); g.addColorStop(0.7,'#79b8e8'); g.addColorStop(1,'#a8dcf0');
+  if(night){
+    g.addColorStop(0,'#0d1030'); g.addColorStop(0.7,'#1c2a52'); g.addColorStop(1,'#2a3f66');
+  } else {
+    g.addColorStop(0,'#2f6fd0'); g.addColorStop(0.7,'#79b8e8'); g.addColorStop(1,'#a8dcf0');
+  }
   ctx.fillStyle=g; ctx.fillRect(0,0,VIEW_W,VIEW_H);
-  // sun wearing ¢ sunglasses, permanently bullish
-  const sunX = VIEW_W-70 - camX*0.02;
-  ctx.fillStyle='rgba(255,236,150,.35)';
-  ctx.beginPath(); ctx.arc(sunX, 58, 40+Math.sin(time*0.02)*3, 0, 7); ctx.fill();
-  ctx.fillStyle='#ffe98a';
-  ctx.beginPath(); ctx.arc(sunX, 58, 26, 0, 7); ctx.fill();
-  ctx.fillStyle='#1b1b2f';
-  ctx.fillRect(sunX-19, 48, 16, 10); ctx.fillRect(sunX+3, 48, 16, 10); ctx.fillRect(sunX-4, 51, 8, 3);
-  ctx.fillStyle='#ffd94a'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
-  ctx.fillText('\u00A2', sunX-11, 56); ctx.fillText('\u00A2', sunX+11, 56);
-  ctx.strokeStyle='#c9962a'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.arc(sunX, 66, 9, 0.3, Math.PI-0.5); ctx.stroke();
+  if(night){
+    // stars
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    for(let i=0;i<40;i++){
+      const sxx = ((i*163 + 40) - camX*0.05) % (VIEW_W+40) - 20;
+      const syy = (i*97 % 200) + 8;
+      const tw = (time>>4)%7 === i%7 ? 2 : 1.2;
+      ctx.fillRect(sxx, syy, tw, tw);
+    }
+    // moon wearing \u00a2 sunglasses, still bullish after dark
+    const mX = VIEW_W-80 - camX*0.02;
+    ctx.fillStyle='rgba(220,228,240,.25)';
+    ctx.beginPath(); ctx.arc(mX, 58, 38, 0, 7); ctx.fill();
+    ctx.fillStyle='#d9dde4'; ctx.beginPath(); ctx.arc(mX, 58, 24, 0, 7); ctx.fill();
+    ctx.fillStyle='#bfc5cf';
+    ctx.beginPath(); ctx.arc(mX-8, 50, 4, 0, 7); ctx.arc(mX+7, 66, 3.2, 0, 7); ctx.fill();
+    ctx.fillStyle='#1b1b2f';
+    ctx.fillRect(mX-18, 49, 15, 9); ctx.fillRect(mX+3, 49, 15, 9); ctx.fillRect(mX-4, 52, 8, 3);
+    ctx.fillStyle='#ffd94a'; ctx.font='bold 8px Courier New'; ctx.textAlign='center';
+    ctx.fillText('\u00A2', mX-10.5, 56.5); ctx.fillText('\u00A2', mX+10.5, 56.5);
+    ctx.strokeStyle='#9aa2ae'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(mX, 66, 8, 0.3, Math.PI-0.5); ctx.stroke();
+  } else {
+    // sun wearing \u00a2 sunglasses, permanently bullish
+    const sunX = VIEW_W-70 - camX*0.02;
+    ctx.fillStyle='rgba(255,236,150,.35)';
+    ctx.beginPath(); ctx.arc(sunX, 58, 40+Math.sin(time*0.02)*3, 0, 7); ctx.fill();
+    ctx.fillStyle='#ffe98a';
+    ctx.beginPath(); ctx.arc(sunX, 58, 26, 0, 7); ctx.fill();
+    ctx.fillStyle='#1b1b2f';
+    ctx.fillRect(sunX-19, 48, 16, 10); ctx.fillRect(sunX+3, 48, 16, 10); ctx.fillRect(sunX-4, 51, 8, 3);
+    ctx.fillStyle='#ffd94a'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
+    ctx.fillText('\u00A2', sunX-11, 56); ctx.fillText('\u00A2', sunX+11, 56);
+    ctx.strokeStyle='#c9962a'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(sunX, 66, 9, 0.3, Math.PI-0.5); ctx.stroke();
+  }
   // far hills
-  ctx.fillStyle='#8fbf87';
+  ctx.fillStyle = night ? '#22382c' : '#8fbf87';
   for(let i=0;i<9;i++){
     const hx = ((i*640+300) - camX*0.22) % (LEVEL_W);
     ctx.beginPath(); ctx.arc(hx, GROUND_Y+70, 190, Math.PI, 0); ctx.fill();
   }
-  ctx.fillStyle='#5f9e57';
+  ctx.fillStyle = night ? '#2c4a36' : '#5f9e57';
   for(let i=0;i<8;i++){
     const hx = ((i*760) - camX*0.4) % (LEVEL_W);
     ctx.beginPath(); ctx.arc(hx, GROUND_Y+40, 150, Math.PI, 0); ctx.fill();
   }
   // clouds
-  ctx.fillStyle='rgba(255,255,255,.9)';
+  ctx.fillStyle = night ? 'rgba(200,210,235,.18)' : 'rgba(255,255,255,.9)';
   for(let i=0;i<10;i++){
     const cx = ((i*520+120) - camX*0.25) % (LEVEL_W*0.6);
     const cy = 40 + (i%3)*32;
@@ -745,7 +849,11 @@ function drawFlockCam(fx){
   const aim = dan.x > fx ? 1 : -1;
   ctx.fillStyle='#1b1b24'; ctx.fillRect(sx-3+aim*2, gy-104, 10, 7);
   ctx.fillStyle='#101018'; ctx.fillRect(sx+(aim>0? 7:-5)+aim*2, gy-103, 3, 5);
-  if((time>>4)%2===0){ ctx.fillStyle='#ff3b30'; ctx.fillRect(sx+aim*2, gy-102.5, 2, 2); }
+  if(fx <= checkpointX){
+    ctx.fillStyle='#3fae2a'; ctx.fillRect(sx+aim*2, gy-102.5, 2.5, 2.5);   // checkpoint saved
+  } else if((time>>4)%2===0){
+    ctx.fillStyle='#ff3b30'; ctx.fillRect(sx+aim*2, gy-102.5, 2, 2);
+  }
 }
 
 function drawPlats(){
@@ -1203,22 +1311,28 @@ function drawBoss1(){
   ctx.fillStyle='#fff'; ctx.fillRect(11.5, 9, 7, 1.6);
   ctx.restore();
   ctx.restore();
-  // speech bubble: pure cackle
+  // speech bubble: cackle, quote, cackle, quote...
   const bx = sx+15;
-  const laugh = 'HA'.repeat(4 + ((time>>4)%3)) + '!';
+  const phase = Math.floor(time/200) % BOSS_SPEECHES.length;
+  const speech = BOSS_SPEECHES[phase];
+  const lines = speech ? wrapText(speech, 34) : ['HA'.repeat(4 + ((time>>4)%3)) + '!'];
+  const bw = speech ? 250 : 110;
+  const lh = 10, bh = lines.length*lh + 8;
+  const byy = b.y - 20 - bh;
+  const bxc = Math.max(bw/2+4, Math.min(VIEW_W-bw/2-4, bx));
   ctx.fillStyle='#fff';
-  const bw=110, bh=20, byy=b.y-34;
   ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(bx-bw/2, byy, bw, bh, 6) : ctx.rect(bx-bw/2, byy, bw, bh);
+  ctx.roundRect ? ctx.roundRect(bxc-bw/2, byy, bw, bh, 6) : ctx.rect(bxc-bw/2, byy, bw, bh);
   ctx.fill();
   ctx.beginPath();
   ctx.moveTo(bx-6, byy+bh); ctx.lineTo(bx+6, byy+bh); ctx.lineTo(bx, byy+bh+7); ctx.closePath(); ctx.fill();
-  ctx.fillStyle='#1b1b2f'; ctx.font='bold 10px Courier New'; ctx.textAlign='center';
-  ctx.fillText(laugh, bx, byy+14);
+  ctx.fillStyle='#1b1b2f'; ctx.font = speech ? 'bold 8px Courier New' : 'bold 10px Courier New';
+  ctx.textAlign='center';
+  lines.forEach((ln,i)=> ctx.fillText(ln, bxc, byy + 11 + i*lh));
   // HP pips
   for(let i=0;i<3;i++){
     ctx.fillStyle = i < b.hp ? '#c0392b' : 'rgba(255,255,255,.3)';
-    ctx.beginPath(); ctx.arc(bx-14+i*14, byy-8, 4, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(bxc-14+i*14, byy-8, 4, 0, 7); ctx.fill();
   }
 }
 
@@ -1246,9 +1360,16 @@ function danHead(){
 
 function drawDan(){
   const sx = px(dan.x), sy = Math.round(dan.y);
-  if(dan.inv>0 && (time>>2)%2===0) return;
-  ctx.save(); ctx.translate(sx+dan.w/2, sy);
-  ctx.scale(dan.face, 1); ctx.translate(-dan.w/2, 0);
+  if(dan.star>0){
+    const hue = (time*14)%360;
+    ctx.fillStyle = 'hsla('+hue+',90%,60%,.35)';
+    ctx.beginPath(); ctx.ellipse(sx+dan.w/2, sy+dan.h/2, dan.w+4, dan.h*0.75, 0, 0, 7); ctx.fill();
+  } else if(dan.inv>0 && (time>>2)%2===0) return;
+  const s = dan.small ? 0.75 : 1;
+  ctx.save();
+  ctx.translate(sx+dan.w/2, sy+dan.h);
+  ctx.scale(dan.face*s, s);
+  ctx.translate(-13, -40);
   const stepA = dan.onGround ? Math.sin(dan.walkT*0.35)*4 : 3;
   ctx.fillStyle='#b99a5f';
   ctx.fillRect(4, 28, 8, 12+stepA*0.4); ctx.fillRect(14, 28, 8, 12-stepA*0.4);
@@ -1266,8 +1387,9 @@ function drawDan(){
 }
 
 function drawFlag(){
+  if(level===2) return;   // no flag in the skunk's lair; the wife is the finish line
   const sx = px(FLAG_X); if(sx>VIEW_W+120) return;
-  const ready = level===1 ? boss1.done : L2S.done;
+  const ready = boss1.done;
   ctx.globalAlpha = ready ? 1 : 0.45;
   // pole
   ctx.fillStyle='#cfd6df'; ctx.fillRect(sx, GROUND_Y-190, 6, 190);
@@ -1391,7 +1513,22 @@ function drawWifeAndChickens(){
     ctx.beginPath();
     ctx.moveTo(bx-5, byy+bh); ctx.lineTo(bx+5, byy+bh); ctx.lineTo(bx, byy+bh+6); ctx.closePath(); ctx.fill();
     ctx.fillStyle='#1b1b2f'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
-    ctx.fillText("DON'T YOU EVER FUCKING DO THAT AGAIN", bxc, byy+12.5);
+    ctx.fillText("THIS WON'T EVER FUCKING HAPPEN AGAIN!", bxc, byy+12.5);
+  }
+}
+
+function drawFloatTexts(){
+  for(let i=floatTexts.length-1;i>=0;i--){
+    const f = floatTexts[i]; f.t++;
+    if(f.t>55){ floatTexts.splice(i,1); continue; }
+    ctx.globalAlpha = f.t<38 ? 1 : 1-(f.t-38)/17;
+    ctx.fillStyle = f.color;
+    ctx.font='bold 12px Courier New'; ctx.textAlign='center';
+    ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=3;
+    const yy = f.y - f.t*0.8;
+    ctx.strokeText(f.txt, px(f.x), yy);
+    ctx.fillText(f.txt, px(f.x), yy);
+    ctx.globalAlpha = 1;
   }
 }
 
@@ -1442,6 +1579,7 @@ function render(){
   }
   drawDan();
   drawStinkAndWind();
+  drawFloatTexts();
   drawHUD();
 }
 
@@ -1512,6 +1650,12 @@ $('retryBtn').addEventListener('click', retryLevel);
 $('againBtn').addEventListener('click', ()=>{ hide('winScreen'); startGame(); });
 $('helpBtn').addEventListener('click', ()=>{ hide('titleScreen'); show('helpScreen'); });
 $('closeHelpBtn').addEventListener('click', ()=>{ hide('helpScreen'); show('titleScreen'); });
+const fsBtn = $('fsBtn');
+if(!document.documentElement.requestFullscreen){ fsBtn.classList.add('hidden'); }
+fsBtn.addEventListener('click', ()=>{
+  if(document.fullscreenElement){ document.exitFullscreen().catch(()=>{}); }
+  else { document.documentElement.requestFullscreen().catch(()=>{}); }
+});
 $('muteBtn').addEventListener('click', ()=>{
   const m = Audio8.toggleMute();
   $('muteBtn').innerHTML = m ? '&#128263;' : '&#128266;';
