@@ -2,16 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dan's Retirement">
 <title>Dan's Retirement: The Game</title>
 <style>
   :root{
     --sky:#3a7bd5; --ink:#1b1b2f; --silver:#c8cdd6; --paper:#f5e9c8;
     --red:#c0392b; --green:#3fae2a;
   }
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;}
   html,body{height:100%;overflow:hidden;background:var(--ink);font-family:'Courier New',monospace;
-    touch-action:none;user-select:none;-webkit-user-select:none;}
+    touch-action:none;user-select:none;-webkit-user-select:none;
+    position:fixed;width:100%;overscroll-behavior:none;}
   #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
   canvas{display:block;image-rendering:pixelated;background:var(--sky);max-width:100%;max-height:100%;}
 
@@ -135,7 +141,19 @@ const Audio8 = (() => {
       sfxg=AC.createGain(); sfxg.gain.value=0.85; sfxg.connect(master);
     }catch(e){ AC=null; }
   }
-  function resume(){ if(AC && AC.state==='suspended') AC.resume(); }
+  function resume(){ if(AC && AC.state!=='running'){ AC.resume(); } }
+  let unlocked = false;
+  function unlock(){
+    init(); resume();
+    if(unlocked || !AC) return;
+    // iOS needs a real (silent) sound played inside a gesture to open the pipe
+    try{
+      const buf = AC.createBuffer(1, 1, 22050);
+      const src = AC.createBufferSource();
+      src.buffer = buf; src.connect(AC.destination); src.start(0);
+      unlocked = true;
+    }catch(e){}
+  }
   function tone(f, t0, dur, type, vol, dest, f2){
     if(!AC||f<=0) return;
     const o=AC.createOscillator(), g=AC.createGain();
@@ -170,6 +188,10 @@ const Audio8 = (() => {
     skunk: { bpm:136,
       bass:[33,-1,45,-1,33,-1,45,-1, 31,-1,43,-1,31,-1,43,-1, 33,-1,45,-1,33,-1,45,-1, 29,-1,41,-1,30,-1,42,-1],
       lead:[69,-1,-1,69,-1,-1,68,-1, 69,-1,72,-1,69,-1,-1,-1, 76,77,76,77,76,77,74,-1, 72,-1,68,-1,69,-1,-1,-1] },
+    // train: frantic runaway chug -- comedic, but your knuckles are white
+    train: { bpm:184,
+      bass:[33,33,40,33,33,33,40,36, 33,33,40,33,31,31,38,31, 33,33,40,33,33,33,40,36, 38,38,45,38,40,40,47,43],
+      lead:[64,-1,64,-1,67,64,-1,-1, 69,-1,-1,67,-1,64,-1,-1, 64,-1,64,-1,72,-1,71,69, 76,75,74,73,72,71,70,-1] },
   };
   function play(name){ song=SONGS[name]; step=0; if(AC) nextT=AC.currentTime+0.06;
     if(!timer) timer=setInterval(sched, 30); }
@@ -205,10 +227,15 @@ const Audio8 = (() => {
     footstep(){ nz(t(),0.05,0.28); tone(85,t(),0.09,'sine',0.32,null,55); },
     checkpoint(){ tone(880,t(),0.07,'square',0.11); tone(1175,t()+0.07,0.14,'square',0.11); },
     star(){ [523,659,784,1047,1319].forEach((f,i)=>tone(f,t()+i*0.05,0.1,'square',0.13)); },
+    horn(){ tone(233,t(),1.0,'sawtooth',0.18); tone(277,t(),1.0,'sawtooth',0.18); tone(196,t()+0.05,0.95,'sawtooth',0.1); },
+    ding(){ tone(1319,t(),0.12,'square',0.16); tone(1760,t()+0.09,0.16,'square',0.12); },
+    slip(){ tone(520,t(),0.55,'sawtooth',0.2,null,70); nz(t()+0.45,0.15,0.3); },
+    clank(){ nz(t(),0.08,0.25); tone(180,t(),0.1,'square',0.2,null,120); },
   };
   function toggleMute(){ muted=!muted; if(master) master.gain.value = muted?0:0.5; return muted; }
-  return { init, resume, play, stop, S, toggleMute };
+  return { init, resume, unlock, play, stop, S, toggleMute };
 })();
+function unlockAudio(){ Audio8.unlock(); }
 
 // ================= sizing =================
 const VIEW_H = 360;
@@ -231,11 +258,19 @@ addEventListener('keydown', e => { if(km[e.key]!==undefined){ keys[km[e.key]]=tr
 addEventListener('keyup',   e => { if(km[e.key]!==undefined){ keys[km[e.key]]=false; }});
 function bindBtn(id, k){
   const el = document.getElementById(id);
-  const on  = e => { e.preventDefault(); keys[k]=true; };
+  const on  = e => { e.preventDefault(); keys[k]=true; unlockAudio(); };
   const off = e => { e.preventDefault(); keys[k]=false; };
-  el.addEventListener('touchstart', on, {passive:false});
-  el.addEventListener('touchend', off); el.addEventListener('touchcancel', off);
-  el.addEventListener('mousedown', on); el.addEventListener('mouseup', off); el.addEventListener('mouseleave', off);
+  if(window.PointerEvent){
+    el.addEventListener('pointerdown', e => { el.setPointerCapture && el.setPointerCapture(e.pointerId); on(e); });
+    el.addEventListener('pointerup', off);
+    el.addEventListener('pointercancel', off);
+    el.addEventListener('lostpointercapture', off);
+  } else {
+    el.addEventListener('touchstart', on, {passive:false});
+    el.addEventListener('touchend', off); el.addEventListener('touchcancel', off);
+    el.addEventListener('mousedown', on); el.addEventListener('mouseup', off); el.addEventListener('mouseleave', off);
+  }
+  el.addEventListener('contextmenu', e => e.preventDefault());
 }
 bindBtn('leftBtn','left'); bindBtn('rightBtn','right'); bindBtn('jumpBtn','jump');
 
@@ -244,7 +279,7 @@ const G = 0.55, T = 32;
 const GROUND_Y = 320;
 let LEVEL_W = 4600, FLAG_X = 4430;
 let plats, pits, coins, bars, enemies, boxes, pops, subs, cams, level = 1;
-let boss1, L2S, bridgePlanks, ozAtLevelStart = 0;
+let boss1, L2S, L3S, bridgePlanks, ozAtLevelStart = 0;
 
 function coinRow(x,y,n,gap=40){ const a=[]; for(let i=0;i<n;i++) a.push({x:x+i*gap, y, got:false}); return a; }
 function mkRed(x, range){ return {type:'red', x, y:GROUND_Y-30, w:28, h:30, x0:x, range, dir:-1, spd:0.9+Math.random()*0.5, dead:false, deadT:0}; }
@@ -346,11 +381,18 @@ function buildLevel(n){
     bridgePlanks = [];
     for(let i=0;i<16;i++) bridgePlanks.push({x:WATER_L+i*34.5, y:BRIDGE_Y, vy:0, ang:0, fell:false});
     plats.push([WATER_L, BRIDGE_Y, WATER_R-WATER_L, 8]);   // bridge collision (last entry)
-    L2S = {switchHit:false, fallT:0,
+    L2S = {switchHit:false, fallT:0, revealed:false,
       skunk:{x:2720, y:BRIDGE_Y-22, w:34, h:22, dir:-1, spd:2.0, alive:true, falling:false, vy:0, sunk:false},
       splash:false, drownT:0, stink:null, windT:0, done:false,
       wife:{x:3395, walking:false, arrived:false, holdT:0},
       chickens:[{x0:3230,ph:0,r:26},{x0:3330,ph:2.2,r:20},{x0:3365,ph:4.1,r:30}]};
+  }
+  if(n === 3){
+    LEVEL_W = 800; FLAG_X = 800;
+    plats = []; pits = []; coins = []; bars = []; subs = []; enemies = []; boxes = []; cams = [];
+    L3S = {phase:'cut', t:0, cars:0, target:50, prompt:null, promptT:0, window:95,
+           nextIn:110, scroll:0, speed:0, jolt:0, doneT:0, fallT:0,
+           items:[], itemIn:40, itemN:0};
   }
 }
 
@@ -389,7 +431,7 @@ function resetDan(){
 const INSULTS = ['YOU SUCK!', "YOU'RE REALLY BAD AT THIS!", 'PATHETIC, DAN!', 'EMBARRASSING!',
   'SELL YOUR SILVER, QUIT NOW!', 'DAN. SERIOUSLY?'];
 const KAREN_HITS = ['CHECK YOUR PRIVILEGE, DAN!', 'THIS IS PROBLEMATIC, DAN!',
-  'SHE REPORTED YOU TO HR!', 'DAN HAS BEEN CANCELED!'];
+  'REPORTED TO HR!', 'DAN HAS BEEN CANCELED!'];
 const PETE_HITS = ['YOUR TAX DOLLARS AT WORK!', 'WEALTH REDISTRIBUTION!',
   'GOVERNMENT ASSISTANCE: -5 oz!'];
 const PETE_STOMPS = ['GET A JOB!', 'NO HANDOUTS TODAY!', 'PULL YOURSELF UP!'];
@@ -428,6 +470,7 @@ function flash(text, color){
 function rectHit(a, b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y; }
 
 function step(){
+  if(level===3) return stepTrain();
   time++;
   if(++spotT > 30){ spotT=0; spot += (Math.random()-0.52)*0.8; spot=Math.max(42.0, spot); }
 
@@ -612,8 +655,13 @@ function stepBoss1(){
 // ---- LEVEL 2 BOSS: THE SKUNK ----
 function stepLevel2(){
   const S = L2S, sk = S.skunk;
+  // the twist: Dan's $20 client reveals himself
+  if(!S.revealed && dan.x > WATER_L - 150){
+    S.revealed = true;
+    flash('YOUR $20 APPOINTMENT IS HERE!', '#3fae2a');
+  }
   // patrolling skunk on the bridge
-  if(sk.alive && !sk.falling){
+  if(S.revealed && sk.alive && !sk.falling){
     sk.x += sk.dir * sk.spd;
     if(sk.x < WATER_L+30){ sk.dir = 1; }
     if(sk.x > WATER_R-60){ sk.dir = -1; }
@@ -668,7 +716,7 @@ function stepLevel2(){
           Audio8.S.pop();
           S.windT = 80;
           Audio8.S.wind();
-          flash('GOOD JOB DAN, YOU DROWNED A SKUNK!', '#3fae2a');
+          flash('GREAT JOB DAN! YOU DROWNED A SKUNK!', '#3fae2a');
         }
       }
       if(S.stink && S.stink.popped) S.stink.popT++;
@@ -687,8 +735,347 @@ function stepLevel2(){
   }
   if(S.wife.arrived){
     S.wife.holdT++;
-    if(S.wife.holdT > 220) return winGame();   // level ends after the ass-chewing
+    if(S.wife.holdT > 220) return levelClear();   // on to the next gig after the ass-chewing
   }
+}
+
+// ================= LEVEL 3: THE TRAIN =================
+const prevKeys = {left:false, right:false, jump:false};
+function freshPress(){
+  const p = {left: keys.left && !prevKeys.left,
+             right: keys.right && !prevKeys.right,
+             jump: keys.jump && !prevKeys.jump};
+  prevKeys.left = keys.left; prevKeys.right = keys.right; prevKeys.jump = keys.jump;
+  return p;
+}
+const QTE_KEYS = ['left','right','jump'];
+const QTE_GLYPH = {left:'\u25C0', right:'\u25B6', jump:'\u25B2'};
+
+function stepTrain(){
+  time++;
+  const S = L3S;
+  S.t++;
+  const press = freshPress();
+  if(S.phase === 'cut'){
+    if(S.t === 190){ Audio8.S.clank(); }       // Dan lands on the car
+    if(S.t === 210){ Audio8.S.horn(); }
+    if(S.t === 260){
+      S.phase = 'ride'; S.speed = 0;
+      Audio8.play('train');
+    }
+    return;
+  }
+  if(S.phase === 'ride'){
+    // accelerate the reverse move, keep it bumpy
+    S.speed = Math.min(4.2, S.speed + 0.02);
+    S.scroll += S.speed;
+    if(S.jolt > 0) S.jolt *= 0.86;
+    if(Math.random() < 0.03){ S.jolt = 5 + Math.random()*5; Audio8.S.clank(); }
+    // silver streaming past over the tracks
+    if(--S.itemIn <= 0){
+      S.itemN++;
+      const isBar = S.itemN % 9 === 0;
+      S.items.push({x:VIEW_W+24, y: 196 + Math.sin(S.itemN*1.3)*18, bar:isBar, got:false});
+      S.itemIn = isBar ? 46 : 22;
+    }
+    const danScreenX = 186 + 2*150 + 128;
+    for(let i=S.items.length-1;i>=0;i--){
+      const it = S.items[i];
+      it.x -= S.speed * 2.2;
+      if(!it.got && Math.abs(it.x - danScreenX) < 18){
+        it.got = true;
+        if(it.bar){ oz += 10; riseText(camX+danScreenX, it.y-8, '+10 oz'); Audio8.S.bar(); }
+        else { oz += 1; Audio8.S.coin(); }
+      }
+      if(it.x < -60) S.items.splice(i,1);
+    }
+    checkMilestone();
+    // prompts
+    if(!S.prompt){
+      if(--S.nextIn <= 0){
+        S.prompt = pick(QTE_KEYS);
+        S.promptT = Math.max(55, S.window - S.cars);   // windows tighten as cars rack up
+      }
+    } else {
+      S.promptT--;
+      let hit = null;
+      for(const k of QTE_KEYS){ if(press[k]) hit = k; }
+      if(hit){
+        if(hit === S.prompt){
+          S.cars += 5;
+          Audio8.S.ding();
+          riseText(camX + VIEW_W/2, 150, '+5 CARS', '#4aa8d8');
+          S.prompt = null; S.nextIn = 55 + Math.random()*45;
+          if(S.cars >= S.target){ S.phase = 'stop'; S.doneT = 0; Audio8.stop(); Audio8.S.horn(); }
+        } else {
+          return trainFall();
+        }
+      } else if(S.promptT <= 0){
+        return trainFall();
+      }
+    }
+    return;
+  }
+  if(S.phase === 'fall'){
+    S.fallT++;
+    if(S.fallT > 55){
+      lives--;
+      Audio8.S.hurt();
+      if(lives <= 0) return gameOver();
+      flash('DAN HIT THE BALLAST! -1 \u2665');
+      S.phase = 'ride'; S.cars = 0; S.prompt = null; S.nextIn = 100; S.speed = 1; S.fallT = 0;
+      Audio8.play('train');
+    }
+    return;
+  }
+  if(S.phase === 'stop'){
+    S.speed = Math.max(0, S.speed - 0.06);
+    S.scroll += S.speed;
+    S.doneT++;
+    if(S.doneT === 80) flash("THAT'LL DO!", '#3fae2a');
+    if(S.doneT > 190) return levelClear();
+    return;
+  }
+}
+
+function trainFall(){
+  L3S.phase = 'fall'; L3S.fallT = 0;
+  Audio8.stop();
+  Audio8.S.slip();
+}
+
+function renderTrain(){
+  const S = L3S;
+  // daytime sky
+  const g = ctx.createLinearGradient(0,0,0,VIEW_H);
+  g.addColorStop(0,'#2f6fd0'); g.addColorStop(0.7,'#79b8e8'); g.addColorStop(1,'#a8dcf0');
+  ctx.fillStyle=g; ctx.fillRect(0,0,VIEW_W,VIEW_H);
+  // sun with the shades
+  const sunX = VIEW_W-70;
+  ctx.fillStyle='#ffe98a'; ctx.beginPath(); ctx.arc(sunX, 52, 24, 0, 7); ctx.fill();
+  ctx.fillStyle='#1b1b2f';
+  ctx.fillRect(sunX-17, 44, 14, 9); ctx.fillRect(sunX+3, 44, 14, 9); ctx.fillRect(sunX-4, 47, 8, 3);
+  ctx.fillStyle='#ffd94a'; ctx.font='bold 8px Courier New'; ctx.textAlign='center';
+  ctx.fillText('\u00A2', sunX-10, 51); ctx.fillText('\u00A2', sunX+10, 51);
+  // scrolling hills
+  ctx.fillStyle='#8fbf87';
+  for(let i=0;i<7;i++){
+    const hx = (((i*420 - S.scroll*0.35) % (VIEW_W+420)) + (VIEW_W+420)) % (VIEW_W+420) - 210;
+    ctx.beginPath(); ctx.arc(hx, 330, 130, Math.PI, 0); ctx.fill();
+  }
+  ctx.fillStyle='#5f9e57';
+  for(let i=0;i<6;i++){
+    const hx = (((i*520 - S.scroll*0.6) % (VIEW_W+520)) + (VIEW_W+520)) % (VIEW_W+520) - 260;
+    ctx.beginPath(); ctx.arc(hx, 340, 110, Math.PI, 0); ctx.fill();
+  }
+  // telegraph poles whipping by
+  ctx.strokeStyle='#6b4423'; ctx.lineWidth=4;
+  for(let i=0;i<4;i++){
+    const pxp = (((i*300 - S.scroll*1.6) % (VIEW_W+300)) + (VIEW_W+300)) % (VIEW_W+300) - 150;
+    ctx.beginPath(); ctx.moveTo(pxp, 296); ctx.lineTo(pxp, 190); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pxp-14, 200); ctx.lineTo(pxp+14, 200); ctx.stroke();
+  }
+  // ground + ballast
+  ctx.fillStyle='#7a9a5a'; ctx.fillRect(0, 296, VIEW_W, VIEW_H-296);
+  ctx.fillStyle='#9a9a94'; ctx.fillRect(0, 302, VIEW_W, 22);
+  // ties scrolling
+  ctx.fillStyle='#5a4430';
+  for(let i=0;i<30;i++){
+    const tx = (((i*34 - S.scroll*2.2) % (VIEW_W+34)) + (VIEW_W+34)) % (VIEW_W+34) - 34;
+    ctx.fillRect(tx, 306, 22, 6);
+  }
+  // rails
+  ctx.fillStyle='#c8cdd6'; ctx.fillRect(0, 304, VIEW_W, 3); ctx.fillRect(0, 314, VIEW_W, 3);
+
+  const bump = (S.phase==='ride'||S.phase==='stop') ? Math.sin(time*0.6)*1.5 + (Math.random()-0.5)*S.jolt*0.5 : 0;
+  const shake = S.jolt>1 ? (Math.random()-0.5)*S.jolt*0.4 : 0;
+  ctx.save(); ctx.translate(shake, 0);
+
+  // === the consist: BNSF locomotive + black tank cars, backing up (rear car leads) ===
+  const baseY = 262 + bump;
+  // === locomotive (trailing unit, doing the shoving) ===
+  const lx = 14;
+  // underframe + walkway
+  ctx.fillStyle='#1b1b2f'; ctx.fillRect(lx, baseY+10, 148, 6);
+  ctx.fillStyle='#2b2b2b'; ctx.fillRect(lx-4, baseY+8, 156, 3);
+  // long hood
+  ctx.fillStyle='#e8720c'; ctx.fillRect(lx+34, baseY-26, 114, 34);
+  // dynamic brake bulge + radiator flare at hood end
+  ctx.fillStyle='#d8660a'; ctx.fillRect(lx+70, baseY-31, 34, 6);
+  ctx.fillStyle='#e8720c';
+  ctx.beginPath(); ctx.moveTo(lx+128, baseY-26); ctx.lineTo(lx+148, baseY-30); ctx.lineTo(lx+148, baseY-8); ctx.lineTo(lx+128, baseY-8); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#5a4a3a';
+  for(let v=0; v<4; v++) ctx.fillRect(lx+132+v*4, baseY-24, 2, 14);   // radiator vents
+  // cab (left end) with nose
+  ctx.fillStyle='#e8720c'; ctx.fillRect(lx+8, baseY-38, 30, 46);
+  ctx.beginPath(); ctx.moveTo(lx+8, baseY-38); ctx.lineTo(lx+14, baseY-44); ctx.lineTo(lx+38, baseY-44); ctx.lineTo(lx+38, baseY-38); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#e8720c'; ctx.fillRect(lx-6, baseY-20, 14, 28);       // low short nose
+  ctx.fillStyle='#f5d33f'; ctx.fillRect(lx-6, baseY-20, 14, 4);
+  // cab windows
+  ctx.fillStyle='#1b1b2f'; ctx.fillRect(lx+12, baseY-41, 10, 8); ctx.fillRect(lx+25, baseY-41, 10, 8);
+  // yellow sill stripe the whole length
+  ctx.fillStyle='#f5d33f'; ctx.fillRect(lx-6, baseY+4, 168, 4);
+  // BNSF on the hood
+  ctx.fillStyle='#f5d33f'; ctx.font='bold 15px Courier New'; ctx.textAlign='center';
+  ctx.fillText('BNSF', lx+92, baseY-6);
+  // number board
+  ctx.fillStyle='#fff'; ctx.fillRect(lx+14, baseY-52, 22, 7);
+  ctx.fillStyle='#1b1b2f'; ctx.font='bold 6px Courier New';
+  ctx.fillText('8010', lx+25, baseY-46.5);
+  // handrails
+  ctx.strokeStyle='#f5d33f'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(lx+38, baseY-18); ctx.lineTo(lx+148, baseY-18); ctx.stroke();
+  // fuel tank
+  ctx.fillStyle='#2b2b2b'; ctx.fillRect(lx+58, baseY+16, 46, 10);
+  // 3-axle trucks
+  ctx.fillStyle='#1b1b2f';
+  for(const wx of [lx+22, lx+36, lx+50, lx+108, lx+122, lx+136]){ ctx.beginPath(); ctx.arc(wx, baseY+26, 7, 0, 7); ctx.fill(); }
+  ctx.fillStyle='#3a3a44';
+  ctx.fillRect(lx+14, baseY+18, 44, 5); ctx.fillRect(lx+100, baseY+18, 44, 5);
+  // exhaust chugging while working
+  if(S.phase==='ride' || S.phase==='stop'){
+    ctx.fillStyle='rgba(90,90,100,.45)';
+    for(let e2=0; e2<3; e2++){
+      const et = (time*1.4 + e2*26) % 70;
+      ctx.beginPath(); ctx.arc(lx+80 - et*0.9, baseY-36 - et*0.8, 3+et*0.12, 0, 7); ctx.fill();
+    }
+  }
+  // tank cars
+  for(let c=0;c<3;c++){
+    const cx0 = 186 + c*150;
+    ctx.fillStyle='#2b2b2b'; ctx.fillRect(cx0-18, baseY+2, 18, 6);   // coupler
+    ctx.fillStyle='#16161c';
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(cx0, baseY-24, 132, 42, 20) : ctx.rect(cx0, baseY-24, 132, 42);
+    ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.09)'; ctx.fillRect(cx0+8, baseY-19, 116, 7); // sheen
+    ctx.fillStyle='#16161c'; ctx.fillRect(cx0+56, baseY-32, 20, 10); // dome hatch
+    ctx.fillStyle='#2b2b2b'; ctx.fillRect(cx0, baseY+14, 132, 6);
+    ctx.fillStyle='#1b1b2f';
+    for(const wx of [cx0+22, cx0+40, cx0+92, cx0+110]){ ctx.beginPath(); ctx.arc(wx, baseY+26, 8, 0, 7); ctx.fill(); }
+    if(c===2){   // ladder on rear car
+      ctx.strokeStyle='#8a93a8'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(cx0+120, baseY-24); ctx.lineTo(cx0+120, baseY+14);
+      ctx.moveTo(cx0+128, baseY-24); ctx.lineTo(cx0+128, baseY+14); ctx.stroke();
+      for(let ry=baseY-20; ry<baseY+14; ry+=8){ ctx.beginPath(); ctx.moveTo(cx0+120, ry); ctx.lineTo(cx0+128, ry); ctx.stroke(); }
+    }
+  }
+  const rearX = 186 + 2*150;   // rear car (leading the shove)
+
+  // streaming silver
+  for(const it of S.items){
+    if(it.got) continue;
+    if(it.bar){
+      ctx.save(); ctx.translate(it.x-14, it.y-8);
+      drawBarShape();
+      ctx.restore();
+    } else {
+      const sq = Math.abs(Math.sin(time*0.08 + it.x*0.05));
+      ctx.save(); ctx.translate(it.x, it.y);
+      ctx.scale(0.4+0.6*sq, 1);
+      ctx.fillStyle='#d7dde6'; ctx.beginPath(); ctx.arc(0,0,9,0,7); ctx.fill();
+      ctx.strokeStyle='#8f97a6'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,.8)'; ctx.beginPath(); ctx.arc(-3,-3,2.6,0,7); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // the end of track eases in from the right as the shove finishes
+  if(S.phase==='stop'){
+    const fbx = VIEW_W + 90 - Math.min(VIEW_W - rearX - 160, S.doneT*4);
+    // bumper post
+    ctx.fillStyle='#c0392b'; ctx.fillRect(fbx, 274, 10, 30);
+    ctx.fillStyle='#c0392b'; ctx.fillRect(fbx-8, 266, 26, 10);
+    ctx.fillStyle='#fdf6e3'; ctx.fillRect(fbx-30, 236, 70, 14);
+    ctx.strokeStyle='#5a4a2e'; ctx.lineWidth=2; ctx.strokeRect(fbx-30, 236, 70, 14);
+    ctx.fillStyle='#c0392b'; ctx.font='bold 8px Courier New'; ctx.textAlign='center';
+    ctx.fillText('END OF TRACK', fbx+5, 246);
+    // checkered finish flag
+    const flx = fbx+34;
+    ctx.fillStyle='#8a93a8'; ctx.fillRect(flx, 214, 3, 90);
+    for(let r=0;r<3;r++) for(let c2=0;c2<4;c2++){
+      ctx.fillStyle = (r+c2)%2===0 ? '#1b1b2f' : '#fff';
+      ctx.fillRect(flx+3+c2*8, 214+r*8, 8, 8);
+    }
+  }
+
+  // === Dan, clinging to the rear-car ladder, facing the move ===
+  if(S.phase !== 'fall'){
+    const flail = (S.phase==='ride') ? Math.sin(time*0.45)*0.18 + (Math.random()-0.5)*S.jolt*0.02 : 0;
+    const onLadder = !(S.phase==='cut' && S.t < 190);
+    const danX = onLadder ? rearX + 128 : 620 + Math.max(0, 190-S.t)*0.5;
+    const danY = onLadder ? baseY + 12 : 296;   // feet on the bottom ladder rung
+    ctx.save();
+    ctx.translate(danX, danY);
+    ctx.rotate(onLadder ? flail : 0);
+    ctx.scale(1, 1);               // facing right: the direction of the shove
+    ctx.translate(-13, -40);
+    const stepA = 3;
+    ctx.fillStyle='#b99a5f';
+    ctx.fillRect(4, 28, 8, 12+stepA*0.4); ctx.fillRect(14, 28, 8, 12-stepA*0.4);
+    ctx.fillStyle='#6b4423';
+    ctx.fillRect(3, 38+stepA*0.4, 10, 4); ctx.fillRect(13, 38-stepA*0.4, 10, 4);
+    ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14, 22, 16);
+    ctx.fillStyle='#b99a5f'; ctx.fillRect(6, 20, 14, 10);
+    ctx.fillRect(6, 15, 4, 7); ctx.fillRect(16, 15, 4, 7);
+    ctx.fillStyle='#8a6f3c'; ctx.fillRect(7, 16, 2, 2); ctx.fillRect(17, 16, 2, 2);
+    ctx.fillStyle='#2e3d6b'; ctx.fillRect(18, 16, 7, 10);
+    ctx.fillStyle='#e8b68a'; ctx.fillRect(20, 25, 5, 4);
+    danHead();
+    ctx.restore();
+    // white-knuckle grip on the ladder rail
+    if(onLadder){
+      ctx.strokeStyle='#e8b68a'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(danX-2, danY-28); ctx.lineTo(rearX+122, baseY-20); ctx.stroke();
+      ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(rearX+122, baseY-20, 2.5, 0, 7); ctx.fill();
+    }
+  } else {
+    // tumbling off
+    const fx2 = rearX + 128 - S.fallT*2.6, fy2 = baseY - 12 + S.fallT*3.2;
+    ctx.save(); ctx.translate(fx2, fy2); ctx.rotate(S.fallT*0.25); ctx.translate(-13, -20);
+    ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14, 22, 16);
+    ctx.fillStyle='#b99a5f'; ctx.fillRect(4, 28, 8, 12); ctx.fillRect(14, 28, 8, 12);
+    danHead();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // cutscene speech bubble
+  if(S.phase==='cut' && S.t < 180){
+    const bx = Math.min(VIEW_W-130, 560), byy = 200, bw = 250, bh = 28;
+    ctx.fillStyle='#fff';
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(bx-bw/2, byy, bw, bh, 6) : ctx.rect(bx-bw/2, byy, bw, bh);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(bx-6, byy+bh); ctx.lineTo(bx+6, byy+bh); ctx.lineTo(bx, byy+bh+7); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#1b1b2f'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
+    ctx.fillText('CONDUCTOR, POINT GROUND,', bx, byy+12);
+    ctx.fillText('BACK UP 50 CARS!', bx, byy+23);
+  }
+
+  // QTE prompt
+  if(S.prompt){
+    const cx0 = VIEW_W/2, cy0 = 100;
+    const frac = S.promptT / Math.max(55, S.window - S.cars);
+    ctx.fillStyle = 'rgba(20,20,40,.85)';
+    ctx.beginPath(); ctx.arc(cx0, cy0, 34, 0, 7); ctx.fill();
+    ctx.strokeStyle = frac > 0.35 ? '#4aa8d8' : '#ff5a4e';
+    ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(cx0, cy0, 30, -Math.PI/2, -Math.PI/2 + frac*Math.PI*2); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='bold 30px Courier New'; ctx.textAlign='center';
+    ctx.fillText(QTE_GLYPH[S.prompt], cx0, cy0+11);
+  }
+
+  // HUD
+  ctx.fillStyle='rgba(20,20,40,.85)'; ctx.fillRect(0,0,VIEW_W,26);
+  ctx.font='bold 12px Courier New'; ctx.textAlign='left';
+  ctx.fillStyle='#d7dde6'; ctx.fillText('CARS: '+S.cars+'/'+S.target+'  |  '+oz+' oz', 10, 17);
+  ctx.fillStyle='#ff8a80'; ctx.fillText('\u2665'.repeat(Math.max(0,lives)), 210, 18);
+  ctx.fillStyle='#ffd94a'; ctx.fillText('LV3', 300, 17);
+  ctx.fillStyle='rgba(255,255,255,.3)'; ctx.fillRect(0, 26, VIEW_W, 3);
+  ctx.fillStyle='#ffd94a'; ctx.fillRect(0, 26, VIEW_W*Math.min(1,S.cars/S.target), 3);
+  drawFloatTexts();
 }
 
 function hurt(msg, forceLife){
@@ -783,10 +1170,27 @@ function drawLandmarks(){
   if(level===1){
     drawWaterTower(120);
     drawSign(745, 'PRIVATE PROPERTY', 'NO COMMIES');
-  } else {
-    drawSign(2380, 'CAUTION', 'SKUNK XING');
+  } else if(level===2){
+    drawAdBillboard(2348);
   }
   for(const fx of cams) drawFlockCam(fx);
+}
+
+function drawAdBillboard(bx){
+  const sx = px(bx);
+  if(sx < -180 || sx > VIEW_W+40) return;
+  const gy = GROUND_Y;
+  ctx.fillStyle='#7a5a34'; ctx.fillRect(sx+20, gy-88, 7, 88); ctx.fillRect(sx+124, gy-88, 7, 88);
+  ctx.fillStyle='#fdf6e3'; ctx.fillRect(sx, gy-142, 152, 58);
+  ctx.strokeStyle='#5a4a2e'; ctx.lineWidth=3; ctx.strokeRect(sx, gy-142, 152, 58);
+  ctx.fillStyle='#1b1b2f'; ctx.font='bold 11px Courier New'; ctx.textAlign='center';
+  ctx.fillText("DAN'S 8/10", sx+76, gy-124);
+  ctx.fillText('SKUNK REMOVAL', sx+76, gy-111);
+  ctx.fillStyle='#c0392b'; ctx.font='bold 9px Courier New';
+  ctx.fillText('PRICES STARTING AT $20', sx+76, gy-95);
+  // small spotlight on the sign because Dan sprang for it
+  ctx.fillStyle='rgba(255,236,150,.14)';
+  ctx.beginPath(); ctx.moveTo(sx+10, gy-84); ctx.lineTo(sx+40, gy-142); ctx.lineTo(sx+112, gy-142); ctx.lineTo(sx+142, gy-84); ctx.closePath(); ctx.fill();
 }
 
 function drawSign(sx0, line1, line2){
@@ -1240,7 +1644,7 @@ function drawSkunkBody(sk, sx){
 }
 
 function drawSkunkBoss(){
-  if(level!==2) return;
+  if(level!==2 || !L2S.revealed) return;
   const sk = L2S.skunk;
   if(sk.sunk) return;
   const sx = px(sk.x);
@@ -1555,6 +1959,7 @@ function drawHUD(){
 }
 
 function render(){
+  if(level===3) return renderTrain();
   drawBg();
   drawWater();
   drawPlats();
@@ -1588,7 +1993,7 @@ function renderIntro(){
   ctx.fillStyle='#d7dde6'; ctx.font='bold 26px Courier New'; ctx.textAlign='center';
   ctx.fillText('LEVEL '+level, VIEW_W/2, 120);
   ctx.fillStyle='#ffd94a'; ctx.font='bold 14px Courier New';
-  ctx.fillText(level===1 ? 'STACKING SEASON' : "THE SKUNK'S LAIR", VIEW_W/2, 146);
+  ctx.fillText(level===1 ? 'STACKING SEASON' : level===2 ? 'AN EASY 20 BUCKS' : 'THE LAST RIDE', VIEW_W/2, 146);
   // Dan head x lives
   ctx.save();
   ctx.translate(VIEW_W/2 - 42, 178);
@@ -1598,7 +2003,7 @@ function renderIntro(){
   ctx.fillStyle='#fff'; ctx.font='bold 22px Courier New';
   ctx.fillText('\u00D7 '+lives, VIEW_W/2 + 32, 202);
   ctx.fillStyle='#8a93a8'; ctx.font='bold 10px Courier New';
-  ctx.fillText(level===1 ? 'STACK OR DIE TRYING' : 'THE ARCH NEMESIS AWAITS', VIEW_W/2, 250);
+  ctx.fillText(level===1 ? 'STACK OR DIE TRYING' : level===2 ? 'WHAT COULD POSSIBLY GO WRONG?' : 'HOLD ON FOR DEAR LIFE', VIEW_W/2, 250);
 }
 
 // ================= state / screens =================
@@ -1609,14 +2014,14 @@ function hide(id){ $(id).classList.add('hidden'); }
 function startGame(){
   hide('titleScreen'); hide('deadScreen'); hide('winScreen'); hide('helpScreen');
   show('muteBtn');
-  Audio8.init(); Audio8.resume(); Audio8.S.start(); Audio8.stop();
+  Audio8.unlock(); Audio8.S.start(); Audio8.stop();
   oz = 0; lives = 3; ozAtLevelStart = 0; nextLifeAt = 100;
   buildLevel(1); resetDan();
   state = 'intro'; introT = 0;
 }
 function retryLevel(){
   hide('deadScreen');
-  Audio8.init(); Audio8.resume(); Audio8.S.start(); Audio8.stop();
+  Audio8.unlock(); Audio8.S.start(); Audio8.stop();
   lives = 3; oz = ozAtLevelStart;
   nextLifeAt = Math.floor(oz/100)*100 + 100;
   buildLevel(level); resetDan();
@@ -1624,10 +2029,10 @@ function retryLevel(){
 }
 function levelClear(){
   Audio8.S.fanfare();
-  if(level === 1){
-    flash('LEVEL 1 COMPLETE!', '#3fae2a');
+  if(level < 3){
+    flash('LEVEL '+level+' COMPLETE!', '#3fae2a');
     ozAtLevelStart = oz;
-    buildLevel(2); resetDan();
+    buildLevel(level+1); resetDan();
     Audio8.stop();
     state = 'intro'; introT = 0;
   } else {
@@ -1664,7 +2069,7 @@ $('muteBtn').addEventListener('click', ()=>{
 // title music: try immediately; browsers that block autoplay get it on the first tap/keypress
 let titleMusicArmed = false;
 function armTitleMusic(){
-  Audio8.init(); Audio8.resume();
+  Audio8.unlock();
   if(!titleMusicArmed){
     titleMusicArmed = true;
     if(state==='title') Audio8.play('title');
@@ -1673,7 +2078,10 @@ function armTitleMusic(){
 }
 armTitleMusic();
 addEventListener('pointerdown', armTitleMusic, {once:false});
+addEventListener('touchend', ()=>Audio8.unlock(), {once:false});
 addEventListener('keydown', armTitleMusic, {once:false});
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) Audio8.resume(); });
+addEventListener('focus', ()=>Audio8.resume());
 
 // ================= loop =================
 let last = 0, acc = 0; const DT = 1000/60;
