@@ -226,6 +226,10 @@ const Audio8 = (() => {
     marx: { bpm:104,
       bass:[45,-1,45,-1,45,45,-1,45, 43,-1,43,-1,43,43,-1,43, 41,-1,41,-1,41,41,-1,41, 40,-1,42,-1,43,-1,44,-1],
       lead:[69,-1,72,-1,76,-1,75,-1, 74,-1,-1,72,-1,-1,69,-1, 68,-1,72,-1,75,-1,74,-1, 72,-1,-1,-1,-1,-1,-1,-1] },
+    // victory: unearned, triumphant, deeply goofy
+    victory: { bpm:150,
+      bass:[36,-1,43,-1,36,-1,43,-1, 41,-1,48,-1,41,-1,48,-1, 43,-1,50,-1,43,-1,50,-1, 36,-1,43,48,50,-1,-1,-1],
+      lead:[72,-1,72,74,76,-1,76,77, 79,-1,-1,77,76,-1,74,-1, 76,-1,77,79,81,-1,79,-1, 84,-1,81,-1,79,-1,-1,-1] },
     // boss: hard-charging retro boss theme
     boss: { bpm:168,
       bass:[40,40,40,45,43,43,43,47, 40,40,40,45,48,47,45,43, 40,40,40,45,43,43,43,47, 50,-1,48,-1,47,-1,45,-1],
@@ -509,7 +513,7 @@ function buildLevel(n){
       {x:3560, y:205, used:false, bump:0},
     ];
     coins = [
-      ...coinRow(180, 270, 4), ...coinRow(400, 205, 3), ...coinRow(560, 155, 2),
+      ...coinRow(260, 270, 3), ...coinRow(400, 205, 3), ...coinRow(560, 155, 2),
       ...coinRow(1010, 195, 2, 45),
       ...coinRow(1170, 200, 3), ...coinRow(1340, 150, 3),
       ...coinRow(1790, 190, 2, 45),
@@ -1095,7 +1099,24 @@ function stepTrain(){
   if(S.phase === 'brawl') return stepBrawl();
   if(S.phase === 'won'){
     S.t++;
-    if(S.t > 150) return levelClear();
+    // fireworks
+    if(S.t % 22 === 0){
+      const fx4 = 60 + Math.random()*(VIEW_W-120), fy4 = 50 + Math.random()*110;
+      const hue = (Math.random()*360)|0;
+      const parts = [];
+      for(let i=0;i<16;i++){
+        const a = (i/16)*Math.PI*2;
+        parts.push({x:fx4, y:fy4, vx:Math.cos(a)*(1.6+Math.random()), vy:Math.sin(a)*(1.6+Math.random())});
+      }
+      S.fw.push({parts, hue, t:0});
+      Audio8.S.pop();
+    }
+    for(let i=S.fw.length-1;i>=0;i--){
+      const f = S.fw[i]; f.t++;
+      for(const p of f.parts){ p.x += p.vx; p.y += p.vy; p.vy += 0.06; }
+      if(f.t > 55) S.fw.splice(i,1);
+    }
+    if(S.t > 420) return levelClear();
     return;
   }
 }
@@ -1120,7 +1141,7 @@ function stepBrawl(){
   if(S.inv > 0) S.inv--;
   if(j.dead){
     j.deadT++;
-    if(j.deadT === 60){ S.phase = 'won'; S.t = 0; Audio8.stop(); Audio8.S.fanfare(); flash('GO BACK TO THE CRAFT!', '#3fae2a'); }
+    if(j.deadT === 60){ S.phase = 'won'; S.t = 0; Audio8.stop(); Audio8.play('victory'); S.fw = []; }
     return;
   }
   if(j.hurtT > 0) j.hurtT--;
@@ -1315,17 +1336,12 @@ function renderTrain(){
     }
   }
 
-  // a red banner staked across the track: the train stops short of it
+  // a plain red banner staked across the track; the train stops short of it
   if(S.phase==='stop' || S.phase==='brawl' || S.phase==='won'){
     const bnx = S.phase==='stop' ? VIEW_W + 60 - Math.min(VIEW_W - rearX - 210, S.doneT*4) : rearX + 190;
-    // posts either side of the rails
-    ctx.fillStyle='#8a1c14'; ctx.fillRect(bnx-2, 246, 6, 62); ctx.fillRect(bnx+96, 246, 6, 62);
-    // the banner itself
-    ctx.fillStyle='#c0392b'; ctx.fillRect(bnx, 248, 98, 30);
-    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.strokeRect(bnx+3, 251, 92, 24);
-    ctx.fillStyle='#fff'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
-    ctx.fillText('STOP', bnx+49, 262);
-    ctx.fillText('ALL OPS', bnx+49, 272);
+    ctx.fillStyle='#8a1c14'; ctx.fillRect(bnx-2, 250, 6, 58); ctx.fillRect(bnx+74, 250, 6, 58);
+    ctx.fillStyle='#c0392b'; ctx.fillRect(bnx, 252, 76, 26);
+    ctx.strokeStyle='#e8e8ec'; ctx.lineWidth=2; ctx.strokeRect(bnx+3, 255, 70, 20);
   }
   // === Dan, clinging to the rear-car ladder, facing the move ===
   if(S.phase !== 'fall' && S.phase !== 'brawl' && S.phase !== 'won'){
@@ -1464,8 +1480,29 @@ function renderTrain(){
       ctx.fillStyle='#8a93a8'; ctx.fillRect(-3.5, -4, 7, 1); ctx.fillRect(-3.5, -1.5, 7, 1);
       ctx.restore();
     }
-    drawBossBar('TRAINMASTER LAUER', Math.max(0,j.hp), 4, j.hurtT>75?1:0);
+    if(S.phase!=='won') drawBossBar('TRAINMASTER LAUER', Math.max(0,j.hp), 4, j.hurtT>75?1:0);
     if(!j.dead) drawBossLine(JL_LINES[j.line]);
+    // === victory: fireworks + the slow crawl of vindication ===
+    if(S.phase==='won'){
+      for(const f of (S.fw||[])){
+        const fade = 1 - f.t/55;
+        for(const p of f.parts){
+          ctx.fillStyle = 'hsla('+f.hue+',95%,65%,'+fade+')';
+          ctx.fillRect(p.x, p.y, 3, 3);
+          ctx.fillStyle = 'hsla('+f.hue+',95%,80%,'+(fade*0.4)+')';
+          ctx.fillRect(p.x-1, p.y-1, 5, 5);
+        }
+      }
+      const txt = "I'M GOOD AT RAILROADING!";
+      ctx.font='bold 34px Courier New'; ctx.textAlign='left';
+      const tw = ctx.measureText(txt).width;
+      const tx = VIEW_W + 20 - S.t*((VIEW_W + tw + 60)/400);   // slow, dignified crawl
+      const ty = 128 + Math.sin(S.t*0.07)*5;
+      ctx.strokeStyle='#0a2a08'; ctx.lineWidth=6;
+      ctx.strokeText(txt, tx, ty);
+      ctx.fillStyle='#4dff4d';
+      ctx.fillText(txt, tx, ty);
+    }
     // STOP ALL OPERATIONS
     if(S.phase==='brawl' && S.t < 130){
       const a = S.t < 100 ? 1 : 1-(S.t-100)/30;
