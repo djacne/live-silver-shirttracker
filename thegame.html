@@ -581,7 +581,7 @@ function buildLevel(n){
     L3S = {phase:'cut', t:0, cars:0, target:50, prompt:null, promptT:0, window:95,
            nextIn:110, scroll:0, speed:0, jolt:0, doneT:0, fallT:0,
            items:[], itemIn:40, itemN:0,
-           dx:0, dy:0, dvy:0, dground:true, dface:1, walkT:0, inv:0,
+           dx:0, dy:0, dvy:0, dground:true, dface:1, walkT:0, inv:0, stopT:0,
            jl:{x:0, y:0, vx:0, hp:4, hurtT:0, lungeT:80, dead:false, deadT:0, line:0, lineT:0}};
   }
 }
@@ -1081,11 +1081,12 @@ function stepTrain(){
     return;
   }
   if(S.phase === 'stop'){
-    S.speed = Math.max(0, S.speed - 0.06);
+    S.speed = Math.max(0, S.speed - 0.075);
     S.scroll += S.speed;
     S.doneT++;
+    if(S.doneT === 20){ S.stopT = 1; }        // the call goes out while she's still rolling
     if(S.doneT === 60) flash('AND STOP!', '#3fae2a');
-    if(S.doneT > 200){
+    if(S.doneT > 230){
       // Dan climbs down and walks off the head end. The trainmaster is waiting.
       S.phase = 'brawl'; S.t = 0;
       S.dx = 150; S.dy = GROUND_Y - 40; S.dvy = 0; S.dground = true; S.dface = 1;
@@ -1096,6 +1097,7 @@ function stepTrain(){
     }
     return;
   }
+  if(S.stopT > 0) S.stopT++;
   if(S.phase === 'brawl') return stepBrawl();
   if(S.phase === 'won'){
     S.t++;
@@ -1127,6 +1129,7 @@ const JL_LINES = ['OPS TEST FAILURE!', 'LEVEL S!', "YOU CAN'T RIDE A CAR LIKE TH
 function stepBrawl(){
   const S = L3S, j = S.jl;
   S.t++;
+  if(S.stopT > 0) S.stopT++;
   if(++j.lineT > 240){ j.lineT = 0; j.line = (j.line+1) % JL_LINES.length; }
   // Dan: simple platforming on flat ground
   const acc = 0.5, max = 3.6, fr = 0.82;
@@ -1366,15 +1369,14 @@ function renderTrain(){
     ctx.fillStyle='#f26a1b'; ctx.fillRect(3, 14, 20, 15);
     ctx.fillStyle='#2e3d6b'; ctx.fillRect(11.5, 14, 3, 15);
     ctx.fillStyle='#e8e8ec'; ctx.fillRect(3, 19, 20, 2.2); ctx.fillRect(3, 24, 20, 2.2);
-    ctx.fillStyle='#2e3d6b'; ctx.fillRect(18, 16, 7, 10);
-    ctx.fillStyle='#e8b68a'; ctx.fillRect(20, 25, 5, 4);
+    // arm reaching BACK to the ladder rail, not across his face
+    ctx.fillStyle='#f26a1b'; ctx.fillRect(-4, 16, 8, 5);
+    ctx.fillStyle='#e8b68a'; ctx.fillRect(-9, 16.5, 5, 4);
     danHead();
     ctx.restore();
     // white-knuckle grip on the ladder rail
     if(onLadder){
-      ctx.strokeStyle='#e8b68a'; ctx.lineWidth=3;
-      ctx.beginPath(); ctx.moveTo(danX-2, danY-28); ctx.lineTo(rearX+122, baseY-20); ctx.stroke();
-      ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(rearX+122, baseY-20, 2.5, 0, 7); ctx.fill();
+      ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(rearX+124, baseY-22, 3, 0, 7); ctx.fill();
     }
   } else if(S.phase === 'fall'){
     // tumbling off
@@ -1503,17 +1505,7 @@ function renderTrain(){
       ctx.fillStyle='#4dff4d';
       ctx.fillText(txt, tx, ty);
     }
-    // STOP ALL OPERATIONS
-    if(S.phase==='brawl' && S.t < 130){
-      const a = S.t < 100 ? 1 : 1-(S.t-100)/30;
-      ctx.globalAlpha = a;
-      ctx.font='bold 30px Courier New'; ctx.textAlign='center';
-      ctx.strokeStyle='#000'; ctx.lineWidth=5;
-      ctx.strokeText('STOP ALL OPERATIONS!', VIEW_W/2, 140);
-      ctx.fillStyle='#ff2b1c';
-      ctx.fillText('STOP ALL OPERATIONS!', VIEW_W/2, 140);
-      ctx.globalAlpha = 1;
-    }
+
   }
 
   // QTE prompt
@@ -1527,6 +1519,21 @@ function renderTrain(){
     ctx.beginPath(); ctx.arc(cx0, cy0, 30, -Math.PI/2, -Math.PI/2 + frac*Math.PI*2); ctx.stroke();
     ctx.fillStyle='#fff'; ctx.font='bold 30px Courier New'; ctx.textAlign='center';
     ctx.fillText(QTE_GLYPH[S.prompt], cx0, cy0+11);
+  }
+
+  // STOP ALL OPERATIONS -- called while she's still rolling, held long enough to read
+  if(S.stopT > 0 && S.stopT < 300){
+    const a = S.stopT < 250 ? Math.min(1, S.stopT/10) : 1-(S.stopT-250)/50;
+    ctx.globalAlpha = a;
+    const pulse = 1 + Math.sin(S.stopT*0.12)*0.03;
+    ctx.save(); ctx.translate(VIEW_W/2, 120); ctx.scale(pulse, pulse);
+    ctx.font='bold 30px Courier New'; ctx.textAlign='center';
+    ctx.strokeStyle='#000'; ctx.lineWidth=6;
+    ctx.strokeText('STOP ALL OPERATIONS!', 0, 0);
+    ctx.fillStyle='#ff2b1c';
+    ctx.fillText('STOP ALL OPERATIONS!', 0, 0);
+    ctx.restore();
+    ctx.globalAlpha = 1;
   }
 
   // HUD
@@ -1925,7 +1932,7 @@ function stepLevel5(){
     const k = S.king;
     if(!k.active && !k.done && dan.x > FLAG_X - 520){
       k.active = true; Audio8.S.audit ? Audio8.S.audit() : Audio8.S.bonk();
-      flash('THE CRACKHEAD KING!', '#8a1c14');
+      flash('THE KING OF JUNCTION CITY!', '#8a1c14');
     }
     if(k.active && !k.done){
       if(k.hurtT>0) k.hurtT--;
@@ -2108,7 +2115,7 @@ function drawKing(){
   ctx.fillRect(15, 15, 3, 5); ctx.fillRect(20, 16, 3, 6); ctx.fillRect(25, 15, 3, 5); ctx.fillRect(29, 14, 2.5, 4);
   ctx.fillStyle='#5a3a30'; ctx.fillRect(19, 13.5, 8, 2.5+Math.abs(jit)*0.6);
   ctx.restore();
-  drawBossBar('THE CRACKHEAD KING', k.hp, 4, k.hurtT>75?1:0);
+  drawBossBar('KING OF JUNCTION CITY', k.hp, 4, k.hurtT>75?1:0);
   drawBossLine(KING_LINES[Math.floor(time/240) % KING_LINES.length]);
 }
 
