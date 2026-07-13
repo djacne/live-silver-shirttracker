@@ -572,7 +572,8 @@ function buildLevel(n){
     ];
     cams = [1000, 2170, 3250];
     L5S = {phase:'car', t:0, carX:-190, paper:null,
-      king:{x:FLAG_X-120, y:GROUND_Y-72, w:44, h:72, vx:0, vy:0, hp:4, hurtT:0, jumpT:120, active:false, dead:false, deadT:0, done:false, throwT:90},
+      king:{x:FLAG_X-120, y:GROUND_Y-72, w:44, h:72, vx:0, vy:0, hp:4, hurtT:0, jumpT:120, active:false, dead:false, deadT:0, done:false, throwT:90, throne:true, throneT:0},
+      caddy:{x:FLAG_X-150},
       thrown:[]};
   }
   if(kind === 'train'){
@@ -635,7 +636,8 @@ const JOHNSON_LINES = ['NOBODY CROSSES ON MY WATCH!', 'STEP AWAY FROM THAT ILLEG
 const TUNEUPS = ['TUNE-UP DELIVERED!', 'FREE ATTITUDE ADJUSTMENT!', 'COMPLIANCE ACHIEVED!', 'COURTESY OF THE KHP!'];
 const DOG_STOMPS = ['BAD DOG!', 'NO TREATS TODAY!'];
 const DOG_HITS = ['BIT BY A STRAY!', 'THE PITBULL WON!'];
-const KING_LINES = ['I RUN THESE STREETS!', "THAT'S MY CORNER, OFFICER!", 'YOU CAN\'T TUNE ME UP!'];
+const KING_LINES = ['I RUN THESE STREETS!', "THAT'S MY CORNER, OFFICER!", "YOU CAN'T TUNE ME UP!",
+  'YOU KNOW WHO I AM?!'];
 const KING_HITS = ['THE KING GOT YOU!', 'ROBBED IN BROAD DAYLIGHT!', 'STREET TAX: -5 oz!'];
 const BOSS1_HITS = ['SEIZED BY THE PROLETARIAT!', 'YOUR LABOR IS ALIENATED!', 'EXPROPRIATED: -5 oz!'];
 const BOSS_SPEECHES = [
@@ -1173,7 +1175,7 @@ function stepBrawl(){
       S.inv = 90; lives--;
       Audio8.S.hurt();
       if(lives <= 0) return gameOver();
-      flash('WRITTEN UP!');
+      flash(pick(['LEVEL S!', 'DECERTIFIED!']));
     }
   }
   const db = {x:S.dx, y:S.dy, w:26, h:40};
@@ -1190,7 +1192,7 @@ function stepBrawl(){
       lives--;
       Audio8.S.hurt();
       if(lives <= 0) return gameOver();
-      flash(pick(JL_LINES));
+      flash(pick(['LEVEL S!', 'DECERTIFIED!']));
       S.dx = Math.max(30, S.dx - 60);
     }
   }
@@ -1948,7 +1950,17 @@ function stepLevel5(){
     const k = S.king;
     if(!k.active && !k.done && dan.x > FLAG_X - 520){
       k.active = true; Audio8.S.audit ? Audio8.S.audit() : Audio8.S.bonk();
-      flash('THE KING OF JUNCTION CITY!', '#8a1c14');
+      flash('VONN QUINN', '#8a1c14');
+    }
+    if(k.active && !k.done && k.throne){
+      k.throneT++;
+      // he takes his time getting up. he's not worried.
+      if(k.throneT > 90 || dan.x > FLAG_X - 330){
+        k.throne = false;
+        k.x = S.caddy.x - 10; k.y = GROUND_Y - k.h;
+        Audio8.S.bonk();
+      }
+      return;
     }
     if(k.active && !k.done){
       if(k.hurtT>0) k.hurtT--;
@@ -2070,6 +2082,85 @@ function drawSquadCar(){
   }
 }
 
+function drawCaddy(){
+  if(kind!=='city') return;
+  const S = L5S;
+  const sx = px(S.caddy.x);
+  if(sx < -180 || sx > VIEW_W+180) return;
+  const gy = GROUND_Y;
+  const W = 132;                     // rear view: we're looking at the back of the car
+  const L = sx - W/2;
+
+  // ground shadow
+  ctx.fillStyle='rgba(0,0,0,.22)';
+  ctx.beginPath(); ctx.ellipse(sx, gy-2, W/2+6, 6, 0, 0, 7); ctx.fill();
+
+  // --- rear tires ---
+  ctx.fillStyle='#12121c';
+  ctx.fillRect(L-4, gy-26, 16, 26); ctx.fillRect(L+W-12, gy-26, 16, 26);
+  ctx.fillStyle='#e8e8ec';           // whitewalls
+  ctx.fillRect(L-2, gy-22, 12, 18); ctx.fillRect(L+W-10, gy-22, 12, 18);
+  ctx.fillStyle='#c8a03a';           // gold spinners
+  ctx.beginPath(); ctx.arc(L+4, gy-13, 5, 0, 7); ctx.arc(L+W-4, gy-13, 5, 0, 7); ctx.fill();
+  ctx.strokeStyle='#8a6f1c'; ctx.lineWidth=1;
+  for(let s2=0;s2<4;s2++){
+    const a=s2*0.79 + time*0.02;
+    ctx.beginPath(); ctx.moveTo(L+4, gy-13); ctx.lineTo(L+4+Math.cos(a)*5, gy-13+Math.sin(a)*5);
+    ctx.moveTo(L+W-4, gy-13); ctx.lineTo(L+W-4+Math.cos(a)*5, gy-13+Math.sin(a)*5); ctx.stroke();
+  }
+
+  // --- body: big white slab ---
+  const grad = ctx.createLinearGradient(0, gy-74, 0, gy-8);
+  grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.55, '#f2f2f4'); grad.addColorStop(1, '#d4d4da');
+  ctx.fillStyle = grad;
+  ctx.fillRect(L, gy-56, W, 48);
+  // rear deck / trunk lid
+  ctx.fillStyle='#fafafc'; ctx.fillRect(L+4, gy-60, W-8, 8);
+  // cabin + rear window
+  ctx.fillStyle = grad; ctx.fillRect(L+16, gy-88, W-32, 32);
+  ctx.fillStyle='#1e2a3a'; ctx.fillRect(L+24, gy-84, W-48, 22);
+  ctx.fillStyle='rgba(255,255,255,.16)'; ctx.fillRect(L+26, gy-82, W-52, 7);
+  // vinyl roof
+  ctx.fillStyle='#c8c8ce'; ctx.fillRect(L+14, gy-92, W-28, 5);
+
+  // --- the fins ---
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.moveTo(L, gy-56); ctx.lineTo(L-6, gy-78); ctx.lineTo(L+10, gy-56); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(L+W, gy-56); ctx.lineTo(L+W+6, gy-78); ctx.lineTo(L+W-10, gy-56); ctx.closePath(); ctx.fill();
+  // bullet taillights in the fins
+  ctx.fillStyle='#ff2b1c';
+  ctx.beginPath(); ctx.ellipse(L-1, gy-70, 3.5, 6, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(L+W+1, gy-70, 3.5, 6, 0, 0, 7); ctx.fill();
+  ctx.fillStyle='rgba(255,140,120,.85)';
+  ctx.beginPath(); ctx.ellipse(L-1, gy-72, 1.6, 2.6, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(L+W+1, gy-72, 1.6, 2.6, 0, 0, 7); ctx.fill();
+  // lower tail lamps
+  ctx.fillStyle='#c0392b';
+  ctx.fillRect(L+8, gy-30, 16, 7); ctx.fillRect(L+W-24, gy-30, 16, 7);
+
+  // --- chrome ---
+  ctx.fillStyle='#d8dce2'; ctx.fillRect(L-6, gy-20, W+12, 8);        // rear bumper
+  ctx.fillStyle='#f0f2f6'; ctx.fillRect(L-6, gy-20, W+12, 2.5);
+  ctx.fillStyle='#c8cdd6'; ctx.fillRect(L+2, gy-52, W-4, 2);         // trim strip
+  // exhaust tips
+  ctx.fillStyle='#8a93a8'; ctx.fillRect(L+16, gy-12, 10, 4); ctx.fillRect(L+W-26, gy-12, 10, 4);
+
+  // --- the plate ---
+  const px0 = L + W/2 - 24;
+  ctx.fillStyle='#f4d34a'; ctx.fillRect(px0, gy-44, 48, 18);
+  ctx.strokeStyle='#1b1b2f'; ctx.lineWidth=1.5; ctx.strokeRect(px0, gy-44, 48, 18);
+  ctx.fillStyle='#1b1b2f'; ctx.font='bold 11px Courier New'; ctx.textAlign='center';
+  ctx.fillText('BULLET', px0+24, gy-31);
+  ctx.fillStyle='#8a6f1c'; ctx.font='bold 4px Courier New';
+  ctx.fillText('KANSAS', px0+24, gy-38.5);
+  // plate lights
+  ctx.fillStyle='rgba(255,240,180,.5)';
+  ctx.fillRect(px0-4, gy-46, 3, 2); ctx.fillRect(px0+49, gy-46, 3, 2);
+
+  // gleam
+  if((time>>4)%5===0){ ctx.fillStyle='#fff'; ctx.fillRect(L+W-26, gy-86, 4, 4); }
+}
+
 function drawKing(){
   if(kind!=='city') return;
   const S = L5S, k = S.king;
@@ -2082,6 +2173,43 @@ function drawKing(){
     ctx.restore();
   }
   if(!k.active) return;
+  if(k.throne){
+    // perched on the trunk of the Caddy, entirely unbothered
+    const sx0 = px(S.caddy.x);
+    const gy = GROUND_Y;
+    const lean = Math.sin(time*0.05)*1.5;
+    ctx.save(); ctx.translate(sx0 - 6, gy - 60 + lean);
+    // legs dangling down the trunk
+    ctx.fillStyle='#4a4a52';
+    ctx.fillRect(6, 10, 11, 20); ctx.fillRect(20, 12, 11, 18);
+    ctx.fillStyle='#9aa0a6'; ctx.fillRect(4, 28, 15, 6); ctx.fillRect(19, 28, 15, 6);
+    // coat
+    ctx.fillStyle='#6b7a4a'; ctx.fillRect(2, -14, 34, 26);
+    ctx.fillStyle='#57633c'; ctx.fillRect(2, -14, 34, 4);
+    ctx.fillStyle='#8a6f3c'; ctx.fillRect(7, -4, 8, 8);
+    // arm draped back on the roof, king of all he surveys
+    ctx.fillStyle='#6b7a4a'; ctx.fillRect(30, -16, 14, 6);
+    ctx.fillStyle='#3a2517'; ctx.fillRect(44, -17, 7, 6);
+    // head
+    ctx.fillStyle='#3a2517'; ctx.beginPath(); ctx.arc(19, -24, 11, 0, 7); ctx.fill();
+    ctx.fillStyle='#b03a2e'; ctx.beginPath(); ctx.arc(19, -29, 11.5, Math.PI, 0); ctx.fill();
+    ctx.fillRect(8, -31, 22, 4);
+    ctx.fillStyle='#ffd94a';
+    ctx.beginPath();
+    ctx.moveTo(8, -38); ctx.lineTo(11, -46); ctx.lineTo(15, -39); ctx.lineTo(19, -48);
+    ctx.lineTo(23, -39); ctx.lineTo(27, -46); ctx.lineTo(30, -38); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#c0392b'; ctx.fillRect(12, -41, 3, 3); ctx.fillRect(23, -41, 3, 3);
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(15, -24, 4.6, 0, 7); ctx.arc(24, -24, 4.6, 0, 7); ctx.fill();
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.arc(13.5, -24, 2.2, 0, 7); ctx.arc(22.5, -24, 2.2, 0, 7); ctx.fill();
+    ctx.fillStyle='#0e0a08';
+    ctx.fillRect(12, -17, 3, 5); ctx.fillRect(17, -16, 3, 6); ctx.fillRect(22, -17, 3, 5);
+    ctx.restore();
+    drawBossBar('VONN QUINN', k.hp, 4, 0);
+    drawBossLine('YOU KNOW WHO I AM?!');
+    return;
+  }
   const sx = px(k.x);
   if(k.dead){
     if(k.deadT > 70) return;
@@ -2131,7 +2259,7 @@ function drawKing(){
   ctx.fillRect(15, 15, 3, 5); ctx.fillRect(20, 16, 3, 6); ctx.fillRect(25, 15, 3, 5); ctx.fillRect(29, 14, 2.5, 4);
   ctx.fillStyle='#5a3a30'; ctx.fillRect(19, 13.5, 8, 2.5+Math.abs(jit)*0.6);
   ctx.restore();
-  drawBossBar('KING OF JUNCTION CITY', k.hp, 4, k.hurtT>75?1:0);
+  drawBossBar('VONN QUINN', k.hp, 4, k.hurtT>75?1:0);
   drawBossLine(KING_LINES[Math.floor(time/240) % KING_LINES.length]);
 }
 
@@ -3277,8 +3405,6 @@ function drawFlag(){
   ctx.fillStyle='#2b2b1a'; ctx.font='bold 6px Courier New'; ctx.textAlign='center';
   ctx.fillText('DONT TREAD ON ME', cx0, GROUND_Y-139);
   ctx.globalAlpha = 1;
-  ctx.fillStyle='#2b2b2b'; ctx.font='bold 11px Courier New';
-  ctx.fillText('RETIREMENT \u2192', sx-70, GROUND_Y-60);
 }
 
 function drawWifeAndChickens(){
@@ -3426,6 +3552,7 @@ function render(){
   drawNelson();
   drawCanadian();
   drawSquadCar();
+  drawCaddy();
   drawKing();
   drawResignation();
   drawTumbleweed();
