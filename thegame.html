@@ -1007,6 +1007,7 @@ function stepTrain(){
   time++;
   const S = L3S;
   S.t++;
+  if(S.stopT > 0) S.stopT++;
   const press = freshPress();
   if(S.phase === 'cut'){
     if(S.t === 190){ Audio8.S.clank(); }       // Dan lands on the car
@@ -1084,9 +1085,8 @@ function stepTrain(){
     S.speed = Math.max(0, S.speed - 0.075);
     S.scroll += S.speed;
     S.doneT++;
-    if(S.doneT === 20){ S.stopT = 1; }        // the call goes out while she's still rolling
-    if(S.doneT === 60) flash('AND STOP!', '#3fae2a');
-    if(S.doneT > 230){
+    if(S.doneT === 12){ S.stopT = 1; }        // the call goes out while she's still rolling
+    if(S.doneT > 300){
       // Dan climbs down and walks off the head end. The trainmaster is waiting.
       S.phase = 'brawl'; S.t = 0;
       S.dx = 150; S.dy = GROUND_Y - 40; S.dvy = 0; S.dground = true; S.dface = 1;
@@ -1097,12 +1097,12 @@ function stepTrain(){
     }
     return;
   }
-  if(S.stopT > 0) S.stopT++;
   if(S.phase === 'brawl') return stepBrawl();
   if(S.phase === 'won'){
     S.t++;
-    // fireworks
-    if(S.t % 22 === 0){
+    if(S.t % 32 === 0 && S.t <= 128) Audio8.S.ding();   // each word lands
+    // fireworks once the line is complete
+    if(S.t > 128 && S.t % 20 === 0){
       const fx4 = 60 + Math.random()*(VIEW_W-120), fy4 = 50 + Math.random()*110;
       const hue = (Math.random()*360)|0;
       const parts = [];
@@ -1129,7 +1129,6 @@ const JL_LINES = ['OPS TEST FAILURE!', 'LEVEL S!', "YOU CAN'T RIDE A CAR LIKE TH
 function stepBrawl(){
   const S = L3S, j = S.jl;
   S.t++;
-  if(S.stopT > 0) S.stopT++;
   if(++j.lineT > 240){ j.lineT = 0; j.line = (j.line+1) % JL_LINES.length; }
   // Dan: simple platforming on flat ground
   const acc = 0.5, max = 3.6, fr = 0.82;
@@ -1341,7 +1340,7 @@ function renderTrain(){
 
   // a plain red banner staked across the track; the train stops short of it
   if(S.phase==='stop' || S.phase==='brawl' || S.phase==='won'){
-    const bnx = S.phase==='stop' ? VIEW_W + 60 - Math.min(VIEW_W - rearX - 210, S.doneT*4) : rearX + 190;
+    const bnx = Math.max(rearX + 152, VIEW_W + 70 - S.doneT*5.2);
     ctx.fillStyle='#8a1c14'; ctx.fillRect(bnx-2, 250, 6, 58); ctx.fillRect(bnx+74, 250, 6, 58);
     ctx.fillStyle='#c0392b'; ctx.fillRect(bnx, 252, 76, 26);
     ctx.strokeStyle='#e8e8ec'; ctx.lineWidth=2; ctx.strokeRect(bnx+3, 255, 70, 20);
@@ -1495,15 +1494,32 @@ function renderTrain(){
           ctx.fillRect(p.x-1, p.y-1, 5, 5);
         }
       }
-      const txt = "I'M GOOD AT RAILROADING!";
-      ctx.font='bold 34px Courier New'; ctx.textAlign='left';
-      const tw = ctx.measureText(txt).width;
-      const tx = VIEW_W + 20 - S.t*((VIEW_W + tw + 60)/400);   // slow, dignified crawl
-      const ty = 128 + Math.sin(S.t*0.07)*5;
-      ctx.strokeStyle='#0a2a08'; ctx.lineWidth=6;
-      ctx.strokeText(txt, tx, ty);
-      ctx.fillStyle='#4dff4d';
-      ctx.fillText(txt, tx, ty);
+      // words land one at a time, then the whole line bounces
+      const words = ["I'M", 'GOOD', 'AT', 'RAILROADING!'];
+      const WORD_IN = 32;                       // frames between each word
+      const shown = Math.min(words.length, Math.floor(S.t / WORD_IN) + 1);
+      const done = S.t >= words.length * WORD_IN;
+      ctx.font='bold 30px Courier New'; ctx.textAlign='left';
+      const widths = words.map(w => ctx.measureText(w + ' ').width);
+      const total = widths.reduce((a,b)=>a+b, 0) - ctx.measureText(' ').width;
+      let cx0 = (VIEW_W - total) / 2;
+      const bounce = done ? Math.abs(Math.sin((S.t - words.length*WORD_IN) * 0.13)) * 14 : 0;
+      for(let i=0; i<shown; i++){
+        const age = S.t - i*WORD_IN;
+        // each word slams in: overshoot then settle
+        const pop = age < 10 ? 1.6 - age*0.06 : 1;
+        const ty = 130 - bounce * (1 - Math.abs(i - (words.length-1)/2) * 0.12);
+        ctx.save();
+        ctx.translate(cx0 + widths[i]/2 - ctx.measureText(' ').width/2, ty);
+        ctx.scale(pop, pop);
+        ctx.textAlign='center';
+        ctx.strokeStyle='#0a2a08'; ctx.lineWidth=6;
+        ctx.strokeText(words[i], 0, 0);
+        ctx.fillStyle = done && (S.t>>3)%2===0 ? '#8dff8d' : '#4dff4d';
+        ctx.fillText(words[i], 0, 0);
+        ctx.restore();
+        cx0 += widths[i];
+      }
     }
 
   }
@@ -1522,15 +1538,15 @@ function renderTrain(){
   }
 
   // STOP ALL OPERATIONS -- called while she's still rolling, held long enough to read
-  if(S.stopT > 0 && S.stopT < 300){
-    const a = S.stopT < 250 ? Math.min(1, S.stopT/10) : 1-(S.stopT-250)/50;
+  if(S.stopT > 0 && S.stopT < 285){
+    const a = S.stopT < 245 ? Math.min(1, S.stopT/8) : 1-(S.stopT-245)/40;
     ctx.globalAlpha = a;
     const pulse = 1 + Math.sin(S.stopT*0.12)*0.03;
     ctx.save(); ctx.translate(VIEW_W/2, 120); ctx.scale(pulse, pulse);
     ctx.font='bold 30px Courier New'; ctx.textAlign='center';
     ctx.strokeStyle='#000'; ctx.lineWidth=6;
     ctx.strokeText('STOP ALL OPERATIONS!', 0, 0);
-    ctx.fillStyle='#ff2b1c';
+    ctx.fillStyle = (S.stopT>>3)%2===0 ? '#ff2b1c' : '#ffd94a';
     ctx.fillText('STOP ALL OPERATIONS!', 0, 0);
     ctx.restore();
     ctx.globalAlpha = 1;
