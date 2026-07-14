@@ -1688,7 +1688,7 @@ function step(){
           e.spin = dan.face * 0.34;
           e.rot = 0;
           e.flyT = 0;
-          burst(e.type==='dog' ? pick(DOG_STOMPS) : pick(TUNEUPS), 0, 0, '#3fae2a');
+          burst(e.type==='dog' ? pick(DOG_STOMPS) : pick(TUNEUPS), 0, 0, '#4a90d9');
           riseText(ix, e.y-6, '+2 oz');
           bumpStreak(ix, e.y);
         }
@@ -1812,7 +1812,7 @@ function step(){
                 e.type==='dog' ? pick(DOG_STOMPS) :
                 kind==='city' ? pick(TUNEUPS) :
                 pick(RED_STOMPS);
-          burst(line, e.x + e.w/2, e.y - 6, '#3fae2a');
+          burst(line, e.x + e.w/2, e.y - 6, '#4a90d9');
           bumpStreak(e.x + e.w/2, e.y);
         }
       } else if(dan.inv<=0){
@@ -1886,12 +1886,13 @@ function stepBoss1(){
       Audio8.S.bossHit();
       if(b.hp <= 0){
         b.dead = true; b.done = true;
+        b.thrown = [];   // no emblems left hanging frozen in the air
         oz += 15;
         killPanel('DAS KAPITAL: DENIED!', 'KARL MARX HAS BEEN PRIVATIZED'); toast('+15 oz', '#3fae2a');
         setTimeout(()=>{ if(state==='play' && kind==='silver'){ Audio8.stop(); Audio8.play('level'); } }, 2600);
         Audio8.stop(); Audio8.S.fanfare();   // the level theme comes back on the timer below
       } else {
-        combat(b.hp===2 ? 'PRIVATE PROPERTY DEFENDED!' : 'THE MEANS REMAIN UNSEIZED!', b.x+15, b.y-14, '#3fae2a');
+        combat(b.hp===2 ? 'PRIVATE PROPERTY DEFENDED!' : 'THE MEANS REMAIN UNSEIZED!', b.x+15, b.y-14, '#4a90d9');
       }
     } else if(dan.inv<=0 && dan.star<=0){
       return hurt(pick(BOSS1_HITS), false, true);
@@ -2205,8 +2206,8 @@ function stepBrawl(){
     if(stomp && j.hurtT <= 0){
       j.hp--; j.hurtT = 90; S.dvy = -8; S.inv = 60;
       Audio8.S.bonk();
-      burstScreen(pick(DAN_VS_LAUER), S.dx+13, S.dy-16, '#3fae2a', 1);
-      if(j.hp <= 0){ j.dead = true; j.deadT = 0; oz += 20; killPanel('I HIRED OUT TO WORK!', 'HE HIRED OUT TOO, ONCE'); toast('+20 oz', '#3fae2a'); }
+      burstScreen(pick(DAN_VS_LAUER), S.dx+13, S.dy-16, '#4a90d9', 1);
+      if(j.hp <= 0){ j.dead = true; j.deadT = 0; oz += 20; S.clips = []; killPanel('I HIRED OUT TO WORK!', 'HE HIRED OUT TOO, ONCE'); toast('+20 oz', '#3fae2a'); }
     } else if(S.inv <= 0 && !stomp){
       S.inv = 90;
       lives--;
@@ -2592,7 +2593,7 @@ function renderTrain(){
   ctx.font='bold 12px Courier New'; ctx.textAlign='left';
   ctx.fillStyle='#d7dde6'; ctx.fillText('CARS: '+S.cars+'/'+S.target+'  |  '+oz+' oz', 10, 17);
   ctx.fillStyle='#ff8a80'; ctx.fillText('\u2665'.repeat(Math.max(0,lives)), 210, 18);
-  ctx.fillStyle='#ffd94a'; ctx.fillText('LV3', 300, 17);
+  ctx.fillStyle='#ffd94a'; ctx.fillText('LV'+(KIND_TO_LEVEL[kind] || level), 300, 17);
   ctx.fillStyle='rgba(255,255,255,.3)'; ctx.fillRect(0, 26, VIEW_W, 3);
   ctx.fillStyle='#ffd94a'; ctx.fillRect(0, 26, VIEW_W*Math.min(1,S.cars/S.target), 3);
   drawFloatTexts();
@@ -3259,7 +3260,7 @@ function stepLevel4(){
             setTimeout(()=>{ if(state==='play' && kind==='border'){ Audio8.stop(); Audio8.play('canada'); } }, 2600);
             Audio8.S.fanfare();
           } else {
-            combat(j.hp===2 ? "HE'S WITH ME!" : 'JURISDICTION LOST!', j.x+16, j.y-14, '#3fae2a');
+            combat(j.hp===2 ? "HE'S WITH ME!" : 'JURISDICTION LOST!', j.x+16, j.y-14, '#4a90d9');
           }
         } else if(dan.inv<=0 && dan.star<=0){
           return hurt(pick(JOHNSON_HITS), false, true);
@@ -3655,11 +3656,12 @@ function stepLevel5(){
         Audio8.S.bonk();
         if(k.hp <= 0){
           k.dead = true; k.done = true; oz += 20;
+          S.thrown = [];   // no pitbulls left hanging frozen in the air
           killPanel('THE STREETS ARE TUNED!', 'VON QUINN ABDICATES'); toast('+20 oz', '#3fae2a');
           setTimeout(()=>{ if(state==='play' && kind==='city'){ Audio8.stop(); Audio8.play('rage'); } }, 2600);
           Audio8.S.fanfare();
         } else {
-          combat(pick(TUNEUPS), k.x+22, k.y-16, '#3fae2a');
+          combat(pick(TUNEUPS), k.x+22, k.y-16, '#4a90d9');
         }
       } else if(rectHit(dan, k) && dan.inv<=0 && dan.star<=0 && !stomp){
         return hurt(pick(KING_HITS), false, true);
@@ -6160,7 +6162,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '5.6';
+const BUILD = '5.9';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
