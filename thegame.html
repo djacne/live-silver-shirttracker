@@ -19,7 +19,8 @@
     --red:#c0392b; --green:#3fae2a;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
-    -webkit-touch-callout:none;}
+    -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+    -webkit-user-drag:none;touch-action:none;}
   html,body{height:100%;overflow:hidden;background:var(--ink);font-family:'Courier New',monospace;
     touch-action:none;user-select:none;-webkit-user-select:none;
     position:fixed;width:100%;overscroll-behavior:none;}
@@ -89,17 +90,28 @@
     text-align:center;text-transform:uppercase;letter-spacing:2px;border:3px solid var(--silver);
     border-radius:8px;background:#0f0f23;color:#fff;outline:none;margin-bottom:10px;}
   #nameInput:focus, #deadNameInput:focus{border-color:var(--green);}
-  #boardWrap, #deadBoardWrap{background:rgba(255,255,255,.06);border:2px solid #39415c;border-radius:10px;
-    padding:10px 14px;min-width:230px;max-height:150px;overflow-y:auto;}
-  .boardTitle{color:#ffd94a;font-weight:bold;font-size:12px;letter-spacing:2px;margin-bottom:6px;
+  #boardWrap, #deadBoardWrap{background:rgba(12,14,28,.96);border:2px solid #39415c;border-radius:10px;
+    box-shadow:0 8px 0 rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.05) inset;
+    padding:8px 0;width:min(320px,86vw);overflow:hidden;}
+  @media (max-height: 540px){
+    #boardWrap, #deadBoardWrap{width:min(480px,92vw);}
+  }
+  .boardTitle{color:#ffd94a;font-weight:bold;font-size:12px;letter-spacing:2px;margin:2px 14px 6px;
     text-transform:uppercase;}
-  #boardList, #deadBoardList{list-style:none;counter-reset:rank;}
-  #boardList li, #deadBoardList li{counter-increment:rank;display:flex;justify-content:space-between;gap:14px;
-    color:#dfe6f0;font-size:13px;padding:3px 0;white-space:nowrap;}
+  #boardList, #deadBoardList{list-style:none;counter-reset:rank;margin:0;padding:0;}
+  #boardList li, #deadBoardList li{counter-increment:rank;display:flex;justify-content:space-between;gap:10px;
+    color:#eef3f8;font-size:clamp(11px,2.5vw,13px);padding:clamp(3px,0.7vh,5px) 14px;white-space:nowrap;}
+  #boardList li:nth-child(odd), #deadBoardList li:nth-child(odd){background:rgba(255,255,255,.05);}
   #boardList li::before, #deadBoardList li::before{content:counter(rank) ".";color:#8a93a8;width:22px;text-align:right;}
   #boardList li .nm, #deadBoardList li .nm{flex:1;text-align:left;padding-left:8px;overflow:hidden;text-overflow:ellipsis;}
   #boardList li .sc, #deadBoardList li .sc{color:#ffd94a;font-weight:bold;}
   #boardList li.me, #deadBoardList li.me{color:#7CFC00;}
+  #boardList li.empty, #deadBoardList li.empty{color:#4a5570;}
+  #boardList li.empty .sc, #deadBoardList li.empty .sc{color:#4a5570;}
+  @media (max-height: 540px){
+    #boardList, #deadBoardList{display:grid;grid-auto-flow:column;grid-template-rows:repeat(5, auto);grid-template-columns:1fr 1fr;}
+    #boardList li:nth-child(n+6), #deadBoardList li:nth-child(n+6){border-left:1px solid rgba(255,255,255,.12);}
+  }
   #lbWrap{background:rgba(255,255,255,.06);border:2px solid #39415c;border-radius:10px;
     padding:12px 16px;min-width:min(320px,86vw);max-height:52vh;overflow-y:auto;}
   #lbList{list-style:none;counter-reset:rank;margin:0;padding:0;
@@ -709,7 +721,15 @@ function bindBtn(id, k){
 // held keys. Any key held by touch whose pointer is no longer down gets force-released.
 window.addEventListener('pointerup',     e => { activePointers.delete(e.pointerId); }, true);
 window.addEventListener('pointercancel', e => { activePointers.delete(e.pointerId); }, true);
-window.addEventListener('touchend',      e => { if(e.touches.length===0) releaseAllTouchKeys(); }, true);
+window.document.addEventListener('selectstart', e => e.preventDefault());
+document.addEventListener('dragstart', e => e.preventDefault());
+document.addEventListener('contextmenu', e => e.preventDefault());
+// the iOS magnifier arms on a long-press-and-hold before any move happens;
+// eating touchstart here (without blocking our own game input) stops it cold.
+document.addEventListener('touchstart', e => {
+  if(e.touches.length > 1) return;  // don't break pinch/multi-touch controls
+}, {passive: true});
+addEventListener('touchend',      e => { if(e.touches.length===0) releaseAllTouchKeys(); }, true);
 window.addEventListener('touchcancel',   () => releaseAllTouchKeys(), true);
 window.addEventListener('blur',          () => releaseAllTouchKeys());
 document.addEventListener('visibilitychange', () => { if(document.hidden) releaseAllTouchKeys(); });
@@ -1476,7 +1496,7 @@ function streakLabel(){
   return 'x' + streak + ' STREAK!';
 }
 function streakSub(){
-  return '+' + Math.min(12, streak - 1) + ' oz PER STOMP';
+  return '+' + Math.min(12, streak - 1) + ' oz PER TUNE-UP';
 }
 function clearMsgs(){
   bursts = []; quipMsg = null; combatMsg = null; bannerMsg = null;
@@ -4086,34 +4106,311 @@ function drawPine(txx){
 function drawLandmarks(){
   if(kind==='silver'){
     drawWaterTower(120);
-    drawSign(745, 'PRIVATE PROPERTY', 'NO COMMIES');
+    drawPropertySign(745);
   } else if(kind==='skunk'){
     drawAdBillboard(1040);
   } else if(kind==='border'){
     for(const txx of [250, 876, 1480, 2008, 2560, 2928, 3244, 3760]) drawPine(txx);
     drawToronto();
   } else if(kind==='city'){
-    drawSign(210, 'WELCOME TO', 'JUNCTION CITY');
-    drawSign(2360, 'CRIME RATE', 'YES');
+    drawWelcomeArch(210);
+    drawCrimeSign(2360);
   }
   for(const fx of cams){ if(kind==='city') drawPayphone(fx); else drawFlockCam(fx); }
 }
 
 function drawAdBillboard(bx){
   const sx = px(bx);
-  if(sx < -180 || sx > VIEW_W+40) return;
+  if(sx < -220 || sx > VIEW_W+40) return;
   const gy = GROUND_Y;
-  ctx.fillStyle='#7a5a34'; ctx.fillRect(sx+20, gy-88, 7, 88); ctx.fillRect(sx+124, gy-88, 7, 88);
-  ctx.fillStyle='#fdf6e3'; ctx.fillRect(sx, gy-142, 152, 58);
-  ctx.strokeStyle='#5a4a2e'; ctx.lineWidth=3; ctx.strokeRect(sx, gy-142, 152, 58);
-  ctx.fillStyle='#1b1b2f'; ctx.font='bold 11px Courier New'; ctx.textAlign='center';
-  ctx.fillText("DAN'S 8/10", sx+76, gy-124);
-  ctx.fillText('SKUNK REMOVAL', sx+76, gy-111);
-  ctx.fillStyle='#c0392b'; ctx.font='bold 9px Courier New';
-  ctx.fillText('PRICES STARTING AT $20', sx+76, gy-95);
-  // small spotlight on the sign because Dan sprang for it
-  ctx.fillStyle='rgba(255,236,150,.14)';
-  ctx.beginPath(); ctx.moveTo(sx+10, gy-84); ctx.lineTo(sx+40, gy-142); ctx.lineTo(sx+112, gy-142); ctx.lineTo(sx+142, gy-84); ctx.closePath(); ctx.fill();
+  const w = 190, panelH = 128;
+  const px0 = sx, py0 = gy - 250;
+
+  // posts
+  ctx.fillStyle='#7a5a34';
+  ctx.fillRect(sx+24, py0+panelH, 8, gy - (py0+panelH));
+  ctx.fillRect(sx+w-32, py0+panelH, 8, gy - (py0+panelH));
+
+  // the panel itself
+  ctx.fillStyle='#fdf6e3';
+  ctx.fillRect(px0, py0, w, panelH);
+  ctx.strokeStyle='#5a4a2e'; ctx.lineWidth=4;
+  ctx.strokeRect(px0, py0, w, panelH);
+
+  // === THE SCENE: Dan strangling a skunk over a trash can full of water ===
+  ctx.save();
+  ctx.beginPath(); ctx.rect(px0+4, py0+4, w-8, panelH-8); ctx.clip();
+
+  // little painted sky wash inside the ad
+  const g = ctx.createLinearGradient(0, py0, 0, py0+panelH);
+  g.addColorStop(0, '#bfe0f2'); g.addColorStop(1, '#fdf6e3');
+  ctx.fillStyle = g; ctx.fillRect(px0, py0, w, panelH*0.6);
+
+  const cx = px0 + w/2, cy = py0 + panelH - 8;
+
+  // the trash can, full of water, skunk's bottom half submerged in it
+  const canW = 46, canH = 40;
+  const canX = cx - canW/2, canY = cy - canH;
+  ctx.fillStyle = '#8a93a8';
+  ctx.beginPath();
+  ctx.moveTo(canX+4, canY); ctx.lineTo(canX+canW-4, canY);
+  ctx.lineTo(canX+canW, canY+canH); ctx.lineTo(canX, canY+canH);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#5a6270'; ctx.lineWidth = 2; ctx.stroke();
+  // corrugated ribbing
+  ctx.strokeStyle = '#6b7484'; ctx.lineWidth = 1.5;
+  for(const ry of [canY+12, canY+22, canY+32]){
+    ctx.beginPath(); ctx.moveTo(canX+2, ry); ctx.lineTo(canX+canW-2, ry); ctx.stroke();
+  }
+  // the water line, sloshing
+  const waterY = canY + 13;
+  ctx.fillStyle = 'rgba(90,150,200,.55)';
+  ctx.beginPath();
+  ctx.moveTo(canX+3, waterY);
+  ctx.quadraticCurveTo(canX+canW*0.25, waterY-4, canX+canW*0.5, waterY);
+  ctx.quadraticCurveTo(canX+canW*0.75, waterY+4, canX+canW-3, waterY);
+  ctx.lineTo(canX+canW-3, canY+canH-2); ctx.lineTo(canX+3, canY+canH-2);
+  ctx.closePath(); ctx.fill();
+  // splash droplets flying off, because this is a WRESTLING MATCH
+  ctx.fillStyle = 'rgba(120,175,220,.8)';
+  for(const [dx,dy] of [[-6,-8],[8,-11],[-14,-4],[14,-3],[3,-14]]){
+    ctx.beginPath(); ctx.arc(cx+dx, waterY+dy, 1.6, 0, 7); ctx.fill();
+  }
+
+  // the skunk: lower half hidden below the can rim (submerged), upper half
+  // thrashing above it, mouth wide open yelling
+  ctx.save();
+  ctx.beginPath(); ctx.rect(canX-2, py0, canW+4, waterY - py0 + 1); ctx.clip();
+  // skunk body rising out of the water at an angle -- he is NOT happy about this
+  ctx.save();
+  ctx.translate(cx, waterY);
+  ctx.rotate(-0.15);
+  ctx.fillStyle = '#1b1b24';
+  ctx.beginPath(); ctx.ellipse(0, -10, 11, 15, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff';                                  // the stripe
+  ctx.beginPath(); ctx.ellipse(0, -14, 3, 13, 0, 0, 7); ctx.fill();
+  // his face, mid-yell
+  ctx.fillStyle = '#1b1b24';
+  ctx.beginPath(); ctx.arc(0, -22, 7, 0, 7); ctx.fill();
+  ctx.fillStyle = '#f4d34a';
+  ctx.beginPath(); ctx.arc(-3, -24, 2.2, 0, 7); ctx.arc(3, -24, 2.2, 0, 7); ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.arc(-3, -24, 1, 0, 7); ctx.arc(3, -24, 1, 0, 7); ctx.fill();
+  ctx.fillStyle = '#8a1c14';                                // the wide-open yelling mouth
+  ctx.beginPath(); ctx.ellipse(0, -18, 3.2, 3.6, 0, 0, 7); ctx.fill();
+  // little front paws flailing, trying to climb out
+  ctx.fillStyle = '#1b1b24';
+  ctx.beginPath(); ctx.ellipse(-9, -16, 3, 5, 0.5, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(9, -16, 3, 5, -0.5, 0, 7); ctx.fill();
+  ctx.restore();
+  ctx.restore();
+
+  // DAN, gripping the skunk around the neck with both hands, straddling the can,
+  // leaning back with the effort, his own face mid-yell
+  ctx.save();
+  ctx.translate(cx + 14, cy - 40);
+  ctx.rotate(0.12);
+  // legs braced against the can
+  ctx.fillStyle = '#3a4d85';
+  ctx.beginPath(); ctx.ellipse(-6, 34, 5, 16, -0.3, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(10, 32, 5, 16, 0.15, 0, 7); ctx.fill();
+  // torso leaning back hard
+  ctx.fillStyle = '#a11c1c';
+  ctx.beginPath(); ctx.ellipse(2, 8, 12, 20, -0.12, 0, 7); ctx.fill();
+  // both arms straining downward, gripping the skunk's neck
+  ctx.strokeStyle = '#e8b68a'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-6, -4); ctx.lineTo(-16, 30); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(10, -4); ctx.lineTo(-4, 32); ctx.stroke();
+  ctx.fillStyle = '#e8b68a';
+  ctx.beginPath(); ctx.arc(-17, 32, 3.6, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(-5, 34, 3.6, 0, 7); ctx.fill();
+  // Dan's head, thrown back, mouth wide open yelling right back at the skunk
+  ctx.translate(2, -14);
+  ctx.fillStyle = '#e8b68a';
+  ctx.beginPath(); ctx.arc(0, 0, 9, 0, 7); ctx.fill();
+  ctx.fillStyle = '#8a5a30'; ctx.fillRect(-8, -2, 16, 3.4);      // horseshoe mustache
+  ctx.fillRect(-9, -2, 3, 5); ctx.fillRect(6, -2, 3, 5);
+  ctx.fillStyle = '#4a3018';
+  ctx.beginPath(); ctx.arc(0, -6, 9.4, Math.PI, 0); ctx.fill();  // hairline
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.arc(-3.4, -3, 1.2, 0, 7); ctx.arc(3.4, -3, 1.2, 0, 7); ctx.fill();
+  ctx.fillStyle = '#7a1c14';
+  ctx.beginPath(); ctx.ellipse(0, 5, 3.4, 4, 0, 0, 7); ctx.fill();  // Dan's own yelling mouth
+  ctx.restore();
+
+  ctx.restore();  // end clip
+
+  // the text banner along the bottom, unmissable
+  ctx.fillStyle = '#1b1b2f';
+  ctx.fillRect(px0, py0+panelH-30, w, 30);
+  ctx.fillStyle = '#fff'; ctx.font='bold 13px Courier New'; ctx.textAlign='center';
+  ctx.fillText("DAN'S 8/10 SKUNK REMOVAL", px0+w/2, py0+panelH-16);
+  ctx.fillStyle = '#ffd94a'; ctx.font='bold 9px Courier New';
+  ctx.fillText('PRICES STARTING AT $20', px0+w/2, py0+panelH-5);
+
+  // spotlight, because Dan sprang for it
+  ctx.fillStyle='rgba(255,236,150,.12)';
+  ctx.beginPath();
+  ctx.moveTo(px0+6, gy-40); ctx.lineTo(px0+30, py0); ctx.lineTo(px0+w-30, py0); ctx.lineTo(px0+w-6, gy-40);
+  ctx.closePath(); ctx.fill();
+}
+
+function drawPropertySign(sx0){
+  const sx = px(sx0);
+  if(sx < -160 || sx > VIEW_W+40) return;
+  const gy = GROUND_Y;
+  const w = 148, h = 96, py0 = gy - 168;
+
+  // a lone fence post, visibly patched with extra boards -- this sign gets shot at often
+  ctx.fillStyle = '#7a5a34';
+  ctx.fillRect(sx+w/2-6, py0+h, 12, gy-(py0+h));
+  ctx.fillStyle = '#8a6a44';
+  ctx.fillRect(sx+w/2-9, py0+h+14, 18, 5);      // a crooked repair brace
+
+  // the board itself, hand-painted and a little crooked
+  ctx.save();
+  ctx.translate(sx+w/2, py0+h/2);
+  ctx.rotate(-0.025);
+  ctx.fillStyle = '#e8dcae';
+  ctx.fillRect(-w/2, -h/2, w, h);
+  ctx.strokeStyle = '#5a4a2e'; ctx.lineWidth = 4;
+  ctx.strokeRect(-w/2, -h/2, w, h);
+  // plank lines
+  ctx.strokeStyle = 'rgba(90,74,46,.3)'; ctx.lineWidth = 1.5;
+  for(const ly of [-h/2+h/3, -h/2+2*h/3]){
+    ctx.beginPath(); ctx.moveTo(-w/2+4, ly); ctx.lineTo(w/2-4, ly); ctx.stroke();
+  }
+
+  ctx.textAlign = 'center'; ctx.fillStyle = '#8a1c14';
+  ctx.font = 'bold 15px Courier New';
+  ctx.fillText('PRIVATE', 0, -30);
+  ctx.fillText('PROPERTY', 0, -14);
+
+  // the hammer-and-sickle, circled and slashed like a "no smoking" sign --
+  // the visual joke doing all the work, no extra text needed
+  const iy = 10, ir = 20;
+  ctx.strokeStyle = '#8a1c14'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.arc(0, iy, ir, 0, 7); ctx.stroke();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(0, iy, ir-3, 0, 7); ctx.clip();
+  ctx.fillStyle = '#1b1b2f';
+  // sickle
+  ctx.beginPath();
+  ctx.arc(-3, iy+2, 10, Math.PI*0.15, Math.PI*1.55);
+  ctx.lineWidth = 3.4; ctx.strokeStyle = '#1b1b2f'; ctx.stroke();
+  // hammer
+  ctx.save();
+  ctx.translate(4, iy-2); ctx.rotate(0.7);
+  ctx.fillRect(-2, -11, 4, 16);
+  ctx.fillRect(-6, -13, 12, 6);
+  ctx.restore();
+  ctx.restore();
+  ctx.strokeStyle = '#8a1c14'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(-ir*0.75, iy-ir*0.75); ctx.lineTo(ir*0.75, iy+ir*0.75); ctx.stroke();
+
+  ctx.font = 'bold 15px Courier New'; ctx.fillStyle = '#8a1c14';
+  ctx.fillText('NO COMMIES', 0, 42);
+  ctx.restore();
+
+  // a couple of stray "bullet holes" -- purely decorative, the sign has seen things
+  ctx.fillStyle = '#3a3020';
+  for(const [hx,hy,r] of [[-w*0.32, -h*0.28, 3], [w*0.36, h*0.15, 2.4]]){
+    ctx.beginPath(); ctx.arc(sx+w/2+hx, py0+h/2+hy, r, 0, 7); ctx.fill();
+  }
+}
+
+function drawWelcomeArch(sx0){
+  const sx = px(sx0);
+  if(sx < -260 || sx > VIEW_W+60) return;
+  const gy = GROUND_Y;
+  const legL = sx, legR = sx + 220, top = gy - 150;
+
+  // two stone-look posts
+  for(const lx of [legL, legR]){
+    ctx.fillStyle = '#8a8078';
+    ctx.fillRect(lx, top, 18, gy - top);
+    ctx.fillStyle = '#6b6258';
+    for(let ry = top+8; ry < gy; ry += 18) ctx.fillRect(lx+2, ry, 14, 3);
+  }
+
+  // the arch spanning between them
+  ctx.strokeStyle = '#6b6258'; ctx.lineWidth = 20; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(legL+9, top);
+  ctx.quadraticCurveTo(sx+110, top-46, legR+9, top);
+  ctx.stroke();
+  ctx.strokeStyle = '#8a8078'; ctx.lineWidth = 12;
+  ctx.beginPath();
+  ctx.moveTo(legL+9, top);
+  ctx.quadraticCurveTo(sx+110, top-46, legR+9, top);
+  ctx.stroke();
+
+  // the hanging placard, a little crooked, one chain longer than the other
+  const px0 = sx + 30, pw = 160, ph = 46, py0 = top - 8;
+  ctx.strokeStyle = '#5a5a5a'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(px0+8, top-30); ctx.lineTo(px0+14, py0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(px0+pw-8, top-34); ctx.lineTo(px0+pw-10, py0+4); ctx.stroke();
+  ctx.save();
+  ctx.translate(px0 + pw/2, py0 + ph/2);
+  ctx.rotate(-0.035);                             // hanging slightly crooked
+  ctx.fillStyle = '#fdf6e3';
+  ctx.fillRect(-pw/2, -ph/2, pw, ph);
+  ctx.strokeStyle = '#5a4a2e'; ctx.lineWidth = 3;
+  ctx.strokeRect(-pw/2, -ph/2, pw, ph);
+  ctx.fillStyle = '#1b1b2f'; ctx.textAlign = 'center';
+  ctx.font = 'bold 13px Courier New';
+  ctx.fillText('WELCOME TO', 0, -10);
+  ctx.font = 'bold 17px Courier New';
+  ctx.fillText('JUNCTION CITY', 0, 8);
+  ctx.font = 'bold 8px Courier New'; ctx.fillStyle = '#c0392b';
+  ctx.fillText('"WHERE THE STREETS GET TUNED UP"', 0, 18);
+  // one bolt visibly stripped, hanging loose -- a little civic decay
+  ctx.fillStyle = '#8a93a8';
+  ctx.beginPath(); ctx.arc(-pw/2+10, -ph/2+8, 2.4, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(pw/2-10, -ph/2+8, 2.4, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#8a93a8'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(pw/2-10, ph/2-8); ctx.lineTo(pw/2-4, ph/2+3); ctx.stroke();
+  ctx.restore();
+}
+
+function drawCrimeSign(sx0){
+  const sx = px(sx0);
+  if(sx < -200 || sx > VIEW_W+40) return;
+  const gy = GROUND_Y;
+  const w = 168, h = 96, py0 = gy - 210;
+
+  ctx.fillStyle = '#7a5a34';
+  ctx.fillRect(sx+w/2-5, py0+h, 10, gy-(py0+h));
+
+  ctx.fillStyle = '#fdf6e3';
+  ctx.fillRect(sx, py0, w, h);
+  ctx.strokeStyle = '#5a4a2e'; ctx.lineWidth = 4;
+  ctx.strokeRect(sx, py0, w, h);
+
+  // a little cartoon crime-o-meter dial, needle jammed hard right into the red
+  const gx = sx + 40, gy2 = py0 + 46, r = 28;
+  ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(gx, gy2, r, Math.PI, 0); ctx.stroke();
+  const zones = [['#3fae2a', Math.PI, Math.PI*0.75], ['#e0a13a', Math.PI*0.75, Math.PI*0.35], ['#c0392b', Math.PI*0.35, 0]];
+  for(const [c,a0,a1] of zones){
+    ctx.strokeStyle = c; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.arc(gx, gy2, r-6, a0, a1); ctx.stroke();
+  }
+  ctx.save();
+  ctx.translate(gx, gy2);
+  ctx.rotate(-0.25);                              // needle buried past max
+  ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r-2, 0); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#1b1b2f';
+  ctx.beginPath(); ctx.arc(gx, gy2, 3, 0, 7); ctx.fill();
+
+  // the text, blunt and unbothered
+  ctx.textAlign = 'center'; ctx.fillStyle = '#1b1b2f';
+  ctx.font = 'bold 15px Courier New';
+  ctx.fillText('CRIME RATE:', sx+w/2+18, py0+30);
+  ctx.font = 'bold 24px Courier New'; ctx.fillStyle = '#c0392b';
+  ctx.fillText('YES', sx+w/2+18, py0+55);
 }
 
 function drawSign(sx0, line1, line2){
@@ -5751,7 +6048,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '4.0';
+const BUILD = '4.2';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
@@ -6009,15 +6306,18 @@ async function renderBoard(listId){
   const list = (await Board.load()).slice().sort((a,b)=> b.score - a.score).slice(0, 10);
   const ol = $(listId || 'boardList');
   ol.innerHTML = '';
-  if(!list.length){
+  // always ten rows, same as the main leaderboard: fixed size, nothing to scroll
+  for(let i = 0; i < 10; i++){
+    const e = list[i];
     const li = document.createElement('li');
-    li.innerHTML = '<span class="nm">No stackers yet. Be the first.</span>';
-    ol.appendChild(li);
-  }
-  for(const e of list){
-    const li = document.createElement('li');
-    if(myEntryAt && e.at === myEntryAt) li.className = 'me';
-    li.innerHTML = '<span class="nm">' + (e.name||'???') + '</span><span class="sc">' + e.score + ' oz</span>';
+    if(e){
+      if(myEntryAt && e.at === myEntryAt) li.className = 'me';
+      li.innerHTML = '<span class="nm">' + (e.name || '???') + '</span>' +
+                     '<span class="sc">' + e.score + ' oz</span>';
+    } else {
+      li.className = 'empty';
+      li.innerHTML = '<span class="nm">&mdash;</span><span class="sc">&mdash;</span>';
+    }
     ol.appendChild(li);
   }
   ((listId === 'deadBoardList') ? $('deadBoardWrap') : $('boardWrap')).classList.remove('hidden');
@@ -6037,6 +6337,7 @@ function loop(t){
     else if(introGo && introT > 30){
       state='play';
       if(matchMedia('(pointer:coarse)').matches) show('controls');
+      show('pauseBtn');
       if(kind==='silver') Audio8.play('level'); else if(kind==='skunk') Audio8.play('skunk'); else if(kind==='bonus') Audio8.play('muzak');
       if(kind==='city') show('swingBtn'); else hide('swingBtn');
       levelStartMs = Date.now(); ozAtLevelBegin = oz;
