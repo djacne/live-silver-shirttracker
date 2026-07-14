@@ -154,8 +154,8 @@
      same top offset, same size, sitting directly to its left with an even gap.
      nothing floats into canvas-drawn scenery (the sun, the HUD) this way. */
   #pauseBtn{position:fixed;z-index:25;
-    top:calc(8.3vh + env(safe-area-inset-top));
-    right:calc(62px + env(safe-area-inset-right));
+    top:calc(8.3vh + 4px + env(safe-area-inset-top));
+    right:calc(58px + env(safe-area-inset-right));
     width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
     background:rgba(20,20,40,.6);cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
@@ -218,8 +218,8 @@
   .cbtn:active{background:rgba(255,255,255,.4);}
   #jumpBtn{width:86px;height:86px;background:rgba(63,174,42,.35);border-color:rgba(120,255,90,.6);}
 
-  #muteBtn{position:fixed;top:calc(8.3vh + env(safe-area-inset-top));
-    right:calc(6px + env(safe-area-inset-right));z-index:25;
+  #muteBtn{position:fixed;top:calc(8.3vh + 4px + env(safe-area-inset-top));
+    right:calc(2px + env(safe-area-inset-right));z-index:25;
     width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
     background:rgba(20,20,40,.6);color:#fff;font-size:20px;cursor:pointer;}
 
@@ -1330,7 +1330,7 @@ function drawBursts(){
 
     // home position: right side, stacked, well clear of the HUD and of Dan
     const homeX = VIEW_W - w * 1.25 - 14;
-    const homeY = 132 + b.slot * (h * 2.4 + 4);   // clear of the sun, which is a running gag
+    const homeY = 108 + b.slot * (h * 2.4 + 4);   // nudged back up now the buttons/sun are clear
 
     // slide in from off the right edge, overshoot, settle, then slide back out
     let x, sc = 1, a = 1;
@@ -2223,7 +2223,7 @@ function renderTrain(){
   g.addColorStop(0,'#2f6fd0'); g.addColorStop(0.7,'#79b8e8'); g.addColorStop(1,'#a8dcf0');
   ctx.fillStyle=g; ctx.fillRect(0,0,VIEW_W,VIEW_H);
   // sun with the shades
-  const sunX = VIEW_W-190;
+  const sunX = VIEW_W-186;
   ctx.fillStyle='#ffe98a'; ctx.beginPath(); ctx.arc(sunX, 52, 24, 0, 7); ctx.fill();
   ctx.fillStyle='#1b1b2f';
   ctx.fillRect(sunX-17, 44, 14, 9); ctx.fillRect(sunX+3, 44, 14, 9); ctx.fillRect(sunX-4, 47, 8, 3);
@@ -2978,9 +2978,9 @@ function renderBonus(){
     ctx.fillStyle='#c0392b';
     ctx.save(); ctx.translate(bx+34, bt+2); ctx.rotate(Math.PI/4);
     ctx.fillRect(-6, -6, 12, 12); ctx.restore();
-    ctx.fillStyle='#e8e8ec'; ctx.font='bold 6px Courier New'; ctx.textAlign='left';
-    ctx.fillText('BNSF ' + (48210 + c*7), bx+52, bt+2);
-    ctx.fillText('GATX', bx+52, bt+11);
+    ctx.fillStyle='#e8e8ec'; ctx.font='bold 7px Courier New'; ctx.textAlign='left';
+    ctx.fillText('GATX', bx+52, bt+3);
+    ctx.fillText(String(48210 + c*7), bx+52, bt+11);
   }
   // ballast + rails
   ctx.fillStyle='#8a8078'; ctx.fillRect(0, 214, VIEW_W, 18);
@@ -3219,7 +3219,7 @@ function stepLevel4(){
       j.vy += G; j.y += j.vy;
       if(j.y > GROUND_Y-j.h){ j.y = GROUND_Y-j.h; j.vy = 0; }
       if(dan.x + dan.w > FLAG_X - 8) dan.x = FLAG_X - 8 - dan.w;   // he holds the line
-      // his weapon is bureaucracy itself: a giant ink stamp, thrown like a hatchet
+      // his weapon: handcuffs, thrown open like a bolas -- instantly readable silhouette
       if(--j.throwT <= 0 && j.hurtT<=0){
         j.throwT = 125 + Math.random()*80;
         j.stamps.push({x:j.x+j.w/2, y:j.y+10, vx: dan.x < j.x ? -4.4 : 4.4, vy:-5.6, spin:0});
@@ -3449,18 +3449,20 @@ function drawJohnson(){
   const j = L4S.johnson;
   if(!j.active) return;
   const sx = px(j.x);
-  // the DENIED stamp, spinning through the air like a thrown hatchet
+  // handcuffs, spinning through the air
   for(const p of j.stamps){
-    // bigger, clearer, unmistakably a rubber stamp -- handle, block, ink pad, and all
+    // handcuffs -- an instantly recognizable silhouette even at small scale, and it
+    // says everything his job is about without needing a single word of text
     ctx.save(); ctx.translate(px(p.x), p.y); ctx.rotate(p.spin);
-    ctx.fillStyle='#5a3a1e'; ctx.fillRect(-4, -20, 8, 12);           // wooden handle
-    ctx.fillStyle='#3a2510'; ctx.beginPath(); ctx.ellipse(0,-20,5,3,0,0,7); ctx.fill();  // handle knob
-    ctx.fillStyle='#8a8a92'; ctx.fillRect(-16, -9, 32, 6);           // the metal mount
-    ctx.fillStyle='#8a1c14'; ctx.fillRect(-16, -3, 32, 18);          // the stamp block
-    ctx.strokeStyle='#4a0e0a'; ctx.lineWidth=2; ctx.strokeRect(-16,-3,32,18);
-    ctx.fillStyle='#c0392b'; ctx.fillRect(-16, 12, 32, 4);           // wet ink along the base
-    ctx.fillStyle='#fff'; ctx.font='bold 11px Courier New'; ctx.textAlign='center';
-    ctx.fillText('DENIED', 0, 9);
+    ctx.strokeStyle='#c4c8ce'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.arc(-8, 0, 7, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(8, 0, 7, 0, 7); ctx.stroke();
+    ctx.fillStyle='#8a8f98'; ctx.fillRect(-3, -2.2, 6, 4.4);          // the linking hinge
+    ctx.strokeStyle='#5a5f68'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.arc(-8, 0, 7, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(8, 0, 7, 0, 7); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.5)';
+    ctx.beginPath(); ctx.arc(-9.5,-2.5,1.6,0,7); ctx.arc(6.5,-2.5,1.6,0,7); ctx.fill();  // glint
     ctx.restore();
   }
   if(j.dead){
@@ -4078,7 +4080,7 @@ function drawBg(){
       ctx.fillRect(sxx, syy, tw, tw);
     }
     // moon wearing \u00a2 sunglasses, still bullish after dark
-    const mX = VIEW_W-200 - camX*0.02;
+    const mX = VIEW_W-196 - camX*0.02;
     ctx.fillStyle='rgba(220,228,240,.25)';
     ctx.beginPath(); ctx.arc(mX, 58, 38, 0, 7); ctx.fill();
     ctx.fillStyle='#d9dde4'; ctx.beginPath(); ctx.arc(mX, 58, 24, 0, 7); ctx.fill();
@@ -4092,7 +4094,7 @@ function drawBg(){
     ctx.beginPath(); ctx.arc(mX, 66, 8, 0.3, Math.PI-0.5); ctx.stroke();
   } else {
     // sun wearing \u00a2 sunglasses, permanently bullish
-    const sunX = VIEW_W-190 - camX*0.02;
+    const sunX = VIEW_W-186 - camX*0.02;
     ctx.fillStyle='rgba(255,236,150,.35)';
     ctx.beginPath(); ctx.arc(sunX, 58, 40+Math.sin(time*0.02)*3, 0, 7); ctx.fill();
     ctx.fillStyle='#ffe98a';
@@ -4451,27 +4453,27 @@ function drawCrimeSign(sx0){
   ctx.strokeRect(sx+2, tapeY, w-4, tapeH);
 
   ctx.save();
-  ctx.translate(sx+w/2, tapeY+tapeH/2+4);
-  ctx.font = 'bold 12px Courier New'; ctx.textAlign = 'center';
-  ctx.lineJoin = 'round';
+  ctx.translate(sx, tapeY+tapeH/2+4);
   const label = 'DAYS SINCE LAST SHOOTING:';
+  ctx.font = 'bold 12px Courier New'; ctx.textAlign = 'left';
   const labelW = ctx.measureText(label).width;
-  // the count gets its own bigger, brighter treatment right after the label
-  ctx.font = 'bold 20px Courier New';
-  const zeroW = ctx.measureText('0').width;
-  const totalW = labelW + 8 + zeroW;
-  const startX = -totalW/2;
-  ctx.textAlign = 'left';
-  ctx.font = 'bold 12px Courier New';
+  const leftPad = 8;
+  ctx.lineJoin = 'round';
   ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
-  ctx.strokeText(label, startX, 0);
+  ctx.strokeText(label, leftPad, 0);
   ctx.fillStyle = '#fff';
-  ctx.fillText(label, startX, 0);
-  ctx.font = 'bold 20px Courier New';
-  ctx.strokeStyle = '#000'; ctx.lineWidth = 4.5;
-  ctx.strokeText('0', startX + labelW + 8, 2);
-  ctx.fillStyle = '#ffd94a';
-  ctx.fillText('0', startX + labelW + 8, 2);
+  ctx.fillText(label, leftPad, 0);
+  // the "0" sits centered in the remaining gap between the colon and the sign's
+  // right edge, rather than immediately after the text
+  const rightPad = 10;
+  const zoneStart = leftPad + labelW + 4;
+  const zoneEnd = w - rightPad;
+  const zeroX = zoneStart + (zoneEnd - zoneStart) / 2;
+  ctx.font = 'bold 24px Courier New'; ctx.textAlign = 'center';
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 5;
+  ctx.strokeText('0', zeroX, 3);
+  ctx.fillStyle = '#e8352a';
+  ctx.fillText('0', zeroX, 3);
   ctx.restore();
 
   // the tagline -- flat, serious, the whole joke is the deadpan
@@ -5147,11 +5149,17 @@ function drawBoss1(){
   // the flying tools of the revolution
   for(const p of b.thrown){
     ctx.save(); ctx.translate(px(p.x), p.y); ctx.rotate(p.spin);
-    // just a hammer -- a real, heavy, unambiguous hammer
-    ctx.fillStyle='#8a5a30'; ctx.fillRect(-2.4, -9, 4.8, 17);          // wooden handle
-    ctx.fillStyle='#5a5a62'; ctx.fillRect(-9, -13, 18, 9);             // steel head
-    ctx.strokeStyle='#2b2b32'; ctx.lineWidth=1.2; ctx.strokeRect(-9,-13,18,9);
-    ctx.fillStyle='#7a7a82'; ctx.fillRect(-9,-13,18,2.4);              // top highlight
+    // the actual communist symbol -- hammer and sickle crossed, gold, unmistakable
+    ctx.fillStyle='#f4d34a';
+    ctx.save(); ctx.rotate(0.78);
+    ctx.fillRect(-2.6, -12, 5.2, 19);                                  // hammer handle
+    ctx.fillRect(-9, -14, 18, 7.5);                                    // hammer head
+    ctx.restore();
+    ctx.strokeStyle='#f4d34a'; ctx.lineWidth=3.6;
+    ctx.beginPath(); ctx.arc(1, 2, 10, Math.PI*0.05, Math.PI*1.55); ctx.stroke();  // sickle blade
+    ctx.fillRect(7, 3.5, 8, 2.6);                                      // sickle handle
+    ctx.strokeStyle='#8a1c14'; ctx.lineWidth=0.8;
+    ctx.beginPath(); ctx.arc(1, 2, 10, Math.PI*0.05, Math.PI*1.55); ctx.stroke();  // thin red trim
     ctx.restore();
   }
   if(b.dead){
@@ -6126,7 +6134,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '5.3';
+const BUILD = '5.4';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
