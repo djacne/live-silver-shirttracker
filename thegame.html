@@ -164,6 +164,15 @@
   ol.steps b{color:#ffd94a;}
   .hint{color:#8a93a8;font-size:clamp(10px,2.4vw,12px);}
   .shareIcon{width:20px;height:20px;vertical-align:middle;margin-left:4px;}
+  .tipCard{display:flex;align-items:center;gap:10px;
+    max-width:min(420px,88vw);margin:2px auto 14px;padding:9px 14px;
+    border:1.5px dashed #5a7590;border-radius:10px;
+    background:rgba(74,168,216,.07);color:#a9c4dc;
+    font-size:clamp(11px,2.6vw,13px);cursor:pointer;text-align:left;}
+  .tipCard svg{flex:0 0 auto;width:17px;height:17px;color:#4aa8d8;}
+  .tipCard span{flex:1;}
+  .tipCard .chev{width:13px;height:13px;opacity:.7;}
+  .tipCard:active{background:rgba(74,168,216,.14);}
   .linkBtn{background:none;border:none;color:#6b7590;text-decoration:underline;
     font-family:inherit;font-size:12px;cursor:pointer;margin-top:4px;padding:6px;}
   .overlay.tight{gap:6px;padding:calc(8px + env(safe-area-inset-top)) 10px
@@ -232,7 +241,6 @@
     <button class="btn" id="startBtn">Start Stacking</button>
     <button class="btn alt" id="lbBtn">Leaderboard</button>
     <button class="btn alt" id="helpBtn">Help</button>
-    <button class="btn alt hidden" id="iosBtn">Play Fullscreen</button>
     <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
@@ -271,10 +279,9 @@
       </div>
     </li>
     <li><span class="n">2</span><div>Scroll down the list of options.</div></li>
-    <li><span class="n">3</span><div>Tap <b>&ldquo;Add to Home Screen&rdquo;</b>.</div></li>
-    <li><span class="n">4</span><div>Tap <b>&ldquo;Add&rdquo;</b> in the top-right corner.</div></li>
-    <li><span class="n">5</span><div>Close Safari. Open <b>Dan's Retirement</b> from your home screen.</div></li>
-    <li><span class="n">6</span><div>Turn your phone <b>sideways</b>. &#128260;</div></li>
+    <li><span class="n">3</span><div>Tap <b>&ldquo;Add to Home Screen.&rdquo;</b> That's it &mdash; no further confirmation needed.</div></li>
+    <li><span class="n">4</span><div>Close Safari. Open <b>Dan's Retirement</b> from your home screen.</div></li>
+    <li><span class="n">5</span><div>Turn your phone <b>sideways.</b></div></li>
   </ol>
   <div class="row">
     <button id="closeIosBtn" class="btn">Got It</button>
@@ -5739,7 +5746,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '3.8';
+const BUILD = '3.9';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
@@ -5752,14 +5759,14 @@ const IS_IOS_SAFARI = IS_IOS && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userA
 function iosDismissed(){
   try{ return localStorage.getItem('dan_ios_guide') === 'off'; }catch(e){ return false; }
 }
-if(IS_IOS && !IS_STANDALONE && !iosDismissed()) show('iosBtn');
+if(IS_IOS && !IS_STANDALONE && !iosDismissed()) show('iosTip');
 if(IS_IOS && !IS_IOS_SAFARI) show('iosSafariWarn');   // they're in Chrome/Firefox: won't work
 
-onTap('iosBtn', ()=>{ hide('titleScreen'); show('iosScreen'); });
+onTap('iosTip', ()=>{ hide('titleScreen'); show('iosScreen'); });
 onTap('closeIosBtn', ()=>{ hide('iosScreen'); show('titleScreen'); });
 onTap('iosNeverBtn', ()=>{
   try{ localStorage.setItem('dan_ios_guide', 'off'); }catch(e){}
-  hide('iosBtn'); hide('iosScreen'); show('titleScreen');
+  hide('iosTip'); hide('iosScreen'); show('titleScreen');
 });
 
 // ---- update check: ask the server what the newest build is ----
