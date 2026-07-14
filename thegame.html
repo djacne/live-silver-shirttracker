@@ -1016,7 +1016,7 @@ function stepLevel2(){
   if(!S.revealed && dan.x > WATER_L - 150){
     S.revealed = true;
     announceBoss('THE SKUNK', 'skunk');
-    setTimeout(()=> flash('YOUR $20 APPOINTMENT IS HERE!', '#3fae2a'), 3800);
+    setTimeout(()=> flash('YOUR $20 APPOINTMENT IS HERE!', '#3fae2a'), 6800);
   }
   // patrolling skunk on the bridge
   if(S.revealed && sk.alive && !sk.falling){
@@ -2670,8 +2670,6 @@ function drawLandmarks(){
     drawAdBillboard(1040);
   } else if(kind==='border'){
     for(const txx of [250, 876, 1480, 2008, 2560, 2928, 3244, 3760]) drawPine(txx);
-    drawSign(648, 'CANADA', '5 KM');
-    drawSign(3420, 'CANADA', '1 KM');
     drawToronto();
   } else if(kind==='city'){
     drawSign(210, 'WELCOME TO', 'JUNCTION CITY');
@@ -3408,7 +3406,7 @@ function drawBoss1(){
 }
 
 let bossIntro = null;   // {name, t, song}
-const BOSS_INTRO_LEN = 200;
+const BOSS_INTRO_LEN = 380;
 
 function announceBoss(name, song){
   bossIntro = {name, t:0, song: song || null};
@@ -3558,7 +3556,7 @@ function drawBossIntro(){
     const slide = k < 8 ? -(8-k) * 42 : 0;
     const sc = k < 6 ? 1 + (6-k) * 0.05 : 1;
     ctx.save();
-    ctx.translate(VIEW_W*0.24 + slide + shake(k), cy + shake(k));
+    ctx.translate(VIEW_W*0.24 + slide + shake(k), cy + shake(k) + Math.sin(t*0.06)*2);
     // portrait plate
     ctx.fillStyle = 'rgba(30,60,120,.55)';
     ctx.fillRect(-72, -78, 144, 132);
@@ -3579,7 +3577,7 @@ function drawBossIntro(){
     const slide = k < 8 ? (8-k) * 42 : 0;
     const sc = k < 6 ? 1 + (6-k) * 0.05 : 1;
     ctx.save();
-    ctx.translate(VIEW_W*0.76 + slide + shake(k), cy + shake(k));
+    ctx.translate(VIEW_W*0.76 + slide + shake(k), cy + shake(k) + Math.sin(t*0.06 + 2)*2);
     ctx.fillStyle = 'rgba(140,28,20,.55)';
     ctx.fillRect(-72, -78, 144, 132);
     ctx.strokeStyle = '#ff5a4e'; ctx.lineWidth = 3;
@@ -3597,7 +3595,7 @@ function drawBossIntro(){
   // ---- the split and the VS ----
   if(t >= 86){
     const k = t - 86;
-    const sc = k < 10 ? 3.2 - k * 0.22 : 1 + Math.sin(k * 0.09) * 0.05;
+    const sc = k < 10 ? 3.2 - k * 0.22 : 1 + Math.sin(k * 0.055) * 0.06;
     // lightning split down the middle
     ctx.strokeStyle = k < 12 ? '#fff' : '#ffd94a';
     ctx.lineWidth = k < 12 ? 6 : 3;
@@ -3622,8 +3620,8 @@ function drawBossIntro(){
   }
 
   // ---- FIGHT! ----
-  if(t >= 150){
-    const k = t - 150;
+  if(t >= 290){
+    const k = t - 290;
     const sc = k < 8 ? 2.4 - k * 0.18 : 1;
     ctx.save();
     ctx.translate(VIEW_W/2, VIEW_H - 44);
