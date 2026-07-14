@@ -152,7 +152,7 @@
     <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
-  <p style="color:#5a6a8a;font-size:10px;">build 1.6</p>
+  <p style="color:#5a6a8a;font-size:10px;">build 1.8</p>
   </div>
  </div>
 </div>
@@ -419,8 +419,10 @@ const Audio8 = (() => {
   function revive(){
     if(!AC){ init(); if(songName) play(songName); return; }
     if(AC.state === 'running'){
-      nextT = AC.currentTime + 0.06;          // the clock drifted while we were away
-      if(songName && !timer){ const n = songName; clearInterval(timer); timer = null; play(n); }
+      // healthy already -- do NOT touch nextT, or the scheduler re-queues notes
+      // it has already scheduled and the track stacks on itself.
+      if(nextT < AC.currentTime - 0.5) nextT = AC.currentTime + 0.06;   // only if truly stale
+      if(songName && !timer){ const n = songName; play(n); }
       return;
     }
     // suspended or 'interrupted' -- try a resume, and rebuild if it doesn't take
@@ -904,6 +906,11 @@ function burst(text, wx, wy, color, tier){
   for(const b of bursts){
     if(Math.abs(b.wx - wx) < 110 && Math.abs(b.wy - y) < 34) y = b.wy - 36;
   }
+  // pick an escape arc: always upward, angled away from the HUD corner
+  const nearLeft = (wx - camX) < VIEW_W * 0.45;
+  const spread = 0.55 + Math.random() * 0.7;                    // how far sideways
+  const dir = nearLeft ? 1 : -1;                                // shove away from the near edge
+  const lean = (Math.random() < 0.25) ? -dir : dir;             // sometimes the other way
   bursts.push({
     text, wx, wy: y, t: 0,
     rot: (Math.random()-0.5) * 0.22,
@@ -911,7 +918,9 @@ function burst(text, wx, wy, color, tier){
     tier: tier || 0,
     spikes: 9 + ((Math.random()*3)|0),
     seed: Math.random() * 6.28,
-    screen: false
+    screen: false,
+    driftX: lean * spread * (70 + Math.random() * 90),
+    driftY: -(70 + Math.random() * 70)
   });
   if(bursts.length > 5) bursts.shift();
 }
@@ -955,21 +964,21 @@ function drawBursts(){
     const a = k > 84 ? 1 - (k-84)/12 : 1;
     const wobble = k > 9 && k < 84 ? Math.sin(k * 0.18 + b.seed) * 0.022 : 0;
 
-    // it lands on the target, then evacuates: floats up and out of the play zone,
-    // so it never sits on top of the thing you're trying to jump onto.
+    // it lands on the target, then drifts away on its own random arc -- upward, but
+    // never into the top-left, which belongs to the silver channel and the boss bar.
     const anchorX = b.screen ? b.wx : px(b.wx);
     const ease = Math.min(1, Math.max(0, (k - 14) / 46));       // hold, then travel
     const glide = ease * ease * (3 - 2 * ease);                  // smoothstep
-    const targetX = b.homeX !== undefined ? b.homeX : (b.homeX = anchorX < VIEW_W/2 ? 96 : VIEW_W - 96);
-    const targetY = 54;
-    const x = anchorX + (targetX - anchorX) * glide;
-    const y = (b.wy - Math.min(8, k * 0.3)) + (targetY - b.wy) * glide;
+    const x = anchorX + b.driftX * glide;
+    const y = b.wy + b.driftY * glide;
+    // stay out of the HUD's corner: fade fast if it wanders in there anyway
+    const inHud = (x < 210 && y < 108);
     if(x < -150 || x > VIEW_W + 150) continue;
 
     const size = b.tier === 2 ? 26 : b.tier === 1 ? 22 : 18;
 
     ctx.save();
-    ctx.globalAlpha = Math.max(0, a);
+    ctx.globalAlpha = Math.max(0, a * (inHud ? 0.35 : 1));
     ctx.translate(x, y);
     ctx.rotate(b.rot + wobble);
     ctx.scale(sc, sc);
@@ -5403,9 +5412,19 @@ function armTitleMusic(){
 armTitleMusic();
 addEventListener('pointerdown', ()=>{ armTitleMusic(); if(state==='intro' || state==='levelwin') introGo=true; }, {once:false});
 addEventListener('touchend', ()=>Audio8.unlock(), {once:false});
-addEventListener('pointerdown', ()=>{ if(state==='play') Audio8.revive(); }, {once:false});
+
 addEventListener('keydown', e => { if(!typingInField(e)) armTitleMusic(); }, {once:false});
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) setTimeout(()=>Audio8.revive(), 120); });
+let wasHidden = false;
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){ wasHidden = true; return; }
+  setTimeout(()=>Audio8.revive(), 120);
+  // one tap after returning re-opens the pipe if iOS still won't play
+  if(wasHidden){
+    wasHidden = false;
+    const kick = () => { Audio8.revive(); removeEventListener('pointerdown', kick); };
+    addEventListener('pointerdown', kick, {once:true});
+  }
+});
 addEventListener('focus', ()=> setTimeout(()=>Audio8.revive(), 120));
 addEventListener('pageshow', ()=> setTimeout(()=>Audio8.revive(), 120));
 
