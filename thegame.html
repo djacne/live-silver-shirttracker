@@ -152,7 +152,7 @@
     <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
-  <p style="color:#5a6a8a;font-size:10px;">build 1.5</p>
+  <p style="color:#5a6a8a;font-size:10px;">build 1.6</p>
   </div>
  </div>
 </div>
@@ -405,7 +405,7 @@ const Audio8 = (() => {
     const n = songName;
     try{ if(timer){ clearInterval(timer); timer = null; } }catch(e){}
     try{ if(AC && AC.close) AC.close(); }catch(e){}
-    AC = null; mus = null; sfx = null;
+    AC = null; master = null; mus = null; sfxg = null; unlocked = false;
     init();
     if(AC){
       try{
