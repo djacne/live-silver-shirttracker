@@ -294,6 +294,10 @@ const Audio8 = (() => {
     victory: { bpm:150,
       bass:[36,-1,43,-1,36,-1,43,-1, 41,-1,48,-1,41,-1,48,-1, 43,-1,50,-1,43,-1,50,-1, 36,-1,43,48,50,-1,-1,-1],
       lead:[72,-1,72,74,76,-1,76,77, 79,-1,-1,77,76,-1,74,-1, 76,-1,77,79,81,-1,79,-1, 84,-1,81,-1,79,-1,-1,-1] },
+    // muzak: corporate safety-video elevator jazz. deeply, aggressively pleasant.
+    muzak: { bpm:96,
+      bass:[41,-1,-1,48,-1,-1,45,-1, 43,-1,-1,50,-1,-1,46,-1, 38,-1,-1,45,-1,-1,41,-1, 40,-1,-1,47,-1,45,43,-1],
+      lead:[65,-1,69,-1,72,-1,69,-1, 71,-1,74,-1,71,-1,67,-1, 65,-1,69,-1,72,-1,76,-1, 74,-1,72,-1,69,-1,-1,-1] },
     // boss: hard-charging retro boss theme
     boss: { bpm:168,
       bass:[40,40,40,45,43,43,43,47, 40,40,40,45,48,47,45,43, 40,40,40,45,43,43,43,47, 50,-1,48,-1,47,-1,45,-1],
@@ -466,9 +470,9 @@ const G = 0.55, T = 32;
 const GROUND_Y = 320;
 let LEVEL_W = 4600, FLAG_X = 4430;
 let plats, pits, coins, bars, enemies, boxes, pops, subs, cams, level = 1;
-let boss1, L2S, L3S, L4S, L5S, nelson, bridgePlanks, ozAtLevelStart = 0;
+let boss1, L2S, L3S, L4S, L5S, BS, nelson, bridgePlanks, ozAtLevelStart = 0;
 // level order: 1 silver, 2 skunk, 3 city (flashback), 4 border, 5 train (finale)
-const KINDS = {1:'silver', 2:'skunk', 3:'city', 4:'border', 5:'train'};
+const KINDS = {1:'silver', 2:'skunk', 3:'city', 4:'border', 5:'bonus', 6:'train'};
 let kind = 'silver';
 
 function coinRow(x,y,n,gap=40){ const a=[]; for(let i=0;i<n;i++) a.push({x:x+i*gap, y, got:false}); return a; }
@@ -670,6 +674,12 @@ function buildLevel(n){
       caddy:{x:FLAG_X-150},
       thrown:[]};
   }
+  if(kind === 'bonus'){
+    LEVEL_W = 800; FLAG_X = 800;
+    plats = []; pits = []; boxes = []; coins = []; bars = []; subs = []; enemies = []; cams = [];
+    BS = {phase:'call', t:0, idx:0, seq:[], at:0, win:0, winMax:0, timeLeft:3600,
+          combo:0, gained:0, days:69, tweak:0, pose:0, poseT:0, slogan:0, hitT:0, shine:0};
+  }
   if(kind === 'train'){
     LEVEL_W = 800; FLAG_X = 800;
     plats = []; pits = []; coins = []; bars = []; subs = []; enemies = []; boxes = []; cams = [];
@@ -685,7 +695,7 @@ function buildLevel(n){
 const dan = {x:60, y:0, w:26, h:40, vx:0, vy:0, onGround:false, face:1, walkT:0, inv:0, boost:0, small:false, star:0, swing:0, swingCd:0, swingHeld:false};
 let oz = 0, lives = 3, camX = 0, time = 0, state = 'title', introT = 0, introGo = false, introStage = 0;
 let spot = 61.40, spotT = 0, nextLifeAt = 100, checkpointX = 60;
-const PAR = {1:105, 2:95, 3:110, 4:110, 5:125};        // seconds; beat par to earn the bonus
+const PAR = {1:105, 2:95, 3:110, 4:110, 6:125};        // seconds; beat par to earn the bonus
 let levelStartMs = 0, ozAtLevelBegin = 0, runStartMs = 0;
 
 function awardSpeedBonus(){
@@ -749,6 +759,22 @@ const DOG_STOMPS = ['BAD DOG!', 'NO TREATS TODAY!'];
 const DOG_HITS = ['BIT BY A STRAY!', 'THE PITBULL WON!'];
 const KING_LINES = ['I RUN THESE STREETS!', 'THIS IS MY CORNER!', "YOU CAN'T TUNE ME UP!",
   'YOU KNOW WHO I AM?!'];
+const STRETCHES = [
+  {n:'NECK ROLLS',       reps:2},
+  {n:'SHOULDER ROLLS',   reps:2},
+  {n:'ARM CROSS',        reps:2},
+  {n:'UPPER BACK HUG',   reps:3},
+  {n:'OVERHEAD REACH',   reps:3},
+  {n:'SIDE BEND',        reps:3},
+  {n:'TRUNK TWIST',      reps:3},
+  {n:'WRIST CIRCLES',    reps:4},
+  {n:'HAMSTRING',        reps:4},
+  {n:'CALF STRETCH',     reps:4},
+  {n:'HIP FLEXOR',       reps:4},
+  {n:'THE FULL SEND',    reps:5},
+];
+const SAFETY_SLOGANS = ['SAFETY IS A CHOICE!', 'STRETCH TO SUCCESS!', 'REPORT ALL NEAR-MISSES!',
+  'A LIMBER CREW IS A SAFE CREW!', 'ZERO IS ATTAINABLE!', 'THINK. PLAN. STRETCH.'];
 const KING_HITS = ['THE KING GOT YOU!', 'ROBBED IN BROAD DAYLIGHT!', 'STREET TAX: -5 oz!'];
 const BOSS1_HITS = ['SEIZED BY THE PROLETARIAT!', 'YOUR LABOR IS ALIENATED!', 'EXPROPRIATED: -5 oz!'];
 const BOSS_SPEECHES = [
@@ -805,6 +831,7 @@ function rectHit(a, b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h &
 function step(){
   auditKeys();
   if(bossIntro){ time++; return; }      // the world holds its breath
+  if(kind==='bonus') return stepBonus();
   if(kind==='train') return stepTrain();
   time++;
   if(++spotT > 30){ spotT=0; spot += (Math.random()-0.52)*0.8; spot=Math.max(42.0, spot); }
@@ -1697,6 +1724,384 @@ function renderTrain(){
   ctx.fillStyle='rgba(255,255,255,.3)'; ctx.fillRect(0, 26, VIEW_W, 3);
   ctx.fillStyle='#ffd94a'; ctx.fillRect(0, 26, VIEW_W*Math.min(1,S.cars/S.target), 3);
   drawFloatTexts();
+}
+
+// ================= BONUS: SAFETY BRIEFING =================
+const KEYNAMES = ['left','right','jump','swing'];
+const KEYGLYPH = {left:'\u25C0', right:'\u25B6', jump:'\u25B2', swing:'\u2694'};
+
+function bonusSeq(reps){
+  const s = [];
+  for(let i=0;i<reps;i++) s.push(KEYNAMES[(Math.random()*4)|0]);
+  return s;
+}
+function bonusWindow(idx){
+  // generous at first, brutal by the end
+  return Math.max(26, 78 - idx * 4.6);
+}
+function bonusPay(idx){
+  return 5 + Math.floor(idx * 1.4);
+}
+
+function stepBonus(){
+  const S = BS;
+  time++;
+  S.t++;
+  if(S.shine > 0) S.shine--;
+  if(S.hitT > 0) S.hitT--;
+
+  if(S.phase === 'done' || S.phase === 'fail'){
+    S.poseT++;
+    if(S.poseT > 150) return levelClear();
+    return;
+  }
+
+  // the shift clock: 60 seconds, no matter how good you are
+  S.timeLeft--;
+  if(S.timeLeft <= 0){
+    S.phase = 'done'; S.poseT = 0;
+    Audio8.stop(); Audio8.S.horn ? Audio8.S.horn() : Audio8.S.fanfare();
+    flash('GET TO WORK!', '#3fae2a');
+    return;
+  }
+
+  if(S.phase === 'call'){
+    // announce the stretch, then hand over the sequence
+    if(S.t === 1) Audio8.S.ding();
+    if(S.t > 55){
+      const st = STRETCHES[Math.min(S.idx, STRETCHES.length-1)];
+      S.seq = bonusSeq(st.reps);
+      S.at = 0;
+      S.winMax = bonusWindow(S.idx);
+      S.win = S.winMax;
+      S.phase = 'input';
+      S.held = {};
+    }
+    return;
+  }
+
+  if(S.phase === 'input'){
+    S.win--;
+    if(S.win <= 0){
+      return bonusTweak();
+    }
+    // read a fresh press
+    for(const k of KEYNAMES){
+      if(keys[k] && !S.held[k]){
+        S.held[k] = true;
+        if(k === S.seq[S.at]){
+          S.at++;
+          Audio8.S.coin();
+          S.shine = 8;
+          if(S.at >= S.seq.length){
+            // stretch complete
+            const pay = bonusPay(S.idx);
+            const combo = 1 + Math.min(1.5, S.combo * 0.12);
+            const won = Math.round(pay * combo);
+            oz += won; S.gained += won; S.combo++;
+            checkMilestone();
+            riseText(VIEW_W/2 + 90, 150, '+' + won + ' oz');
+            Audio8.S.bar();
+            S.phase = 'perform';
+            S.poseT = 0;
+            S.pose = S.idx;
+          } else {
+            S.win = Math.min(S.winMax, S.win + 10);   // small mercy for a correct press
+          }
+        } else {
+          return bonusTweak();
+        }
+      } else if(!keys[k]){
+        S.held[k] = false;
+      }
+    }
+    return;
+  }
+
+  if(S.phase === 'perform'){
+    S.poseT++;
+    if(S.poseT === 1) Audio8.S.checkpoint();
+    if(S.poseT > 62){
+      S.idx++;
+      S.slogan = (S.slogan + 1) % SAFETY_SLOGANS.length;
+      if(S.idx >= 16){          // nobody is getting here
+        S.phase = 'done'; S.poseT = 0;
+        Audio8.stop(); Audio8.S.fanfare();
+        flash('GET TO WORK!', '#3fae2a');
+        return;
+      }
+      S.phase = 'call'; S.t = 0;
+    }
+    return;
+  }
+}
+
+function bonusTweak(){
+  const S = BS;
+  S.phase = 'fail'; S.poseT = 0; S.days = 0; S.tweak = 1;
+  Audio8.stop();
+  Audio8.S.bonk(); Audio8.S.sadTrombone ? Audio8.S.sadTrombone() : Audio8.S.hurt();
+  flash('TWEAKED IT!', '#c0392b');
+  return;
+}
+
+// ---- the crew, stretching badly and out of sync ----
+function drawCrewGuy(x, y, s, off, tint){
+  const p = Math.sin((time + off) * 0.045 + off) ;
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  // legs
+  ctx.fillStyle='#3a4a6b';
+  ctx.fillRect(5, 28, 6, 12); ctx.fillRect(14, 28, 6, 12);
+  ctx.fillStyle='#4a3018'; ctx.fillRect(4, 39, 8, 3); ctx.fillRect(13, 39, 8, 3);
+  // shirt
+  ctx.fillStyle = tint;
+  ctx.fillRect(3, 14, 19, 15);
+  // orange hi-viz vest, on every single one of them
+  ctx.fillStyle='#f26a1b'; ctx.fillRect(3.5, 14, 18, 14);
+  ctx.fillStyle = tint; ctx.fillRect(11.5, 14, 3, 14);
+  ctx.fillStyle='#e8e8ec'; ctx.fillRect(3.5, 18, 18, 2); ctx.fillRect(3.5, 23, 18, 2);
+  // arms, doing their own thing entirely
+  ctx.fillStyle='#f26a1b';
+  ctx.save(); ctx.translate(3, 16); ctx.rotate(-0.5 - p * 1.1); ctx.fillRect(-3, 0, 4, 11); ctx.restore();
+  ctx.save(); ctx.translate(22, 16); ctx.rotate(0.5 + p * 0.7); ctx.fillRect(-1, 0, 4, 11); ctx.restore();
+  // head + hardhat
+  ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(12.5, 8, 6.4, 0, 7); ctx.fill();
+  ctx.fillStyle='#f4d34a';
+  ctx.beginPath(); ctx.arc(12.5, 6, 7, Math.PI, 0); ctx.fill();
+  ctx.fillRect(4.5, 5, 16, 2.4);
+  ctx.fillStyle='#000'; ctx.fillRect(10, 7.5, 1.6, 1.6); ctx.fillRect(14, 7.5, 1.6, 1.6);
+  ctx.restore();
+}
+
+// ---- Dan, stretching (or not) ----
+function drawBonusDan(){
+  const S = BS;
+  const cx = VIEW_W/2 - 40, cy = 150;
+  const s = 2.6;
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
+  const performing = S.phase === 'perform';
+  const p = performing ? Math.sin(S.poseT * 0.1) : 0;
+  const idle = Math.sin(time * 0.05) * 1.2;
+  const failed = S.phase === 'fail';
+
+  // legs
+  ctx.fillStyle='#b99a5f';
+  if(performing && (S.pose === 8 || S.pose === 9)){        // hamstring / calf: lunge
+    ctx.fillRect(2, 28, 8, 12); ctx.fillRect(16, 28, 8, 12 + p*3);
+  } else {
+    ctx.fillRect(4, 28, 8, 12); ctx.fillRect(14, 28, 8, 12);
+  }
+  ctx.fillStyle='#6b4423';
+  ctx.fillRect(3, 39, 10, 4); ctx.fillRect(13, 39, 10, 4);
+  // torso + hoodie
+  ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14 + idle*0.2, 22, 16);
+  ctx.fillStyle='#b99a5f'; ctx.fillRect(6, 20, 14, 10);
+  // the vest
+  ctx.fillStyle='#f26a1b'; ctx.fillRect(3, 14 + idle*0.2, 20, 15);
+  ctx.fillStyle='#2e3d6b'; ctx.fillRect(11.5, 14 + idle*0.2, 3, 15);
+  ctx.fillStyle='#e8e8ec'; ctx.fillRect(3, 19 + idle*0.2, 20, 2.2); ctx.fillRect(3, 24 + idle*0.2, 20, 2.2);
+
+  // arms: pose-dependent
+  const armL = (a, len) => { ctx.save(); ctx.translate(3, 17); ctx.rotate(a); ctx.fillStyle='#f26a1b'; ctx.fillRect(-3.4, 0, 4, len); ctx.fillStyle='#e8b68a'; ctx.fillRect(-3.4, len, 4, 3.4); ctx.restore(); };
+  const armR = (a, len) => { ctx.save(); ctx.translate(23, 17); ctx.rotate(a); ctx.fillStyle='#f26a1b'; ctx.fillRect(-0.6, 0, 4, len); ctx.fillStyle='#e8b68a'; ctx.fillRect(-0.6, len, 4, 3.4); ctx.restore(); };
+
+  if(failed){
+    armL(2.4, 8); armR(-2.4, 8);                            // both hands to the lower back
+  } else if(!performing){
+    armL(0.3 + idle*0.03, 11); armR(-0.3 - idle*0.03, 11);
+  } else if(S.pose === 2 || S.pose === 3){                  // arm cross / back hug
+    armL(1.5 + p*0.2, 12); armR(-1.5 - p*0.2, 12);
+  } else if(S.pose === 4 || S.pose === 11){                 // overhead reach / full send
+    armL(-0.15 + p*0.1, 14); armR(0.15 - p*0.1, 14);
+  } else if(S.pose === 5 || S.pose === 6){                  // side bend / twist
+    armL(-0.4, 13); armR(1.2 + p*0.3, 10);
+  } else if(S.pose === 7){                                  // wrist circles
+    armL(1.1 + p*0.5, 9); armR(-1.1 - p*0.5, 9);
+  } else {
+    armL(0.9 + p*0.4, 11); armR(-0.9 - p*0.4, 11);
+  }
+
+  // head: tilts for neck rolls, hangs in shame on failure
+  ctx.save();
+  if(failed) ctx.rotate(0.22);
+  else if(performing && S.pose === 0) ctx.rotate(Math.sin(S.poseT*0.12) * 0.4);
+  else if(performing && S.pose === 5) ctx.rotate(p * 0.25);
+  ctx.translate(0, idle*0.2);
+  danHead();
+  ctx.restore();
+
+  // sweat beads while working
+  if(performing || S.phase === 'input'){
+    ctx.fillStyle = 'rgba(140,200,255,.75)';
+    const sw = (time % 40) / 40;
+    ctx.fillRect(26, 4 + sw*10, 2, 3);
+    ctx.fillRect(-1, 6 + ((time+20) % 40)/40 * 10, 2, 3);
+  }
+  ctx.restore();
+
+  // the tweak: a red pop right at the lower back
+  if(failed && S.poseT < 40){
+    const a = 1 - S.poseT/40;
+    ctx.strokeStyle = 'rgba(255,60,50,' + a + ')'; ctx.lineWidth = 3;
+    for(let i=0;i<6;i++){
+      const ang = i * 1.05;
+      ctx.beginPath();
+      ctx.moveTo(cx + 52 + Math.cos(ang)*14, cy + 70 + Math.sin(ang)*14);
+      ctx.lineTo(cx + 52 + Math.cos(ang)*(24 + S.poseT*0.4), cy + 70 + Math.sin(ang)*(24 + S.poseT*0.4));
+      ctx.stroke();
+    }
+  }
+}
+
+function renderBonus(){
+  const S = BS;
+  // morning sky over the yard
+  const g = ctx.createLinearGradient(0,0,0,VIEW_H);
+  g.addColorStop(0,'#f0a860'); g.addColorStop(0.45,'#f6cf9a'); g.addColorStop(1,'#e8dcc0');
+  ctx.fillStyle=g; ctx.fillRect(0,0,VIEW_W,VIEW_H);
+  // low sun
+  ctx.fillStyle='rgba(255,240,190,.6)';
+  ctx.beginPath(); ctx.arc(VIEW_W*0.78, 84, 34, 0, 7); ctx.fill();
+
+  // a string of tank cars behind him
+  ctx.fillStyle='#2b2b34';
+  for(let c=0;c<5;c++){
+    const bx = -40 + c*150;
+    ctx.fillRect(bx, 190, 132, 8);
+    ctx.fillStyle='#1b1b24';
+    ctx.beginPath(); ctx.ellipse(bx+66, 172, 62, 22, 0, 0, 7); ctx.fill();
+    ctx.fillStyle='#3a3a44'; ctx.fillRect(bx+20, 198, 12, 6); ctx.fillRect(bx+100, 198, 12, 6);
+    ctx.fillStyle='#12121c';
+    ctx.beginPath(); ctx.arc(bx+26, 208, 7, 0, 7); ctx.arc(bx+106, 208, 7, 0, 7); ctx.fill();
+    ctx.fillStyle='#2b2b34';
+  }
+  // ballast + rails
+  ctx.fillStyle='#8a8078'; ctx.fillRect(0, 214, VIEW_W, 18);
+  ctx.fillStyle='#5a4a3a';
+  for(let i=0;i<28;i++) ctx.fillRect(i*32, 216, 22, 6);
+  ctx.fillStyle='#9aa0a6'; ctx.fillRect(0, 215, VIEW_W, 2.5); ctx.fillRect(0, 224, VIEW_W, 2.5);
+  // the yard dirt
+  ctx.fillStyle='#c8ae82'; ctx.fillRect(0, 232, VIEW_W, VIEW_H-232);
+  ctx.fillStyle='#b89e72';
+  for(let i=0;i<40;i++){ const gx=(i*97)%VIEW_W; ctx.fillRect(gx, 240+((i*37)%50), 6, 2); }
+
+  // === DAYS SINCE LAST INJURY ===
+  const sgx = 40, sgy = 66;
+  ctx.fillStyle='#5a4a3a'; ctx.fillRect(sgx+40, sgy+58, 8, 60);
+  ctx.fillStyle='#fdf6e3'; ctx.fillRect(sgx, sgy, 92, 58);
+  ctx.strokeStyle='#5a4a2e'; ctx.lineWidth=3; ctx.strokeRect(sgx, sgy, 92, 58);
+  ctx.fillStyle='#1e4f8a'; ctx.font='bold 7px Courier New'; ctx.textAlign='center';
+  ctx.fillText('DAYS SINCE', sgx+46, sgy+13);
+  ctx.fillText('LAST INJURY', sgx+46, sgy+22);
+  ctx.fillStyle='#1b1b24'; ctx.fillRect(sgx+22, sgy+26, 48, 26);
+  ctx.fillStyle = S.days === 0 ? '#ff2b1c' : '#4dff4d';
+  ctx.font='bold 22px Courier New';
+  ctx.fillText(String(S.days), sgx+46, sgy+46);
+
+  // the crew, all in hi-viz, all completely out of sync
+  drawCrewGuy(VIEW_W - 190, 196, 1.5, 0,   '#3a5f96');
+  drawCrewGuy(VIEW_W - 130, 200, 1.4, 90,  '#6b4a3a');
+  drawCrewGuy(VIEW_W - 74,  194, 1.55, 170, '#4a5a4a');
+
+  drawBonusDan();
+  drawFloatTexts();
+
+  // ===== the briefing UI =====
+  ctx.textAlign='center';
+
+  // shift clock
+  const secs = Math.max(0, Math.ceil(S.timeLeft/60));
+  ctx.fillStyle='rgba(20,20,40,.85)'; ctx.fillRect(VIEW_W/2-52, 30, 104, 26);
+  ctx.strokeStyle = secs <= 10 ? '#ff2b1c' : '#e8e8ec'; ctx.lineWidth=2;
+  ctx.strokeRect(VIEW_W/2-52, 30, 104, 26);
+  ctx.fillStyle = secs <= 10 && (time>>3)%2===0 ? '#ff2b1c' : '#ffd94a';
+  ctx.font='bold 15px Courier New';
+  ctx.fillText('SHIFT IN ' + secs + 's', VIEW_W/2, 48);
+
+  // combo + earnings
+  ctx.fillStyle='rgba(20,20,40,.85)'; ctx.fillRect(VIEW_W-136, 66, 120, 40);
+  ctx.fillStyle='#d7dde6'; ctx.font='bold 10px Courier New'; ctx.textAlign='left';
+  ctx.fillText('STRETCHES: ' + S.combo, VIEW_W-128, 80);
+  ctx.fillStyle='#ffd94a';
+  ctx.fillText('EARNED: ' + S.gained + ' oz', VIEW_W-128, 96);
+  ctx.textAlign='center';
+
+  if(S.phase === 'call'){
+    const st = STRETCHES[Math.min(S.idx, STRETCHES.length-1)];
+    const pop = S.t < 8 ? 1.5 - S.t*0.06 : 1;
+    ctx.save();
+    ctx.translate(VIEW_W/2, 268);
+    ctx.scale(pop, pop);
+    ctx.font='bold 24px Courier New';
+    ctx.strokeStyle='#000'; ctx.lineWidth=6; ctx.lineJoin='round';
+    ctx.strokeText(st.n, 0, 0);
+    ctx.fillStyle='#fff'; ctx.fillText(st.n, 0, 0);
+    ctx.restore();
+    ctx.fillStyle='#5a4a2e'; ctx.font='bold 10px Courier New';
+    ctx.fillText(SAFETY_SLOGANS[S.slogan], VIEW_W/2, 292);
+  }
+
+  if(S.phase === 'input'){
+    const st = STRETCHES[Math.min(S.idx, STRETCHES.length-1)];
+    ctx.fillStyle='#5a4a2e'; ctx.font='bold 12px Courier New';
+    ctx.fillText(st.n, VIEW_W/2, 250);
+    // the sequence
+    const n = S.seq.length, gap = 46, x0 = VIEW_W/2 - (n-1)*gap/2;
+    for(let i=0;i<n;i++){
+      const x = x0 + i*gap, y = 282;
+      const done = i < S.at;
+      const cur = i === S.at;
+      ctx.fillStyle = done ? 'rgba(63,174,42,.9)' : cur ? 'rgba(20,20,40,.9)' : 'rgba(20,20,40,.5)';
+      const bump = (cur && S.shine>0) ? 3 : 0;
+      ctx.fillRect(x-17, y-19-bump, 34, 34);
+      ctx.strokeStyle = done ? '#7CFC00' : cur ? '#ffd94a' : '#5a5a6a';
+      ctx.lineWidth = cur ? 3 : 2;
+      ctx.strokeRect(x-17, y-19-bump, 34, 34);
+      ctx.fillStyle = done ? '#fff' : cur ? '#ffd94a' : '#8a93a8';
+      ctx.font='bold 19px Courier New';
+      ctx.fillText(KEYGLYPH[S.seq[i]], x, y+5-bump);
+    }
+    // the window bar draining
+    const bw = 180, frac = Math.max(0, S.win/S.winMax);
+    ctx.fillStyle='rgba(20,20,40,.6)'; ctx.fillRect(VIEW_W/2-bw/2, 306, bw, 7);
+    ctx.fillStyle = frac > 0.4 ? '#3fae2a' : frac > 0.2 ? '#e0a13a' : '#ff2b1c';
+    ctx.fillRect(VIEW_W/2-bw/2, 306, bw*frac, 7);
+  }
+
+  if(S.phase === 'perform'){
+    const st = STRETCHES[Math.min(S.idx, STRETCHES.length-1)];
+    ctx.fillStyle='#3fae2a'; ctx.font='bold 20px Courier New';
+    ctx.strokeStyle='#000'; ctx.lineWidth=5; ctx.lineJoin='round';
+    ctx.strokeText('NICE STRETCH!', VIEW_W/2, 272);
+    ctx.fillText('NICE STRETCH!', VIEW_W/2, 272);
+    if(S.combo > 2){
+      ctx.fillStyle='#ffd94a'; ctx.font='bold 13px Courier New';
+      ctx.fillText('x' + S.combo + ' COMBO', VIEW_W/2, 292);
+    }
+  }
+
+  if(S.phase === 'fail'){
+    ctx.font='bold 30px Courier New';
+    ctx.strokeStyle='#000'; ctx.lineWidth=7; ctx.lineJoin='round';
+    ctx.strokeText('TWEAKED IT!', VIEW_W/2, 276);
+    ctx.fillStyle = (time>>3)%2===0 ? '#ff2b1c' : '#ffd94a';
+    ctx.fillText('TWEAKED IT!', VIEW_W/2, 276);
+    ctx.fillStyle='#5a4a2e'; ctx.font='bold 11px Courier New';
+    ctx.fillText('KEPT THE SILVER THOUGH: ' + S.gained + ' oz', VIEW_W/2, 300);
+  }
+
+  if(S.phase === 'done'){
+    ctx.font='bold 30px Courier New';
+    ctx.strokeStyle='#000'; ctx.lineWidth=7; ctx.lineJoin='round';
+    ctx.strokeText('GET TO WORK!', VIEW_W/2, 276);
+    ctx.fillStyle = (time>>3)%2===0 ? '#4dff4d' : '#ffd94a';
+    ctx.fillText('GET TO WORK!', VIEW_W/2, 276);
+    ctx.fillStyle='#5a4a2e'; ctx.font='bold 11px Courier New';
+    ctx.fillText(S.combo + ' STRETCHES  |  +' + S.gained + ' oz', VIEW_W/2, 300);
+  }
+
+  drawHUD();
+  drawBossIntro();
 }
 
 // ================= LEVEL 4: NELSON + THE BORDER =================
@@ -3952,6 +4357,7 @@ function drawHUD(){
 }
 
 function render(){
+  if(kind==='bonus') return renderBonus();
   if(kind==='train') return renderTrain();
   drawBg();
   drawWater();
@@ -4021,7 +4427,7 @@ function renderIntro(){
   ctx.fillStyle='#d7dde6'; ctx.font='bold 26px Courier New'; ctx.textAlign='center';
   ctx.fillText('LEVEL '+level, VIEW_W/2, 120);
   ctx.fillStyle='#ffd94a'; ctx.font='bold 14px Courier New';
-  ctx.fillText(kind==='silver' ? 'STACKING SEASON' : kind==='skunk' ? 'AN EASY 20 BUCKS' : kind==='city' ? 'JUNCTION CITY' : kind==='border' ? 'NORTHBOUND' : 'THE LAST RIDE', VIEW_W/2, 146);
+  ctx.fillText(kind==='silver' ? 'STACKING SEASON' : kind==='skunk' ? 'AN EASY 20 BUCKS' : kind==='city' ? 'JUNCTION CITY' : kind==='border' ? 'NORTHBOUND' : kind==='bonus' ? 'SAFETY BRIEFING' : 'THE LAST RIDE', VIEW_W/2, 146);
   // Dan head x lives
   ctx.save();
   ctx.translate(VIEW_W/2 - 42, 178);
@@ -4031,10 +4437,14 @@ function renderIntro(){
   ctx.fillStyle='#fff'; ctx.font='bold 22px Courier New';
   ctx.fillText('\u00D7 '+lives, VIEW_W/2 + 32, 202);
   ctx.fillStyle='#8a93a8'; ctx.font='bold 10px Courier New';
-  ctx.fillText(kind==='silver' ? 'STACK OR DIE TRYING' : kind==='skunk' ? 'WHAT COULD POSSIBLY GO WRONG?' : kind==='city' ? 'PROTECT & TUNE UP' : kind==='border' ? 'GET LITTLE NELSON HOME, EH' : 'HOLD ON FOR DEAR LIFE', VIEW_W/2, 250);
+  ctx.fillText(kind==='silver' ? 'STACK OR DIE TRYING' : kind==='skunk' ? 'WHAT COULD POSSIBLY GO WRONG?' : kind==='city' ? 'PROTECT & TUNE UP' : kind==='border' ? 'GET LITTLE NELSON HOME, EH' : kind==='bonus' ? 'STRETCH FIRST. STACK SECOND.' : 'HOLD ON FOR DEAR LIFE', VIEW_W/2, 250);
   if(kind==='city'){
     ctx.fillStyle='#e8c990'; ctx.font='bold 11px Courier New';
     ctx.fillText('\u2694 BUTTON = TUNE-UP  (F OR X ON KEYBOARD)', VIEW_W/2, 272);
+  }
+  if(kind==='bonus'){
+    ctx.fillStyle='#e8c990'; ctx.font='bold 11px Courier New';
+    ctx.fillText('MATCH THE SEQUENCE. NO SILVER IS EVER LOST HERE.', VIEW_W/2, 272);
   }
   if(introT > 30 && (time>>4)%2===0){
     ctx.fillStyle='#ffd94a'; ctx.font='bold 12px Courier New';
@@ -4065,8 +4475,8 @@ function retryLevel(){
 }
 function levelClear(){
   Audio8.S.fanfare();
-  awardSpeedBonus();
-  if(level < 5){
+  if(kind !== 'bonus') awardSpeedBonus();
+  if(level < 6){
     flash('LEVEL '+level+' COMPLETE!', '#3fae2a');
     ozAtLevelStart = oz;
     buildLevel(level+1); resetDan();
@@ -4273,8 +4683,8 @@ function loop(t){
     else if(introGo && introT > 30){
       state='play';
       if(matchMedia('(pointer:coarse)').matches) show('controls');
-      if(kind==='silver') Audio8.play('level'); else if(kind==='skunk') Audio8.play('skunk');
-      if(kind==='city') show('swingBtn'); else hide('swingBtn');
+      if(kind==='silver') Audio8.play('level'); else if(kind==='skunk') Audio8.play('skunk'); else if(kind==='bonus') Audio8.play('muzak');
+      if(kind==='city' || kind==='bonus') show('swingBtn'); else hide('swingBtn');
       levelStartMs = Date.now(); ozAtLevelBegin = oz;
       if(level === 1) runStartMs = Date.now();
     }
