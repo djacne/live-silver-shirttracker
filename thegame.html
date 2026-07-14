@@ -799,14 +799,15 @@ const STRETCHES = [
   {n:'NECK ROLLS',       reps:2},
   {n:'SHOULDER ROLLS',   reps:2},
   {n:'ARM CROSS',        reps:2},
-  {n:'UPPER BACK HUG',   reps:3},
+  {n:'UPPER BACK HUG',   reps:2},
   {n:'OVERHEAD REACH',   reps:3},
   {n:'SIDE BEND',        reps:3},
   {n:'TRUNK TWIST',      reps:3},
-  {n:'WRIST CIRCLES',    reps:4},
+  {n:'WRIST CIRCLES',    reps:3},
   {n:'HAMSTRING',        reps:4},
   {n:'CALF STRETCH',     reps:4},
   {n:'HIP FLEXOR',       reps:4},
+  {n:'GROIN STRETCH',    reps:5},
   {n:'THE FULL SEND',    reps:5},
 ];
 const SAFETY_SLOGANS = ['SAFETY IS A CHOICE!', 'STRETCH TO SUCCESS!', 'REPORT ALL NEAR-MISSES!',
@@ -868,7 +869,8 @@ function burst(text, wx, wy, color, tier){
 function burstScreen(text, sx, sy, color, tier){
   if(bossIntro) return;
   burst(text, sx, sy, color, tier);
-  bursts[bursts.length-1].screen = true;
+  const b = bursts[bursts.length-1];
+  if(b) b.screen = true;
 }
 
 function drawStarburst(w, h, spikes, seed, fill, edge, lw){
@@ -1154,7 +1156,7 @@ function step(){
           e.dead = true; oz += 2;
           riseText(e.x+e.w/2, e.y-6, '+2 oz');
           Audio8.S.bonk();
-          burst(e.type==='dog' ? pick(DOG_STOMPS) : pick(TUNEUPS), px(e.x)+e.w/2, e.y-6, '#3fae2a'); bumpStreak();
+          burst(e.type==='dog' ? pick(DOG_STOMPS) : pick(TUNEUPS), e.x+e.w/2, e.y-6, '#3fae2a'); bumpStreak();
         }
       }
     }
@@ -1275,7 +1277,7 @@ function step(){
                 e.type==='dog' ? pick(DOG_STOMPS) :
                 kind==='city' ? pick(TUNEUPS) :
                 pick(RED_STOMPS);
-          burst(line, px(e.x)+e.w/2, e.y - 6, '#3fae2a');
+          burst(line, e.x + e.w/2, e.y - 6, '#3fae2a');
           bumpStreak();
         }
       } else if(dan.inv<=0){
@@ -2038,11 +2040,14 @@ function bonusSeq(reps){
   return s;
 }
 function bonusWindow(idx){
-  // generous at first, brutal by the end
-  return Math.max(26, 78 - idx * 4.6);
+  // roomy for the first stretch or six, then the wheels come off
+  if(idx < 3)  return 150;              // 2.5s. plenty.
+  if(idx < 6)  return 130 - (idx-3)*8;
+  if(idx < 9)  return 106 - (idx-6)*10;
+  return Math.max(46, 76 - (idx-9) * 6);
 }
 function bonusPay(idx){
-  return 5 + Math.floor(idx * 1.4);
+  return 6 + Math.floor(idx * 1.8);
 }
 
 function stepBonus(){
@@ -2063,14 +2068,13 @@ function stepBonus(){
   if(S.timeLeft <= 0){
     S.phase = 'done'; S.poseT = 0;
     Audio8.stop(); Audio8.S.horn ? Audio8.S.horn() : Audio8.S.fanfare();
-    banner('GET TO WORK!', '#3fae2a');
     return;
   }
 
   if(S.phase === 'call'){
     // announce the stretch, then hand over the sequence
     if(S.t === 1) Audio8.S.ding();
-    if(S.t > 55){
+    if(S.t > 70){
       const st = STRETCHES[Math.min(S.idx, STRETCHES.length-1)];
       S.seq = bonusSeq(st.reps);
       S.at = 0;
@@ -2108,7 +2112,7 @@ function stepBonus(){
             S.poseT = 0;
             S.pose = S.idx;
           } else {
-            S.win = Math.min(S.winMax, S.win + 10);   // small mercy for a correct press
+            S.win = Math.min(S.winMax, S.win + 22);   // a correct press buys real time back
           }
         } else {
           return bonusTweak();
@@ -2129,7 +2133,6 @@ function stepBonus(){
       if(S.idx >= 16){          // nobody is getting here
         S.phase = 'done'; S.poseT = 0;
         Audio8.stop(); Audio8.S.fanfare();
-        banner('GET TO WORK!', '#3fae2a');
         return;
       }
       S.phase = 'call'; S.t = 0;
@@ -2143,7 +2146,7 @@ function bonusTweak(){
   S.phase = 'fail'; S.poseT = 0; S.days = 0; S.tweak = 1;
   Audio8.stop();
   Audio8.S.bonk(); Audio8.S.sadTrombone ? Audio8.S.sadTrombone() : Audio8.S.hurt();
-  banner('TWEAKED IT!', '#c0392b');
+
   return;
 }
 
@@ -2265,17 +2268,59 @@ function renderBonus(){
   ctx.fillStyle='rgba(255,240,190,.6)';
   ctx.beginPath(); ctx.arc(VIEW_W*0.78, 84, 34, 0, 7); ctx.fill();
 
-  // a string of tank cars behind him
-  ctx.fillStyle='#2b2b34';
+  // a string of black tank cars behind him
   for(let c=0;c<5;c++){
-    const bx = -40 + c*150;
-    ctx.fillRect(bx, 190, 132, 8);
-    ctx.fillStyle='#1b1b24';
-    ctx.beginPath(); ctx.ellipse(bx+66, 172, 62, 22, 0, 0, 7); ctx.fill();
-    ctx.fillStyle='#3a3a44'; ctx.fillRect(bx+20, 198, 12, 6); ctx.fillRect(bx+100, 198, 12, 6);
-    ctx.fillStyle='#12121c';
-    ctx.beginPath(); ctx.arc(bx+26, 208, 7, 0, 7); ctx.arc(bx+106, 208, 7, 0, 7); ctx.fill();
+    const bx = -50 + c*152;
+    const bt = 176;                         // barrel centerline
+    // trucks + wheels
     ctx.fillStyle='#2b2b34';
+    ctx.fillRect(bx+16, 200, 26, 9); ctx.fillRect(bx+100, 200, 26, 9);
+    ctx.fillStyle='#12121c';
+    for(const wx of [bx+20, bx+36, bx+104, bx+120]){
+      ctx.beginPath(); ctx.arc(wx, 212, 7.5, 0, 7); ctx.fill();
+      ctx.fillStyle='#3a3a44'; ctx.beginPath(); ctx.arc(wx, 212, 2.6, 0, 7); ctx.fill();
+      ctx.fillStyle='#12121c';
+    }
+    // underframe + coupler
+    ctx.fillStyle='#3a3a44'; ctx.fillRect(bx+8, 196, 126, 5);
+    ctx.fillStyle='#2b2b34'; ctx.fillRect(bx-6, 197, 16, 4); ctx.fillRect(bx+132, 197, 16, 4);
+    // the barrel: rounded ends, banded body
+    ctx.fillStyle='#1b1b24';
+    ctx.beginPath();
+    ctx.moveTo(bx+18, bt-20); ctx.lineTo(bx+124, bt-20);
+    ctx.quadraticCurveTo(bx+140, bt, bx+124, bt+20);
+    ctx.lineTo(bx+18, bt+20);
+    ctx.quadraticCurveTo(bx+2, bt, bx+18, bt-20);
+    ctx.closePath(); ctx.fill();
+    // top highlight so it reads as a cylinder
+    ctx.fillStyle='#3a3a46';
+    ctx.fillRect(bx+18, bt-19, 106, 5);
+    ctx.fillStyle='#0e0e14';
+    ctx.fillRect(bx+18, bt+13, 106, 6);
+    // rivet bands
+    ctx.strokeStyle='#3a3a46'; ctx.lineWidth=1.5;
+    for(const bxx of [bx+46, bx+96]){
+      ctx.beginPath(); ctx.moveTo(bxx, bt-19); ctx.lineTo(bxx, bt+19); ctx.stroke();
+    }
+    // dome + safety valve on top
+    ctx.fillStyle='#1b1b24'; ctx.fillRect(bx+62, bt-30, 20, 11);
+    ctx.fillStyle='#3a3a46'; ctx.fillRect(bx+64, bt-32, 16, 3);
+    ctx.fillStyle='#8a93a8'; ctx.fillRect(bx+70, bt-36, 4, 5);
+    // walkway + end ladder
+    ctx.fillStyle='#4a4a56'; ctx.fillRect(bx+16, bt-22, 110, 2);
+    ctx.strokeStyle='#5a5a66'; ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(bx+128, bt-16); ctx.lineTo(bx+128, bt+18);
+    ctx.moveTo(bx+136, bt-16); ctx.lineTo(bx+136, bt+18);
+    for(let r=0;r<4;r++){ ctx.moveTo(bx+128, bt-12+r*9); ctx.lineTo(bx+136, bt-12+r*9); }
+    ctx.stroke();
+    // placard + reporting marks
+    ctx.fillStyle='#f4d34a';
+    ctx.save(); ctx.translate(bx+34, bt+2); ctx.rotate(Math.PI/4);
+    ctx.fillRect(-6, -6, 12, 12); ctx.restore();
+    ctx.fillStyle='#e8e8ec'; ctx.font='bold 6px Courier New'; ctx.textAlign='left';
+    ctx.fillText('BNSF ' + (48210 + c*7), bx+52, bt+2);
+    ctx.fillText('GATX', bx+52, bt+11);
   }
   // ballast + rails
   ctx.fillStyle='#8a8078'; ctx.fillRect(0, 214, VIEW_W, 18);
@@ -2392,23 +2437,55 @@ function renderBonus(){
   }
 
   if(S.phase === 'fail'){
-    ctx.font='bold 30px Courier New';
-    ctx.strokeStyle='#000'; ctx.lineWidth=7; ctx.lineJoin='round';
-    ctx.strokeText('TWEAKED IT!', VIEW_W/2, 276);
+    const pop = S.poseT < 9 ? 2.3 - S.poseT*0.145 : 1 + Math.sin(S.poseT*0.09)*0.03;
+    ctx.save();
+    ctx.translate(VIEW_W/2, 272);
+    ctx.scale(pop, pop);
+    ctx.rotate(Math.sin(S.poseT*0.07)*0.03);
+    ctx.font = '42px ' + COMIC_FONT;
+    ctx.textAlign='center'; ctx.lineJoin='round';
+    ctx.fillStyle='rgba(20,20,30,.5)'; ctx.fillText('TWEAKED IT!', 4, 4);
+    ctx.strokeStyle='#12121c'; ctx.lineWidth=9; ctx.strokeText('TWEAKED IT!', 0, 0);
     ctx.fillStyle = (time>>3)%2===0 ? '#ff2b1c' : '#ffd94a';
-    ctx.fillText('TWEAKED IT!', VIEW_W/2, 276);
-    ctx.fillStyle='#5a4a2e'; ctx.font='bold 11px Courier New';
-    ctx.fillText('KEPT THE SILVER THOUGH: ' + S.gained + ' oz', VIEW_W/2, 300);
+    ctx.fillText('TWEAKED IT!', 0, 0);
+    ctx.restore();
+    // the payout, big and readable
+    ctx.font = '26px ' + COMIC_FONT;
+    ctx.textAlign='center'; ctx.lineJoin='round';
+    ctx.strokeStyle='#12121c'; ctx.lineWidth=7;
+    ctx.strokeText(S.gained + ' oz EARNED', VIEW_W/2, 310);
+    ctx.fillStyle='#4dff4d';
+    ctx.fillText(S.gained + ' oz EARNED', VIEW_W/2, 310);
+    // and the joke, small, underneath
+    ctx.font = '13px ' + COMIC_FONT;
+    ctx.strokeStyle='#12121c'; ctx.lineWidth=4;
+    ctx.strokeText('FILE AN INJURY REPORT WITH TRAINMASTER LAUER', VIEW_W/2, 330);
+    ctx.fillStyle='#fdf6e3';
+    ctx.fillText('FILE AN INJURY REPORT WITH TRAINMASTER LAUER', VIEW_W/2, 330);
   }
-
   if(S.phase === 'done'){
-    ctx.font='bold 30px Courier New';
-    ctx.strokeStyle='#000'; ctx.lineWidth=7; ctx.lineJoin='round';
-    ctx.strokeText('GET TO WORK!', VIEW_W/2, 276);
+    const pop = S.poseT < 9 ? 2.3 - S.poseT*0.145 : 1 + Math.sin(S.poseT*0.09)*0.03;
+    ctx.save();
+    ctx.translate(VIEW_W/2, 272);
+    ctx.scale(pop, pop);
+    ctx.font = '42px ' + COMIC_FONT;
+    ctx.textAlign='center'; ctx.lineJoin='round';
+    ctx.fillStyle='rgba(20,20,30,.5)'; ctx.fillText('GET TO WORK!', 4, 4);
+    ctx.strokeStyle='#12121c'; ctx.lineWidth=9; ctx.strokeText('GET TO WORK!', 0, 0);
     ctx.fillStyle = (time>>3)%2===0 ? '#4dff4d' : '#ffd94a';
-    ctx.fillText('GET TO WORK!', VIEW_W/2, 276);
-    ctx.fillStyle='#5a4a2e'; ctx.font='bold 11px Courier New';
-    ctx.fillText(S.combo + ' STRETCHES  |  +' + S.gained + ' oz', VIEW_W/2, 300);
+    ctx.fillText('GET TO WORK!', 0, 0);
+    ctx.restore();
+    ctx.font = '26px ' + COMIC_FONT;
+    ctx.textAlign='center'; ctx.lineJoin='round';
+    ctx.strokeStyle='#12121c'; ctx.lineWidth=7;
+    ctx.strokeText(S.gained + ' oz EARNED', VIEW_W/2, 310);
+    ctx.fillStyle='#4dff4d';
+    ctx.fillText(S.gained + ' oz EARNED', VIEW_W/2, 310);
+    ctx.font = '13px ' + COMIC_FONT;
+    ctx.strokeStyle='#12121c'; ctx.lineWidth=4;
+    ctx.strokeText('NOBODY GOT HURT. NOBODY EVER DOES.', VIEW_W/2, 330);
+    ctx.fillStyle='#fdf6e3';
+    ctx.fillText('NOBODY GOT HURT. NOBODY EVER DOES.', VIEW_W/2, 330);
   }
 
   drawChannels();
@@ -3256,7 +3333,7 @@ function hurt(msg, forceLife){
   }
   lives--;
   if(lives <= 0){ return gameOver(); }
-  flash(msg + suffix);
+  quip(msg + suffix, '#ff5a4e');
   resetDan();
 }
 
