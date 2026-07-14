@@ -155,7 +155,7 @@
      nothing floats into canvas-drawn scenery (the sun, the HUD) this way. */
   #pauseBtn{position:fixed;z-index:25;
     top:calc(9.5vh + env(safe-area-inset-top));
-    right:calc(62px + env(safe-area-inset-right));
+    left:calc(10px + env(safe-area-inset-left));
     width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
     background:rgba(20,20,40,.6);cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
@@ -218,7 +218,8 @@
   .cbtn:active{background:rgba(255,255,255,.4);}
   #jumpBtn{width:86px;height:86px;background:rgba(63,174,42,.35);border-color:rgba(120,255,90,.6);}
 
-  #muteBtn{position:fixed;top:calc(9.5vh + env(safe-area-inset-top));right:10px;z-index:25;
+  #muteBtn{position:fixed;top:calc(9.5vh + env(safe-area-inset-top));
+    left:calc(62px + env(safe-area-inset-left));z-index:25;
     width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
     background:rgba(20,20,40,.6);color:#fff;font-size:20px;cursor:pointer;}
 
@@ -946,7 +947,7 @@ function buildLevel(n){
       {x:3600, y:205, used:false, bump:0},
     ];
     coins = [
-      ...coinRow(240, 270, 4), ...coinRow(440, 205, 3), ...coinRow(600, 155, 2),
+      ...coinRow(240, 270, 4), ...coinRow(500, 205, 3), ...coinRow(660, 155, 2),
       ...coinRow(1110, 195, 2, 45),
       ...coinRow(1280, 200, 3), ...coinRow(1450, 150, 3),
       ...coinRow(1890, 190, 2, 45),
@@ -4352,85 +4353,78 @@ function drawCrimeSign(sx0){
   const sx = px(sx0);
   if(sx < -220 || sx > VIEW_W+40) return;
   const gy = GROUND_Y;
-  const w = 210, h = 120, py0 = gy - 234;   // taller, so there's room for a second joke below
+  const w = 200, h = 168, py0 = gy - 250;
 
+  // post
   ctx.fillStyle = '#7a5a34';
   ctx.fillRect(sx+w/2-5, py0+h, 10, gy-(py0+h));
 
-  ctx.fillStyle = '#fdf6e3';
+  // the poster board, dark frame -- a real notice, not a joke prop
+  ctx.fillStyle = '#f2ede0';
   ctx.fillRect(sx, py0, w, h);
-  ctx.strokeStyle = '#5a4a2e'; ctx.lineWidth = 4;
+  ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 4;
   ctx.strokeRect(sx, py0, w, h);
 
-  // the dial: yellow at the low end ramping straight to red at the high end,
-  // needle buried in the red
-  const gx = sx + 46, gy2 = py0 + 42, r = 26;
-  ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(gx, gy2, r, Math.PI, 0); ctx.stroke();
-  const dialGrad = ctx.createLinearGradient(gx-r, 0, gx+r, 0);
-  dialGrad.addColorStop(0, '#f4d34a');
-  dialGrad.addColorStop(1, '#c0392b');
-  ctx.strokeStyle = dialGrad; ctx.lineWidth = 8;
-  ctx.beginPath(); ctx.arc(gx, gy2, r-6, Math.PI, 0); ctx.stroke();
-  ctx.save();
-  ctx.translate(gx, gy2);
-  ctx.rotate(-0.22);
-  ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r-2, 0); ctx.stroke();
-  ctx.restore();
-  ctx.fillStyle = '#1b1b2f';
-  ctx.beginPath(); ctx.arc(gx, gy2, 3, 0, 7); ctx.fill();
+  // === the CRIME STOPPERS header: a solid red PSA banner ===
+  const bannerH = 34;
+  ctx.fillStyle = '#8a1218';
+  ctx.fillRect(sx, py0, w, bannerH);
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+  ctx.font = 'bold 17px Courier New';
+  ctx.fillText('CRIME STOPPERS', sx+w/2, py0+23);
+  // a thin gold rule under the banner, like real municipal signage
+  ctx.fillStyle = '#c9a227'; ctx.fillRect(sx, py0+bannerH, w, 3);
 
-  // text, clear of the gauge in its own column
-  const textX = gx + r + 24;
-  ctx.textAlign = 'left'; ctx.fillStyle = '#1b1b2f';
-  ctx.font = 'bold 14px Courier New';
-  ctx.fillText('CRIME RATE:', textX, py0+30);
-  ctx.font = 'bold 26px Courier New'; ctx.fillStyle = '#c0392b';
-  ctx.fillText('YES', textX, py0+58);
-
-  // a little burglar tucked in the remaining right-hand space -- ski mask, striped
-  // shirt, swag bag over the shoulder, tiptoeing off the edge of the sign
+  // === the crime-scene tape band, with the count legible right on top of it ===
+  const tapeY = py0 + bannerH + 14, tapeH = 34;
   ctx.save();
-  ctx.translate(sx + w - 34, py0 + 46);
-  ctx.fillStyle = '#2b2b38';
-  ctx.beginPath(); ctx.ellipse(0, 0, 8, 9, 0, 0, 7); ctx.fill();      // ski-masked head
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(-6, -2, 12, 3);                                        // eye slit
-  ctx.fillStyle = '#3a4d85';
-  ctx.fillRect(-9, 8, 18, 15);                                        // striped shirt
-  ctx.strokeStyle = '#e8e8ec'; ctx.lineWidth = 1.6;
-  for(const ly of [11,15,19]){ ctx.beginPath(); ctx.moveTo(-9,ly); ctx.lineTo(9,ly); ctx.stroke(); }
-  ctx.fillStyle = '#8a1c14';                                           // the swag bag
-  ctx.beginPath(); ctx.ellipse(11, 14, 6, 7, 0.3, 0, 7); ctx.fill();
-  ctx.fillStyle = '#f4d34a'; ctx.font='bold 8px Courier New'; ctx.textAlign='center';
-  ctx.fillText('$', 11, 17);
-  ctx.strokeStyle = '#8a1c14'; ctx.lineWidth = 1.6;
-  ctx.beginPath(); ctx.moveTo(6, 6); ctx.lineTo(14, 9); ctx.stroke();  // the bag strap
-  ctx.restore();
-
-  // hazard tape running along the bottom, because SOMEBODY should rope this off
-  const tapeY = py0 + h - 22, tapeH = 16;
-  ctx.save();
-  ctx.beginPath(); ctx.rect(sx, tapeY, w, tapeH); ctx.clip();
-  ctx.fillStyle = '#1b1b2f'; ctx.fillRect(sx, tapeY, w, tapeH);
+  ctx.beginPath(); ctx.rect(sx+2, tapeY, w-4, tapeH); ctx.clip();
+  ctx.fillStyle = '#151515'; ctx.fillRect(sx, tapeY, w, tapeH);
   ctx.fillStyle = '#f4d34a';
-  for(let i = -tapeH; i < w + tapeH; i += 16){
+  for(let i = -tapeH; i < w + tapeH; i += 20){
     ctx.save();
     ctx.translate(sx + i, tapeY + tapeH/2);
-    ctx.rotate(-0.5);
-    ctx.fillRect(-6, -tapeH, 12, tapeH*3);
+    ctx.rotate(-0.45);
+    ctx.fillRect(-7, -tapeH, 14, tapeH*3);
     ctx.restore();
   }
   ctx.restore();
-  ctx.fillStyle = '#1b1b2f'; ctx.font = 'bold 9px Courier New'; ctx.textAlign = 'center';
-  // punched through the tape, the running gag from the yard finally catches up with the street
-  ctx.fillStyle = 'rgba(20,20,30,.0)';   // (kept for future use; tape carries the joke alone)
+  ctx.strokeStyle = '#151515'; ctx.lineWidth = 2;
+  ctx.strokeRect(sx+2, tapeY, w-4, tapeH);
 
-  // the second joke: a running tally, deadpan, right under the tape
-  ctx.textAlign = 'center'; ctx.fillStyle = '#5a4a2e';
-  ctx.font = 'bold 10px Courier New';
-  ctx.fillText('DAYS SINCE LAST SHOOTING: 0', sx+w/2, py0+h-4);
+  // the count, punched through the tape in heavy black-outlined white -- has to read
+  // clean over the diagonal stripes
+  ctx.save();
+  ctx.translate(sx+w/2, tapeY+tapeH/2+1);
+  ctx.font = 'bold 11px Courier New'; ctx.textAlign = 'center';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
+  ctx.strokeText('DAYS SINCE LAST', 0, -6);
+  ctx.strokeText('SHOOTING: 0', 0, 8);
+  ctx.fillStyle = '#fff';
+  ctx.fillText('DAYS SINCE LAST', 0, -6);
+  ctx.fillText('SHOOTING: 0', 0, 8);
+  ctx.restore();
+
+  // the tagline, plain and serious -- the deadpan is the whole joke
+  ctx.textAlign = 'center'; ctx.fillStyle = '#1b1b2f';
+  ctx.font = 'bold 12px Courier New';
+  ctx.fillText('IF YOU SEE SOMETHING?', sx+w/2, tapeY+tapeH+26);
+  ctx.fillText('SAY SOMETHING!', sx+w/2, tapeY+tapeH+42);
+
+  // a small anonymous-tip phone icon, bottom corner, understated
+  ctx.save();
+  ctx.translate(sx+22, py0+h-24);
+  ctx.strokeStyle = '#5a4a2e'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-5,-8); ctx.quadraticCurveTo(-9,-8,-8,-3);
+  ctx.quadraticCurveTo(-6,4,0,7); ctx.quadraticCurveTo(6,10,8,6);
+  ctx.quadraticCurveTo(9,3,5,1); ctx.quadraticCurveTo(3,0,2,3);
+  ctx.quadraticCurveTo(-2,1,-4,-3); ctx.quadraticCurveTo(-1,-4,-2,-6);
+  ctx.quadraticCurveTo(-3,-9,-5,-8); ctx.closePath(); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#5a4a2e'; ctx.font = 'bold 8px Courier New'; ctx.textAlign = 'left';
+  ctx.fillText('ANONYMOUS TIPS TAKEN', sx+36, py0+h-21);
 }
 
 function drawSign(sx0, line1, line2){
@@ -6068,7 +6062,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '4.7';
+const BUILD = '4.8';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
