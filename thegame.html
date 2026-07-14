@@ -91,6 +91,13 @@
   #lbList li:nth-child(1)::before{color:#ffd94a;}
   #lbList li:nth-child(2)::before{color:#d7dde6;}
   #lbList li:nth-child(3)::before{color:#c88a3a;}
+  #dbgBar{position:fixed;z-index:40;left:0;right:0;bottom:0;display:flex;gap:6px;flex-wrap:wrap;
+    align-items:center;justify-content:center;padding:6px calc(6px + env(safe-area-inset-left))
+    calc(6px + env(safe-area-inset-bottom));background:rgba(180,20,20,.85);}
+  #dbgBar span{color:#fff;font-weight:bold;font-size:11px;letter-spacing:2px;}
+  #dbgBar button{font-family:inherit;font-weight:bold;font-size:11px;padding:5px 9px;border:none;
+    border-radius:5px;background:#fdf6e3;color:#1b1b2f;cursor:pointer;}
+  #dbgBar button:active{background:#ffd94a;}
   .helpbox{background:rgba(255,255,255,.07);border:2px solid #39415c;border-radius:10px;
     padding:16px 18px;max-width:480px;text-align:left;}
   .helpbox p{font-size:clamp(9px,2.6vw,13px);margin-bottom:8px;white-space:nowrap;}
@@ -147,6 +154,16 @@
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
   </div>
  </div>
+</div>
+
+<div id="dbgBar" class="hidden">
+  <span>DEBUG</span>
+  <button data-lv="1">1 Silver</button>
+  <button data-lv="2">2 Skunk</button>
+  <button data-lv="3">3 Junction</button>
+  <button data-lv="4">4 Border</button>
+  <button data-lv="5">5 Bonus</button>
+  <button data-lv="6">6 Train</button>
 </div>
 
 <div id="lbScreen" class="overlay hidden">
@@ -707,7 +724,7 @@ function awardSpeedBonus(){
   const bonus = Math.round(gained * (mult - 1));
   if(bonus > 0){
     oz += bonus;
-    flash('SPEED BONUS +' + bonus + ' oz', '#3fae2a');
+    toast('SPEED BONUS +' + bonus + ' oz', '#3fae2a');
   }
   return bonus;
 }
@@ -727,7 +744,7 @@ function checkMilestone(){
   while(oz >= nextLifeAt){
     nextLifeAt += 100;
     if(lives < 6) lives++;
-    flash((nextLifeAt-100)+' oz! +1 \u2665', '#3fae2a');
+    toast((nextLifeAt-100)+' oz! +1 \u2665', '#3fae2a');
     Audio8.S.oneUp();
   }
 }
@@ -796,33 +813,220 @@ function pick(a){ return a[(Math.random()*a.length)|0]; }
 // ================= messages =================
 const msgEl = document.getElementById('msg');
 let msgTimer = null;
-// notifications queue up and cycle through one spot, so several can land back to back
-const msgQueue = [];
-let msgShowing = false;
-function flash(text, color){
-  if(bossIntro) return;                 // never cover the fight card
-  msgQueue.push({text, color: color || 'var(--red)'});
-  if(msgQueue.length > 4) msgQueue.splice(0, msgQueue.length - 4);
-  pumpMsg();
+// ===== NOTIFICATION CHANNELS =====
+// 1. BURSTS   - comic impact callouts, anchored to the action, instant, many at once
+// 2. TOASTS   - silver receipts, tidy corner stack (DOM)
+// 3. QUIP     - Dan's own voice, centered, one at a time
+// 4. COMBAT   - boss hits, a fast band under the boss bar, always latest
+// 5. BANNER   - end-of-level / announcer, big and readable
+
+let bursts = [];
+let quipMsg = null;      // {text, t, color}
+let combatMsg = null;    // {text, t, color}
+let bannerMsg = null;    // {text, t, color}
+let streak = 0, streakT = 0, streakShow = 0;
+
+function burst(text, x, y, color){
+  if(bossIntro) return;
+  bursts.push({text, x, y, t:0, rot:(Math.random()-0.5)*0.28, color: color || '#ffd94a', big:1});
+  if(bursts.length > 6) bursts.shift();
 }
-function pumpMsg(){
-  if(msgShowing || !msgQueue.length) return;
-  const m = msgQueue.shift();
-  msgShowing = true;
+function quip(text, color){                    // Dan's voice: centered
+  if(bossIntro) return;
+  quipMsg = {text, t:0, color: color || '#ffd94a'};
+}
+function combat(text, color){                  // boss exchange: fast, always the newest
+  if(bossIntro) return;
+  combatMsg = {text, t:0, color: color || '#ff5a4e'};
+}
+function banner(text, color){                  // end of level
+  bannerMsg = {text, t:0, color: color || '#3fae2a'};
+}
+function bumpStreak(x, y){
+  streak++; streakT = 100;
+  if(streak >= 3){
+    streakShow = 70;
+    Audio8.S.ding();
+  }
+}
+function streakLabel(){
+  if(streak >= 8) return 'x' + streak + ' \u2014 SEIZE THIS!';
+  if(streak >= 5) return 'x' + streak + ' \u2014 UNBURDENED!';
+  return 'x' + streak + ' STREAK!';
+}
+function clearMsgs(){
+  bursts = []; quipMsg = null; combatMsg = null; bannerMsg = null;
+  streakShow = 0;
+  toastQueue.length = 0;
+  toastShowing = false;
+  clearTimeout(msgTimer);
+  msgEl.style.opacity = 0;
+}
+
+// ---- channel 2: the silver receipts, corner stack ----
+const toastQueue = [];
+let toastShowing = false;
+function toast(text, color){
+  toastQueue.push({text, color: color || '#3fae2a'});
+  if(toastQueue.length > 3) toastQueue.splice(0, toastQueue.length - 3);
+  pumpToast();
+}
+function pumpToast(){
+  if(toastShowing || !toastQueue.length) return;
+  const m = toastQueue.shift();
+  toastShowing = true;
   msgEl.textContent = m.text;
   msgEl.style.background = m.color;
   msgEl.style.opacity = 1;
   clearTimeout(msgTimer);
   msgTimer = setTimeout(() => {
     msgEl.style.opacity = 0;
-    setTimeout(() => { msgShowing = false; pumpMsg(); }, 220);   // brief gap, then the next one
-  }, 1400);
+    setTimeout(() => { toastShowing = false; pumpToast(); }, 140);
+  }, 900);
 }
-function clearMsgs(){
-  msgQueue.length = 0;
-  msgShowing = false;
-  clearTimeout(msgTimer);
-  msgEl.style.opacity = 0;
+// legacy name -> silver toasts
+function flash(text, color){ if(!bossIntro) toast(text, color); }
+
+// ---- drawing ----
+function drawJagged(cx, cy, w, h, color, edge){
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  const pts = 14;
+  for(let i=0;i<pts;i++){
+    const a = (i/pts)*Math.PI*2;
+    const r = (i%2===0) ? 1 : 0.74;
+    ctx.lineTo(cx + Math.cos(a)*w*r, cy + Math.sin(a)*h*r);
+  }
+  ctx.closePath(); ctx.fill();
+  if(edge){ ctx.strokeStyle = edge; ctx.lineWidth = 2; ctx.stroke(); }
+}
+
+function drawChannels(){
+  // --- 1. comic bursts, on the action ---
+  for(let i=bursts.length-1;i>=0;i--){
+    const b = bursts[i];
+    b.t++;
+    if(b.t > 46){ bursts.splice(i,1); continue; }
+    const k = b.t;
+    const pop = k < 6 ? 0.55 + k*0.09 : k > 36 ? 1 - (k-36)*0.06 : 1;
+    const rise = Math.min(16, k * 0.5);
+    const a = k > 34 ? 1 - (k-34)/12 : 1;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, a);
+    ctx.translate(b.x, b.y - rise);
+    ctx.rotate(b.rot);
+    ctx.scale(pop, pop);
+    ctx.font = 'bold 15px Courier New';
+    ctx.textAlign = 'center';
+    const w = ctx.measureText(b.text).width * 0.62 + 14;
+    drawJagged(0, -4, w, 18, '#fff', '#1b1b2f');
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 3.5;
+    ctx.strokeText(b.text, 0, 0);
+    ctx.fillStyle = b.color;
+    ctx.fillText(b.text, 0, 0);
+    ctx.restore();
+  }
+
+  // --- streak announcer ---
+  if(streakT > 0 && --streakT <= 0) streak = 0;
+  if(streakShow > 0){
+    streakShow--;
+    const k = 70 - streakShow;
+    const pop = k < 7 ? 2.1 - k*0.16 : 1;
+    const a = streakShow < 12 ? streakShow/12 : 1;
+    const tier = streak >= 8 ? 24 : streak >= 5 ? 21 : 18;
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.translate(VIEW_W/2, 68);
+    ctx.scale(pop, pop);
+    ctx.transform(1, 0, -0.16, 1, 0, 0);
+    ctx.font = 'bold ' + tier + 'px Courier New';
+    ctx.textAlign = 'center';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 6;
+    ctx.strokeText(streakLabel(), 0, 0);
+    ctx.fillStyle = (k>>2)%2===0 ? '#fff' : '#ffd94a';
+    ctx.fillText(streakLabel(), 0, 0);
+    ctx.restore();
+  }
+
+  // --- 4. combat band: boss exchanges, right under the boss bar ---
+  if(combatMsg){
+    combatMsg.t++;
+    if(combatMsg.t > 50){ combatMsg = null; }
+    else {
+      const m = combatMsg;
+      const a = m.t > 38 ? 1 - (m.t-38)/12 : 1;
+      const slide = m.t < 6 ? (6-m.t)*10 : 0;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.font = 'bold 13px Courier New';
+      ctx.textAlign = 'left';
+      const w = ctx.measureText(m.text).width + 16;
+      ctx.fillStyle = 'rgba(20,20,40,.9)';
+      ctx.fillRect(12 - slide, 70, w, 20);
+      ctx.fillStyle = m.color;
+      ctx.fillRect(12 - slide, 70, 3, 20);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(m.text, 22 - slide, 84);
+      ctx.restore();
+    }
+  }
+
+  // --- 3. Dan's voice: centered ---
+  if(quipMsg){
+    quipMsg.t++;
+    if(quipMsg.t > 78){ quipMsg = null; }
+    else {
+      const m = quipMsg;
+      const pop = m.t < 7 ? 1.5 - m.t*0.07 : 1;
+      const a = m.t > 62 ? 1 - (m.t-62)/16 : 1;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.translate(VIEW_W/2, 116);
+      ctx.scale(pop, pop);
+      ctx.font = 'bold 19px Courier New';
+      ctx.textAlign = 'center';
+      const w = ctx.measureText(m.text).width + 26;
+      ctx.fillStyle = 'rgba(20,20,40,.9)';
+      ctx.fillRect(-w/2, -19, w, 28);
+      ctx.strokeStyle = m.color; ctx.lineWidth = 2.5;
+      ctx.strokeRect(-w/2, -19, w, 28);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(m.text, 0, 2);
+      ctx.restore();
+    }
+  }
+
+  // --- 5. the big readable end-of-level banner ---
+  if(bannerMsg){
+    bannerMsg.t++;
+    if(bannerMsg.t > 150){ bannerMsg = null; }
+    else {
+      const m = bannerMsg;
+      const k = m.t;
+      const slide = k < 10 ? (10-k) * 30 : 0;
+      const a = k > 130 ? 1 - (k-130)/20 : 1;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.translate(VIEW_W/2 - slide, VIEW_H/2 - 46);
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 26px Courier New';
+      const w = Math.min(VIEW_W - 30, ctx.measureText(m.text).width + 44);
+      ctx.fillStyle = 'rgba(15,15,35,.92)';
+      ctx.fillRect(-w/2, -26, w, 46);
+      ctx.fillStyle = m.color;
+      ctx.fillRect(-w/2, -26, w, 4);
+      ctx.fillRect(-w/2, 16, w, 4);
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 5;
+      ctx.strokeText(m.text, 0, 6);
+      ctx.fillStyle = m.color;
+      ctx.fillText(m.text, 0, 6);
+      ctx.restore();
+    }
+  }
 }
 
 // ================= physics =================
@@ -830,7 +1034,7 @@ function rectHit(a, b){ return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h &
 
 function step(){
   auditKeys();
-  if(bossIntro){ time++; return; }      // the world holds its breath
+  if(bossIntro) return;                 // the world holds its breath: nothing moves, nothing cycles
   if(kind==='bonus') return stepBonus();
   if(kind==='train') return stepTrain();
   time++;
@@ -855,7 +1059,7 @@ function step(){
           e.dead = true; oz += 2;
           riseText(e.x+e.w/2, e.y-6, '+2 oz');
           Audio8.S.bonk();
-          flash(e.type==='dog' ? pick(DOG_STOMPS) : pick(TUNEUPS), '#3fae2a');
+          burst(e.type==='dog' ? pick(DOG_STOMPS) : pick(TUNEUPS), px(e.x)+e.w/2, e.y-6, '#3fae2a'); bumpStreak();
         }
       }
     }
@@ -905,7 +1109,7 @@ function step(){
           bx.used = true; bx.bump = 8;
           oz += 10;
           pops.push({x:bx.x+T/2, y:bx.y-10, t:0});
-          flash('+10 oz BAR!', '#3fae2a');
+          toast('+10 oz BAR!', '#3fae2a');
           Audio8.S.bar();
         }
       }
@@ -924,7 +1128,7 @@ function step(){
   }
   for(const b of bars){
     if(!b.got && Math.abs(dan.x+dan.w/2-b.x)<26 && Math.abs(dan.y+dan.h/2-b.y)<26){
-      b.got=true; oz+=10; flash('+10 oz BAR!', '#3fae2a'); Audio8.S.bar();
+      b.got=true; oz+=10; toast('+10 oz BAR!', '#3fae2a'); Audio8.S.bar();
     }
   }
   for(const s of subs){
@@ -932,7 +1136,7 @@ function step(){
       s.got=true;
       dan.boost = 450; dan.star = 450;   // 7.5 seconds of freaky fast invincibility
       if(dan.small) setSize(false);
-      flash(kind==='city' ? "DON'T GLAZE ME BRO!" : 'FREAKY FAST!', '#e0a13a');
+      quip(kind==='city' ? "DON'T GLAZE ME BRO!" : 'FREAKY FAST!', '#e0a13a');
       Audio8.S.munch(); Audio8.S.star();
     }
   }
@@ -969,13 +1173,15 @@ function step(){
         if(stomp) dan.vy = -7;
         Audio8.S.stomp();
         if(stomp){
-          flash(e.type==='karen' ? 'TRIGGERED!' :
+          const line = e.type==='karen' ? 'TRIGGERED!' :
                 e.type==='twitch' ? pick(PETE_STOMPS) :
                 e.type==='ice' ? pick(ICE_STOMPS) :
                 e.type==='bp' ? pick(BP_STOMPS) :
                 e.type==='dog' ? pick(DOG_STOMPS) :
                 kind==='city' ? pick(TUNEUPS) :
-                pick(RED_STOMPS), '#3fae2a');
+                pick(RED_STOMPS);
+          burst(line, px(e.x)+e.w/2, e.y - 6, '#3fae2a');
+          bumpStreak();
         }
       } else if(dan.inv<=0){
         return hurt(e.type==='karen' ? pick(KAREN_HITS) :
@@ -1034,10 +1240,10 @@ function stepBoss1(){
       if(b.hp <= 0){
         b.dead = true; b.done = true;
         oz += 15;
-        flash('DAS KAPITAL: DENIED! +15 oz', '#3fae2a');
+        banner('DAS KAPITAL: DENIED!', '#3fae2a'); toast('+15 oz', '#3fae2a');
         Audio8.stop(); Audio8.S.fanfare(); Audio8.play('level');
       } else {
-        flash(b.hp===2 ? 'PRIVATE PROPERTY DEFENDED!' : 'THE MEANS REMAIN UNSEIZED!', '#3fae2a');
+        combat(b.hp===2 ? 'PRIVATE PROPERTY DEFENDED!' : 'THE MEANS REMAIN UNSEIZED!', '#3fae2a');
       }
     } else if(dan.inv<=0 && dan.star<=0){
       return hurt(pick(BOSS1_HITS));
@@ -1052,7 +1258,7 @@ function stepLevel2(){
   if(!S.revealed && dan.x > WATER_L - 150){
     S.revealed = true;
     announceBoss('THE SKUNK', 'skunk');
-    setTimeout(()=> flash('YOUR $20 APPOINTMENT IS HERE!', '#3fae2a'), 9600);
+    setTimeout(()=> quip('YOUR $20 APPOINTMENT IS HERE!', '#3fae2a'), 9600);
   }
   // patrolling skunk on the bridge
   if(S.revealed && sk.alive && !sk.falling){
@@ -1067,7 +1273,7 @@ function stepLevel2(){
         if(S.sprayCd <= 0){
           S.sprayCd = 70; S.spray = 26;
           Audio8.S.wind();
-          flash('HE JUST SPRAYS! USE THE BRIDGE!', '#8cbe5a');
+          quip('HE JUST SPRAYS! USE THE BRIDGE!', '#8cbe5a');
         }
       } else if(dan.inv<=0 && dan.star<=0){
         return hurt('SKUNKED!');
@@ -1082,7 +1288,7 @@ function stepLevel2(){
     if(rectHit(dan, sw)){
       S.switchHit = true;
       Audio8.S.sw();
-      flash('BRIDGE OUT!', '#e0a13a');
+      quip('BRIDGE OUT!', '#e0a13a');
       plats.pop();   // remove bridge collision
     }
   } else if(!S.done){
@@ -1123,7 +1329,7 @@ function stepLevel2(){
           Audio8.S.pop();
           S.windT = 80;
           Audio8.S.wind();
-          flash('GREAT JOB DAN! YOU DROWNED A SKUNK!', '#3fae2a');
+          banner('YOU DROWNED A SKUNK!', '#3fae2a');
         }
       }
       if(S.stink && S.stink.popped) S.stink.popT++;
@@ -1160,7 +1366,7 @@ const QTE_GLYPH = {left:'\u25C0', right:'\u25B6', jump:'\u25B2'};
 
 function stepTrain(){
   auditKeys();
-  if(bossIntro){ time++; return; }
+  if(bossIntro) return;
   time++;
   const S = L3S;
   S.t++;
@@ -1232,7 +1438,7 @@ function stepTrain(){
       lives--;
       Audio8.S.hurt();
       if(lives <= 0) return gameOver();
-      flash('DAN HIT THE BALLAST! -1 \u2665');
+      quip('DAN HIT THE BALLAST! -1 \u2665', '#ff5a4e');
       S.phase = 'ride'; S.cars = 0; S.prompt = null; S.nextIn = 100; S.speed = 1; S.fallT = 0;
       Audio8.play('train');
     }
@@ -1330,7 +1536,7 @@ function stepBrawl(){
       S.inv = 90; lives--;
       Audio8.S.hurt();
       if(lives <= 0) return gameOver();
-      flash(pick(['LEVEL S!', 'DECERTIFIED!']));
+      combat(pick(['LEVEL S!', 'DECERTIFIED!']), '#ff5a4e');
     }
   }
   const db = {x:S.dx, y:S.dy, w:26, h:40};
@@ -1340,14 +1546,14 @@ function stepBrawl(){
     if(stomp && j.hurtT <= 0){
       j.hp--; j.hurtT = 90; S.dvy = -8; S.inv = 60;
       Audio8.S.bonk();
-      flash('I HIRED OUT TO WORK!', '#3fae2a');
+      combat('I HIRED OUT TO WORK!', '#3fae2a');
       if(j.hp <= 0){ j.dead = true; j.deadT = 0; oz += 20; }
     } else if(S.inv <= 0 && !stomp){
       S.inv = 90;
       lives--;
       Audio8.S.hurt();
       if(lives <= 0) return gameOver();
-      flash(pick(['LEVEL S!', 'DECERTIFIED!']));
+      combat(pick(['LEVEL S!', 'DECERTIFIED!']), '#ff5a4e');
       S.dx = Math.max(30, S.dx - 60);
     }
   }
@@ -1713,6 +1919,7 @@ function renderTrain(){
     ctx.globalAlpha = 1;
   }
 
+  drawChannels();
   drawBossIntro();
 
   // HUD
@@ -1761,7 +1968,7 @@ function stepBonus(){
   if(S.timeLeft <= 0){
     S.phase = 'done'; S.poseT = 0;
     Audio8.stop(); Audio8.S.horn ? Audio8.S.horn() : Audio8.S.fanfare();
-    flash('GET TO WORK!', '#3fae2a');
+    banner('GET TO WORK!', '#3fae2a');
     return;
   }
 
@@ -1827,7 +2034,7 @@ function stepBonus(){
       if(S.idx >= 16){          // nobody is getting here
         S.phase = 'done'; S.poseT = 0;
         Audio8.stop(); Audio8.S.fanfare();
-        flash('GET TO WORK!', '#3fae2a');
+        banner('GET TO WORK!', '#3fae2a');
         return;
       }
       S.phase = 'call'; S.t = 0;
@@ -1841,7 +2048,7 @@ function bonusTweak(){
   S.phase = 'fail'; S.poseT = 0; S.days = 0; S.tweak = 1;
   Audio8.stop();
   Audio8.S.bonk(); Audio8.S.sadTrombone ? Audio8.S.sadTrombone() : Audio8.S.hurt();
-  flash('TWEAKED IT!', '#c0392b');
+  banner('TWEAKED IT!', '#c0392b');
   return;
 }
 
@@ -2045,27 +2252,33 @@ function renderBonus(){
     const st = STRETCHES[Math.min(S.idx, STRETCHES.length-1)];
     ctx.fillStyle='#5a4a2e'; ctx.font='bold 12px Courier New';
     ctx.fillText(st.n, VIEW_W/2, 250);
-    // the sequence
-    const n = S.seq.length, gap = 46, x0 = VIEW_W/2 - (n-1)*gap/2;
+    // the sequence, in the same ringed style as the railcar QTE
+    const n = S.seq.length, gap = 62, x0 = VIEW_W/2 - (n-1)*gap/2;
+    const frac = Math.max(0, S.win / S.winMax);
     for(let i=0;i<n;i++){
-      const x = x0 + i*gap, y = 282;
+      const cx0 = x0 + i*gap, cy0 = 284;
       const done = i < S.at;
       const cur = i === S.at;
-      ctx.fillStyle = done ? 'rgba(63,174,42,.9)' : cur ? 'rgba(20,20,40,.9)' : 'rgba(20,20,40,.5)';
-      const bump = (cur && S.shine>0) ? 3 : 0;
-      ctx.fillRect(x-17, y-19-bump, 34, 34);
-      ctx.strokeStyle = done ? '#7CFC00' : cur ? '#ffd94a' : '#5a5a6a';
-      ctx.lineWidth = cur ? 3 : 2;
-      ctx.strokeRect(x-17, y-19-bump, 34, 34);
-      ctx.fillStyle = done ? '#fff' : cur ? '#ffd94a' : '#8a93a8';
-      ctx.font='bold 19px Courier New';
-      ctx.fillText(KEYGLYPH[S.seq[i]], x, y+5-bump);
+      const r = cur ? 26 : 20;
+      ctx.fillStyle = done ? 'rgba(30,90,26,.9)' : 'rgba(20,20,40,.85)';
+      ctx.beginPath(); ctx.arc(cx0, cy0, r + 4, 0, 7); ctx.fill();
+      if(cur){
+        // the draining ring, exactly like the train
+        ctx.strokeStyle = frac > 0.35 ? '#4aa8d8' : '#ff5a4e';
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(cx0, cy0, r, -Math.PI/2, -Math.PI/2 + frac*Math.PI*2); ctx.stroke();
+      } else {
+        ctx.strokeStyle = done ? '#7CFC00' : '#5a5a6a';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx0, cy0, r, 0, 7); ctx.stroke();
+      }
+      const bump = (cur && S.shine > 0) ? 2 : 0;
+      ctx.fillStyle = done ? '#7CFC00' : cur ? '#fff' : '#8a93a8';
+      ctx.font = 'bold ' + (cur ? 26 : 20) + 'px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(KEYGLYPH[S.seq[i]], cx0, cy0 + (cur ? 9 : 7) - bump);
     }
     // the window bar draining
-    const bw = 180, frac = Math.max(0, S.win/S.winMax);
-    ctx.fillStyle='rgba(20,20,40,.6)'; ctx.fillRect(VIEW_W/2-bw/2, 306, bw, 7);
-    ctx.fillStyle = frac > 0.4 ? '#3fae2a' : frac > 0.2 ? '#e0a13a' : '#ff2b1c';
-    ctx.fillRect(VIEW_W/2-bw/2, 306, bw*frac, 7);
   }
 
   if(S.phase === 'perform'){
@@ -2100,6 +2313,7 @@ function renderBonus(){
     ctx.fillText(S.combo + ' STRETCHES  |  +' + S.gained + ' oz', VIEW_W/2, 300);
   }
 
+  drawChannels();
   drawHUD();
   drawBossIntro();
 }
@@ -2175,10 +2389,10 @@ function stepLevel4(){
           Audio8.S.bossHit();
           if(j.hp <= 0){
             j.dead = true; j.done = true; oz += 15;
-            flash('DEPORTATION DENIED! +15 oz', '#3fae2a');
+            banner('DEPORTATION DENIED!', '#3fae2a'); toast('+15 oz', '#3fae2a');
             Audio8.S.fanfare();
           } else {
-            flash(j.hp===2 ? 'BADGE DENTED!' : 'JURISDICTION LOST!', '#3fae2a');
+            combat(j.hp===2 ? 'BADGE DENTED!' : 'JURISDICTION LOST!', '#3fae2a');
           }
         } else if(dan.inv<=0 && dan.star<=0){
           return hurt(pick(JOHNSON_HITS));
@@ -2553,10 +2767,10 @@ function stepLevel5(){
         Audio8.S.bonk();
         if(k.hp <= 0){
           k.dead = true; k.done = true; oz += 20;
-          flash('THE STREETS ARE TUNED! +20 oz', '#3fae2a');
+          banner('THE STREETS ARE TUNED!', '#3fae2a'); toast('+20 oz', '#3fae2a');
           Audio8.S.fanfare();
         } else {
-          flash(pick(TUNEUPS), '#3fae2a');
+          combat(pick(TUNEUPS), '#3fae2a');
         }
       } else if(rectHit(dan, k) && dan.inv<=0 && dan.star<=0 && !stomp){
         return hurt(pick(KING_HITS));
@@ -2588,7 +2802,7 @@ function stepLevel5(){
       S.paper.y -= Math.sin(S.paper.t*0.16)*1.2;
     }
     if(S.t === 20) Audio8.S.ding();
-    if(S.t === 400){ flash('THE REST IS HISTORY.', '#3fae2a'); }
+    if(S.t === 400){ banner('THE REST IS HISTORY.', '#3fae2a'); }
     if(S.t > 470) return levelClear();
     return;
   }
@@ -2931,6 +3145,7 @@ function drawTumbleweed(){
 }
 
 function hurt(msg, forceLife){
+  streak = 0; streakShow = 0;
   if(dan.star>0 && !forceLife) return;
   Audio8.S.hurt();
   const tax = Math.min(oz, 5); oz -= tax;
@@ -2938,7 +3153,7 @@ function hurt(msg, forceLife){
   if(!forceLife && !dan.small){
     setSize(true);            // shrink instead of dying
     dan.inv = 100;
-    flash(msg + suffix);
+    quip(msg + suffix, '#ff5a4e');
     return;
   }
   lives--;
@@ -3820,7 +4035,7 @@ function drawBoss1(){
 }
 
 let bossIntro = null;   // {name, t, song}
-const BOSS_INTRO_LEN = 540;
+const BOSS_INTRO_LEN = 480;
 
 function announceBoss(name, song){
   bossIntro = {name, t:0, song: song || null};
@@ -3857,10 +4072,13 @@ function bigFace(name, cx, cy, s){
     ctx.fillStyle='#fff'; ctx.fillRect(7, 9, 5, 3.6); ctx.fillRect(15, 9, 5, 3.6);
     ctx.fillStyle='#000'; ctx.fillRect(9, 10, 2.4, 2.4); ctx.fillRect(17, 10, 2.4, 2.4);
     ctx.fillStyle='#4a3018'; ctx.fillRect(6.5, 7.4, 6, 1.6); ctx.fillRect(14.5, 7.4, 6, 1.6);
-    // the handlebar
+    // THE HANDLEBAR, in all its glory
     ctx.fillStyle='#4a3018';
-    ctx.fillRect(7, 15, 12, 3);
-    ctx.fillRect(4.5, 14, 3, 3); ctx.fillRect(18.5, 14, 3, 3);
+    ctx.fillRect(7.5, 14.5, 11, 3.6);                       // the body of it
+    ctx.fillRect(4, 13.5, 4, 3.2); ctx.fillRect(18, 13.5, 4, 3.2);
+    // the curled tips
+    ctx.beginPath(); ctx.arc(4, 12.6, 2.2, Math.PI*0.5, Math.PI*1.9); ctx.fill();
+    ctx.beginPath(); ctx.arc(22, 12.6, 2.2, Math.PI*1.1, Math.PI*0.5); ctx.fill();
     ctx.fillStyle='#8a4a3a'; ctx.fillRect(10, 19, 6, 1.6);
   } else if(name === 'KARL MARX'){
     ctx.translate(-13, -12);
@@ -4041,8 +4259,8 @@ function drawBossIntro(){
   }
 
   // ---- FIGHT! ----
-  if(t >= 440){
-    const k = t - 440;
+  if(t >= 380){
+    const k = t - 380;
     const sc = k < 8 ? 2.4 - k * 0.18 : 1;
     ctx.save();
     ctx.translate(VIEW_W/2, VIEW_H - 44);
@@ -4057,7 +4275,7 @@ function drawBossIntro(){
 }
 
 function drawBossLine(txt){
-  if(!txt) return;
+  if(!txt || bossIntro) return;
   const w = Math.min(VIEW_W-20, txt.length*7.6 + 24);
   const x = (VIEW_W-w)/2, y = VIEW_H-30;
   ctx.fillStyle='rgba(20,20,40,.9)';
@@ -4068,6 +4286,7 @@ function drawBossLine(txt){
 }
 
 function drawBossBar(name, hp, max, hurtT){
+  if(bossIntro) return;
   const bx = 12, by = 36, bw = 168;
   ctx.fillStyle='rgba(20,20,40,.85)';
   ctx.fillRect(bx-4, by-4, bw+8, 30);
@@ -4393,6 +4612,7 @@ function render(){
   drawDan();
   drawStinkAndWind();
   drawFloatTexts();
+  drawChannels();
   drawHUD();
   drawBossIntro();
 }
@@ -4477,7 +4697,7 @@ function levelClear(){
   Audio8.S.fanfare();
   if(kind !== 'bonus') awardSpeedBonus();
   if(level < 6){
-    flash('LEVEL '+level+' COMPLETE!', '#3fae2a');
+    banner(kind==='bonus' ? 'BONUS COMPLETE!' : 'LEVEL '+level+' COMPLETE!', '#3fae2a');
     ozAtLevelStart = oz;
     buildLevel(level+1); resetDan();
     Audio8.stop();
@@ -4519,6 +4739,30 @@ $('lbBtn').addEventListener('click', ()=>{ Audio8.unlock(); showLeaderboard(); }
 $('nameInput').addEventListener('keydown', e => { if(e.key==='Enter') $('submitScoreBtn').click(); });
 $('deadNameInput').addEventListener('keydown', e => { if(e.key==='Enter') $('deadSubmitBtn').click(); });
 $('closeLbBtn').addEventListener('click', ()=> hide('lbScreen'));
+
+// ---- debug level select:  thegame.html?debug=1   (or press ~ )  ----
+const DEBUG = new URLSearchParams(location.search).has('debug');
+function jumpToLevel(n){
+  Audio8.unlock();
+  hide('titleScreen'); hide('winScreen'); hide('deadScreen'); hide('helpScreen'); hide('lbScreen');
+  oz = 0; lives = 3; nextLifeAt = 100;
+  bossIntro = null; clearMsgs();
+  level = n;
+  buildLevel(n);
+  ozAtLevelStart = oz;
+  state = 'intro'; introT = 0; introGo = false; introStage = 0;
+  show('controls');
+  runStartMs = Date.now();
+}
+if(DEBUG) show('dbgBar');
+document.querySelectorAll('#dbgBar button').forEach(b => {
+  b.addEventListener('click', () => jumpToLevel(parseInt(b.dataset.lv, 10)));
+});
+addEventListener('keydown', e => {
+  if(typingInField(e)) return;
+  if(e.key === '`' || e.key === '~'){ $('dbgBar').classList.toggle('hidden'); return; }
+  if(DEBUG && e.key >= '1' && e.key <= '6') jumpToLevel(parseInt(e.key, 10));
+});
 $('submitScoreBtn').addEventListener('click', async ()=>{
   const nm = ($('nameInput').value || '').trim().toUpperCase().replace(/[^A-Z0-9 ._-]/g,'').slice(0,12);
   if(!nm){ $('nameInput').focus(); return; }
