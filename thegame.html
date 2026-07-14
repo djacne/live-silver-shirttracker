@@ -61,21 +61,21 @@
   .btn.alt{background:#4aa8d8;border-bottom-color:#2b7aa4;}
   .btn:active{transform:translateY(3px);border-bottom-width:2px;}
   .hidden{display:none !important;}
-  #nameInput{width:190px;padding:9px 10px;font-family:inherit;font-size:16px;font-weight:bold;
+  #nameInput, #deadNameInput{width:190px;padding:9px 10px;font-family:inherit;font-size:16px;font-weight:bold;
     text-align:center;text-transform:uppercase;letter-spacing:2px;border:3px solid var(--silver);
     border-radius:8px;background:#0f0f23;color:#fff;outline:none;margin-bottom:10px;}
-  #nameInput:focus{border-color:var(--green);}
-  #boardWrap{background:rgba(255,255,255,.06);border:2px solid #39415c;border-radius:10px;
+  #nameInput:focus, #deadNameInput:focus{border-color:var(--green);}
+  #boardWrap, #deadBoardWrap{background:rgba(255,255,255,.06);border:2px solid #39415c;border-radius:10px;
     padding:10px 14px;min-width:230px;max-height:150px;overflow-y:auto;}
   .boardTitle{color:#ffd94a;font-weight:bold;font-size:12px;letter-spacing:2px;margin-bottom:6px;
     text-transform:uppercase;}
-  #boardList{list-style:none;counter-reset:rank;}
-  #boardList li{counter-increment:rank;display:flex;justify-content:space-between;gap:14px;
+  #boardList, #deadBoardList{list-style:none;counter-reset:rank;}
+  #boardList li, #deadBoardList li{counter-increment:rank;display:flex;justify-content:space-between;gap:14px;
     color:#dfe6f0;font-size:13px;padding:3px 0;white-space:nowrap;}
-  #boardList li::before{content:counter(rank) ".";color:#8a93a8;width:22px;text-align:right;}
-  #boardList li .nm{flex:1;text-align:left;padding-left:8px;overflow:hidden;text-overflow:ellipsis;}
-  #boardList li .sc{color:#ffd94a;font-weight:bold;}
-  #boardList li.me{color:#7CFC00;}
+  #boardList li::before, #deadBoardList li::before{content:counter(rank) ".";color:#8a93a8;width:22px;text-align:right;}
+  #boardList li .nm, #deadBoardList li .nm{flex:1;text-align:left;padding-left:8px;overflow:hidden;text-overflow:ellipsis;}
+  #boardList li .sc, #deadBoardList li .sc{color:#ffd94a;font-weight:bold;}
+  #boardList li.me, #deadBoardList li.me{color:#7CFC00;}
   #lbWrap{background:rgba(255,255,255,.06);border:2px solid #39415c;border-radius:10px;
     padding:12px 16px;min-width:min(320px,86vw);max-height:52vh;overflow-y:auto;}
   #lbList{list-style:none;counter-reset:rank;}
@@ -168,6 +168,18 @@
 <div id="deadScreen" class="overlay hidden">
   <h1 style="color:#ff5a4e">Game Over</h1>
   <p style="font-size:clamp(18px,5vw,26px);font-weight:bold;color:#fff;letter-spacing:1px;">GET BACK TO WORK!</p>
+  <p id="deadText"></p>
+  <div id="deadEntry">
+    <input id="deadNameInput" maxlength="12" placeholder="YOUR NAME" autocomplete="off" spellcheck="false">
+    <div class="btnrow">
+      <button class="btn" id="deadSubmitBtn">Submit Score</button>
+      <button class="btn alt" id="deadSkipBtn">Skip</button>
+    </div>
+  </div>
+  <div id="deadBoardWrap" class="hidden">
+    <div class="boardTitle">Top Stackers</div>
+    <ol id="deadBoardList"></ol>
+  </div>
   <button class="btn" id="retryBtn">Try Again Loser</button>
 </div>
 
@@ -3755,6 +3767,13 @@ function levelClear(){
 }
 function gameOver(){
   state='dead';
+  myEntryAt = null;
+  $('deadText').textContent = 'Dan hauled in ' + oz + ' oz before it all went wrong.';
+  $('deadNameInput').value = '';
+  $('deadSubmitBtn').disabled = false;
+  $('deadSubmitBtn').textContent = 'Submit Score';
+  show('deadEntry');
+  hide('deadBoardWrap');
   hide('controls'); Audio8.stop();
   show('deadScreen');
 }
@@ -3786,11 +3805,25 @@ $('submitScoreBtn').addEventListener('click', async ()=>{
   const entry = {name: nm, score: oz, at: myEntryAt};
   await Board.submit(entry.name, entry.score);
   hide('nameEntry');
-  await renderBoard();
+  await renderBoard('boardList');
 });
 $('skipScoreBtn').addEventListener('click', async ()=>{
   hide('nameEntry');
-  await renderBoard();
+  await renderBoard('boardList');
+});
+$('deadSubmitBtn').addEventListener('click', async ()=>{
+  const nm = ($('deadNameInput').value || '').trim().toUpperCase().replace(/[^A-Z0-9 ._-]/g,'').slice(0,12);
+  if(!nm){ $('deadNameInput').focus(); return; }
+  $('deadSubmitBtn').disabled = true;
+  $('deadSubmitBtn').textContent = 'Saving...';
+  myEntryAt = Date.now();
+  await Board.submit(nm, oz);
+  hide('deadEntry');
+  await renderBoard('deadBoardList');
+});
+$('deadSkipBtn').addEventListener('click', async ()=>{
+  hide('deadEntry');
+  await renderBoard('deadBoardList');
 });
 $('helpBtn').addEventListener('click', ()=>{ hide('titleScreen'); show('helpScreen'); });
 $('closeHelpBtn').addEventListener('click', ()=>{ hide('helpScreen'); show('titleScreen'); });
@@ -3894,9 +3927,9 @@ async function showLeaderboard(){
     ol.appendChild(li);
   }
 }
-async function renderBoard(){
+async function renderBoard(listId){
   const list = (await Board.load()).slice().sort((a,b)=> b.score - a.score).slice(0, 10);
-  const ol = $('boardList');
+  const ol = $(listId || 'boardList');
   ol.innerHTML = '';
   if(!list.length){
     const li = document.createElement('li');
@@ -3909,7 +3942,7 @@ async function renderBoard(){
     li.innerHTML = '<span class="nm">' + (e.name||'???') + '</span><span class="sc">' + e.score + ' oz</span>';
     ol.appendChild(li);
   }
-  $('boardWrap').classList.remove('hidden');
+  ((listId === 'deadBoardList') ? $('deadBoardWrap') : $('boardWrap')).classList.remove('hidden');
 }
 
 // ================= loop =================
