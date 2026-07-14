@@ -239,11 +239,6 @@
   <p>Stack silver. Stomp commies. Retire.</p>
   <div class="btnrow">
     <div id="iosTip" class="tipCard hidden">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-         stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 3v12"/><path d="M8 7l4-4 4 4"/>
-      <path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/>
-    </svg>
     <span>Play in fullscreen &mdash; tap for iPhone setup</span>
     <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
          stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
@@ -5770,6 +5765,7 @@ function iosDismissed(){
   try{ return localStorage.getItem('dan_ios_guide') === 'off'; }catch(e){ return false; }
 }
 if(IS_IOS && !IS_STANDALONE && !iosDismissed()) show('iosTip');
+if(IS_IOS && !IS_STANDALONE) hide('rotateHint');   // rotating in Safari doesn't help
 if(IS_IOS && !IS_IOS_SAFARI) show('iosSafariWarn');   // they're in Chrome/Firefox: won't work
 
 onTap('iosTip', ()=>{ hide('titleScreen'); show('iosScreen'); });
