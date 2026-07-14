@@ -1473,16 +1473,22 @@ function step(){
       for(const e of enemies){
         if(!e.dead && rectHit(hb, e)){
           e.dead = true; oz += 2;
-          // THE CONNECT: freeze, shake, star, and send him flying
+          // THE CONNECT: freeze, shake, star -- but NO quip yet.
           const ix = e.x + e.w/2, iy = e.y + e.h*0.35;
-          hitStop = 5;                              // the frame-freeze that sells the impact
+          hitStop = 5;
           shake = 7;
-          impacts.push({x: ix, y: iy, t: 0, dir: dan.face});
-          e.flyVX = dan.face * 5.2; e.flyVY = -5.4; e.spin = dan.face * 0.3;
-          riseText(e.x+e.w/2, e.y-6, '+2 oz');
+          impacts.push({x: ix, y: iy, t: 0});
           Audio8.S.bonk();
-          Audio8.S.slam();
-          burst(e.type==='dog' ? pick(DOG_STOMPS) : pick(TUNEUPS), ix, e.y-6, '#3fae2a'); bumpStreak(ix, e.y);
+          Audio8.S.whoosh();
+          // he is now airborne. the punchline lands when HE lands.
+          e.flyVX = dan.face * 9.5;
+          e.flyVY = -7.2;
+          e.spin = dan.face * 0.34;
+          e.rot = 0;
+          e.flyT = 0;
+          e.pendingQuip = (e.type==='dog' ? pick(DOG_STOMPS) : pick(TUNEUPS));
+          riseText(ix, e.y-6, '+2 oz');
+          bumpStreak(ix, e.y);
         }
       }
     }
@@ -4259,6 +4265,18 @@ function drawSub(s){
 
 // ---- enemies ----
 function drawEnemy(e){
+  if(e.dead && e.rot){
+    ctx.save();
+    ctx.translate(px(e.x) + e.w/2, e.y + e.h/2);
+    ctx.rotate(e.rot);
+    ctx.translate(-(px(e.x) + e.w/2), -(e.y + e.h/2));
+    drawEnemyBody(e);
+    ctx.restore();
+    return;
+  }
+  drawEnemyBody(e);
+}
+function drawEnemyBody(e){
   const sx=px(e.x); if(sx<-60||sx>VIEW_W+60) return;
   if(e.dead){
     if(e.deadT>40) return;
@@ -4887,8 +4905,13 @@ function drawBossIntro(){
     ctx.restore();
   }
 
-  // ---- FIGHT! ---- (and the boss theme kicks in right here)
-  if(t === 380 && bossIntro.song){ Audio8.stop(); Audio8.play(bossIntro.song); }
+  // ---- the handoff ----
+  // the VS track cuts out early, leaving a beat of dead air. the gong lands in the
+  // silence, THEN the boss theme drops on FIGHT!. a hard cut sounds intentional;
+  // a crossfade would just sound like a mistake.
+  if(t === 352) Audio8.stop();                                   // dead air
+  if(t === 366) Audio8.S.gong();                                 // the hit that fills it
+  if(t === 380 && bossIntro.song) Audio8.play(bossIntro.song);   // and we're off
   if(t >= 380){
     const k = t - 380;
     const sc = k < 8 ? 2.4 - k * 0.18 : 1;
