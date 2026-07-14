@@ -764,6 +764,7 @@ let plats, pits, coins, bars, enemies, boxes, pops, subs, cams, level = 1;
 let boss1, L2S, L3S, L4S, L5S, BS, LWS, nelson, bridgePlanks, ozAtLevelStart = 0;
 // level order: 1 silver, 2 skunk, 3 city (flashback), 4 border, 5 train (finale)
 const KINDS = {1:'silver', 2:'skunk', 3:'city', 4:'border', 5:'bonus', 6:'train'};
+const KIND_TO_LEVEL = {silver:1, skunk:2, city:3, border:4, bonus:5, train:6};
 let kind = 'silver';
 
 function coinRow(x,y,n,gap=40){ const a=[]; for(let i=0;i<n;i++) a.push({x:x+i*gap, y, got:false}); return a; }
@@ -1074,7 +1075,7 @@ const SAFETY_SLOGANS = ['SAFETY IS A CHOICE!', 'STRETCH TO SUCCESS!', 'REPORT AL
 const KING_HITS = ['ROBBED IN BROAD DAYLIGHT!', 'STREET TAX!'];
 const BOSS1_HITS = ['SEIZED BY THE PROLETARIAT!', 'YOUR LABOR IS ALIENATED!', 'EXPROPRIATED!'];
 // the only pool you asked for: Dan, against Lauer
-const DAN_VS_LAUER = ['I HIRED OUT TO WORK!', 'SAFETY FIRST!', 'GOOD FAITH CHALLENGE!'];
+const DAN_VS_LAUER = ['GO BACK TO THE CRAFT!', 'SAFETY FIRST!', 'GOOD FAITH CHALLENGE!'];
 const LAUER_HITS  = ['LEVEL S!', 'DECERTIFIED!', 'THAT IS A FAILURE!'];
 const BOSS_SPEECHES = [
   'ABOLISH ALL PRIVATE PROPERTY!',
@@ -1414,6 +1415,7 @@ function banner(text, color){                  // end of level
 function killPanel(text, sub){
   panel = {text, sub: sub || '', t:0};
   clearMsgs();
+  hide('controls'); hide('swingBtn'); hide('pauseBtn');   // nothing pokes through the cinematic
   Audio8.S.slam();
   setTimeout(()=> Audio8.S.gong(), 90);
 }
@@ -1421,7 +1423,13 @@ const PANEL_LEN = 132;
 function drawKillPanel(){
   if(!panel) return;
   const t = panel.t++;
-  if(t > PANEL_LEN){ panel = null; return; }
+  if(t > PANEL_LEN){
+    panel = null;
+    if(matchMedia('(pointer:coarse)').matches) show('controls');
+    if(kind==='city') show('swingBtn');
+    show('pauseBtn');
+    return;
+  }
 
   // the first few frames are a hard white flash: the impact
   if(t < 5){
@@ -2198,7 +2206,7 @@ function stepBrawl(){
       j.hp--; j.hurtT = 90; S.dvy = -8; S.inv = 60;
       Audio8.S.bonk();
       burstScreen(pick(DAN_VS_LAUER), S.dx+13, S.dy-16, '#3fae2a', 1);
-      if(j.hp <= 0){ j.dead = true; j.deadT = 0; oz += 20; killPanel('GO BACK TO THE CRAFT!', 'HE HIRED OUT TOO, ONCE'); toast('+20 oz', '#3fae2a'); }
+      if(j.hp <= 0){ j.dead = true; j.deadT = 0; oz += 20; killPanel('I HIRED OUT TO WORK!', 'HE HIRED OUT TOO, ONCE'); toast('+20 oz', '#3fae2a'); }
     } else if(S.inv <= 0 && !stomp){
       S.inv = 90;
       lives--;
@@ -2222,13 +2230,18 @@ function renderTrain(){
   const g = ctx.createLinearGradient(0,0,0,VIEW_H);
   g.addColorStop(0,'#2f6fd0'); g.addColorStop(0.7,'#79b8e8'); g.addColorStop(1,'#a8dcf0');
   ctx.fillStyle=g; ctx.fillRect(0,0,VIEW_W,VIEW_H);
-  // sun with the shades
-  const sunX = VIEW_W-186;
-  ctx.fillStyle='#ffe98a'; ctx.beginPath(); ctx.arc(sunX, 52, 24, 0, 7); ctx.fill();
+  // sun with the shades -- identical to every other level's sun
+  const sunX = VIEW_W-180;
+  ctx.fillStyle='rgba(255,236,150,.35)';
+  ctx.beginPath(); ctx.arc(sunX, 58, 40+Math.sin(time*0.02)*3, 0, 7); ctx.fill();
+  ctx.fillStyle='#ffe98a';
+  ctx.beginPath(); ctx.arc(sunX, 58, 26, 0, 7); ctx.fill();
   ctx.fillStyle='#1b1b2f';
-  ctx.fillRect(sunX-17, 44, 14, 9); ctx.fillRect(sunX+3, 44, 14, 9); ctx.fillRect(sunX-4, 47, 8, 3);
-  ctx.fillStyle='#ffd94a'; ctx.font='bold 8px Courier New'; ctx.textAlign='center';
-  ctx.fillText('\u00A2', sunX-10, 51); ctx.fillText('\u00A2', sunX+10, 51);
+  ctx.fillRect(sunX-19, 48, 16, 10); ctx.fillRect(sunX+3, 48, 16, 10); ctx.fillRect(sunX-4, 51, 8, 3);
+  ctx.fillStyle='#ffd94a'; ctx.font='bold 9px Courier New'; ctx.textAlign='center';
+  ctx.fillText('\u00A2', sunX-11, 56); ctx.fillText('\u00A2', sunX+11, 56);
+  ctx.strokeStyle='#c9962a'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(sunX, 66, 9, 0.3, Math.PI-0.5); ctx.stroke();
   // scrolling hills
   ctx.fillStyle='#8fbf87';
   for(let i=0;i<7;i++){
@@ -3454,15 +3467,20 @@ function drawJohnson(){
     // handcuffs -- an instantly recognizable silhouette even at small scale, and it
     // says everything his job is about without needing a single word of text
     ctx.save(); ctx.translate(px(p.x), p.y); ctx.rotate(p.spin);
+    // the rings pushed further apart, with a real chain of links between them --
+    // a solid bar just read as a dumbbell. a chain reads as handcuffs.
     ctx.strokeStyle='#c4c8ce'; ctx.lineWidth=4;
-    ctx.beginPath(); ctx.arc(-8, 0, 7, 0, 7); ctx.stroke();
-    ctx.beginPath(); ctx.arc(8, 0, 7, 0, 7); ctx.stroke();
-    ctx.fillStyle='#8a8f98'; ctx.fillRect(-3, -2.2, 6, 4.4);          // the linking hinge
+    ctx.beginPath(); ctx.arc(-11, 0, 7, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(11, 0, 7, 0, 7); ctx.stroke();
+    ctx.strokeStyle='#8a8f98'; ctx.lineWidth=2.4;
+    for(const lx of [-4.5, 0, 4.5]){
+      ctx.beginPath(); ctx.ellipse(lx, 0, 2.6, 1.8, 0, 0, 7); ctx.stroke();
+    }
     ctx.strokeStyle='#5a5f68'; ctx.lineWidth=1.2;
-    ctx.beginPath(); ctx.arc(-8, 0, 7, 0, 7); ctx.stroke();
-    ctx.beginPath(); ctx.arc(8, 0, 7, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-11, 0, 7, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(11, 0, 7, 0, 7); ctx.stroke();
     ctx.fillStyle='rgba(255,255,255,.5)';
-    ctx.beginPath(); ctx.arc(-9.5,-2.5,1.6,0,7); ctx.arc(6.5,-2.5,1.6,0,7); ctx.fill();  // glint
+    ctx.beginPath(); ctx.arc(-12.5,-2.5,1.6,0,7); ctx.arc(9.5,-2.5,1.6,0,7); ctx.fill();  // glint
     ctx.restore();
   }
   if(j.dead){
@@ -4080,7 +4098,7 @@ function drawBg(){
       ctx.fillRect(sxx, syy, tw, tw);
     }
     // moon wearing \u00a2 sunglasses, still bullish after dark
-    const mX = VIEW_W-196 - camX*0.02;
+    const mX = VIEW_W-190 - camX*0.02;
     ctx.fillStyle='rgba(220,228,240,.25)';
     ctx.beginPath(); ctx.arc(mX, 58, 38, 0, 7); ctx.fill();
     ctx.fillStyle='#d9dde4'; ctx.beginPath(); ctx.arc(mX, 58, 24, 0, 7); ctx.fill();
@@ -4094,7 +4112,7 @@ function drawBg(){
     ctx.beginPath(); ctx.arc(mX, 66, 8, 0.3, Math.PI-0.5); ctx.stroke();
   } else {
     // sun wearing \u00a2 sunglasses, permanently bullish
-    const sunX = VIEW_W-186 - camX*0.02;
+    const sunX = VIEW_W-180 - camX*0.02;
     ctx.fillStyle='rgba(255,236,150,.35)';
     ctx.beginPath(); ctx.arc(sunX, 58, 40+Math.sin(time*0.02)*3, 0, 7); ctx.fill();
     ctx.fillStyle='#ffe98a';
@@ -5149,17 +5167,24 @@ function drawBoss1(){
   // the flying tools of the revolution
   for(const p of b.thrown){
     ctx.save(); ctx.translate(px(p.x), p.y); ctx.rotate(p.spin);
-    // the actual communist symbol -- hammer and sickle crossed, gold, unmistakable
-    ctx.fillStyle='#f4d34a';
-    ctx.save(); ctx.rotate(0.78);
-    ctx.fillRect(-2.6, -12, 5.2, 19);                                  // hammer handle
-    ctx.fillRect(-9, -14, 18, 7.5);                                    // hammer head
+    // the actual communist symbol -- big, bold, unmistakable. black outline on
+    // everything so it reads as a crisp icon instead of a blurry gold blob.
+    ctx.lineJoin = 'round';
+    // the sickle: a fat, obvious crescent
+    ctx.strokeStyle = '#12121c'; ctx.lineWidth = 8.5;
+    ctx.beginPath(); ctx.arc(0, 0, 13, Math.PI*0.05, Math.PI*1.5); ctx.stroke();
+    ctx.strokeStyle = '#f4d34a'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(0, 0, 13, Math.PI*0.05, Math.PI*1.5); ctx.stroke();
+    // its handle
+    ctx.fillStyle = '#12121c'; ctx.fillRect(8, 8, 11, 5);
+    ctx.fillStyle = '#8a5a10'; ctx.fillRect(9, 9, 9, 3);
+    // the hammer, laid flat across it at a fixed angle -- a real cross, not a smear
+    ctx.save(); ctx.rotate(-0.72);
+    ctx.fillStyle = '#12121c'; ctx.fillRect(-3.6, -18, 7.2, 30);        // handle, outlined
+    ctx.fillRect(-13, -21, 26, 12);                                    // head, outlined
+    ctx.fillStyle = '#f4d34a'; ctx.fillRect(-2.4, -16, 4.8, 26);
+    ctx.fillRect(-11, -19, 22, 9);
     ctx.restore();
-    ctx.strokeStyle='#f4d34a'; ctx.lineWidth=3.6;
-    ctx.beginPath(); ctx.arc(1, 2, 10, Math.PI*0.05, Math.PI*1.55); ctx.stroke();  // sickle blade
-    ctx.fillRect(7, 3.5, 8, 2.6);                                      // sickle handle
-    ctx.strokeStyle='#8a1c14'; ctx.lineWidth=0.8;
-    ctx.beginPath(); ctx.arc(1, 2, 10, Math.PI*0.05, Math.PI*1.55); ctx.stroke();  // thin red trim
     ctx.restore();
   }
   if(b.dead){
@@ -5773,7 +5798,7 @@ function drawHUD(){
   ctx.fillStyle='#ff8a80';
   ctx.fillText('\u2665'.repeat(Math.max(0,lives)), 178, 18);
   ctx.fillStyle='#ffd94a';
-  ctx.fillText('LV'+level, 258, 17);
+  ctx.fillText('LV'+(KIND_TO_LEVEL[kind] || level), 258, 17);
   ctx.fillStyle = spot >= 61.40 ? '#7CFC00' : '#ff6f61';
   ctx.textAlign='right';
   ctx.fillText('SPOT: $'+spot.toFixed(2)+(spot>=61.40?' \u25B2':' \u25BC'), VIEW_W-58, 17);
@@ -6134,7 +6159,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '5.4';
+const BUILD = '5.5';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
