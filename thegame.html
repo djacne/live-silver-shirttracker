@@ -176,7 +176,7 @@
     <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
-  <p style="color:#5a6a8a;font-size:10px;">build 3.3</p>
+  <p style="color:#5a6a8a;font-size:10px;">build 3.4</p>
   </div>
  </div>
 </div>
@@ -264,6 +264,11 @@
 
 <script>
 window.addEventListener('error', function(ev){
+  // Safari reports errors from cross-origin scripts (its own share sheet, extensions,
+  // etc.) as a bare "Script error." at line 0. Nothing to do with us -- ignore them.
+  if(!ev.lineno && (!ev.message || ev.message.indexOf('Script error') !== -1)) return;
+  // and only surface anything at all in debug mode
+  if(location.search.indexOf('debug') === -1) return;
   var d = document.getElementById('errBox');
   if(!d){
     d = document.createElement('div');
