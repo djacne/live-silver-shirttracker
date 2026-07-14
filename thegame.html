@@ -61,6 +61,34 @@
   .btn.alt{background:#4aa8d8;border-bottom-color:#2b7aa4;}
   .btn:active{transform:translateY(3px);border-bottom-width:2px;}
   .hidden{display:none !important;}
+  #nameInput{width:190px;padding:9px 10px;font-family:inherit;font-size:16px;font-weight:bold;
+    text-align:center;text-transform:uppercase;letter-spacing:2px;border:3px solid var(--silver);
+    border-radius:8px;background:#0f0f23;color:#fff;outline:none;margin-bottom:10px;}
+  #nameInput:focus{border-color:var(--green);}
+  #boardWrap{background:rgba(255,255,255,.06);border:2px solid #39415c;border-radius:10px;
+    padding:10px 14px;min-width:230px;max-height:150px;overflow-y:auto;}
+  .boardTitle{color:#ffd94a;font-weight:bold;font-size:12px;letter-spacing:2px;margin-bottom:6px;
+    text-transform:uppercase;}
+  #boardList{list-style:none;counter-reset:rank;}
+  #boardList li{counter-increment:rank;display:flex;justify-content:space-between;gap:14px;
+    color:#dfe6f0;font-size:13px;padding:3px 0;white-space:nowrap;}
+  #boardList li::before{content:counter(rank) ".";color:#8a93a8;width:22px;text-align:right;}
+  #boardList li .nm{flex:1;text-align:left;padding-left:8px;overflow:hidden;text-overflow:ellipsis;}
+  #boardList li .sc{color:#ffd94a;font-weight:bold;}
+  #boardList li.me{color:#7CFC00;}
+  #lbWrap{background:rgba(255,255,255,.06);border:2px solid #39415c;border-radius:10px;
+    padding:12px 16px;min-width:min(320px,86vw);max-height:52vh;overflow-y:auto;}
+  #lbList{list-style:none;counter-reset:rank;}
+  #lbList li{counter-increment:rank;display:flex;align-items:center;gap:12px;
+    color:#dfe6f0;font-size:15px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07);
+    white-space:nowrap;}
+  #lbList li:last-child{border-bottom:none;}
+  #lbList li::before{content:counter(rank);color:#8a93a8;font-weight:bold;width:26px;text-align:right;}
+  #lbList li .nm{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;}
+  #lbList li .sc{color:#ffd94a;font-weight:bold;}
+  #lbList li:nth-child(1)::before{color:#ffd94a;}
+  #lbList li:nth-child(2)::before{color:#d7dde6;}
+  #lbList li:nth-child(3)::before{color:#c88a3a;}
   .helpbox{background:rgba(255,255,255,.07);border:2px solid #39415c;border-radius:10px;
     padding:16px 18px;max-width:480px;text-align:left;}
   .helpbox p{font-size:clamp(9px,2.6vw,13px);margin-bottom:8px;white-space:nowrap;}
@@ -108,12 +136,21 @@
   <p>Stack silver. Stomp commies. Retire.</p>
   <div class="btnrow">
     <button class="btn" id="startBtn">Start Stacking</button>
+    <button class="btn alt" id="lbBtn">Leaderboard</button>
     <button class="btn alt" id="helpBtn">Help</button>
     <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
   </div>
  </div>
+</div>
+
+<div id="lbScreen" class="overlay hidden">
+  <h1>Top <span class="ag">Stackers</span></h1>
+  <div id="lbWrap">
+    <ol id="lbList"></ol>
+  </div>
+  <button class="btn" id="closeLbBtn">Back</button>
 </div>
 
 <div id="helpScreen" class="overlay hidden">
@@ -140,6 +177,17 @@
   <div class="stack">
   <h1><span class="ag">Retirement</span> Achieved</h1>
   <p id="winText"></p>
+  <div id="nameEntry">
+    <input id="nameInput" maxlength="12" placeholder="YOUR NAME" autocomplete="off" spellcheck="false">
+    <div class="btnrow">
+      <button class="btn" id="submitScoreBtn">Submit</button>
+      <button class="btn alt" id="skipScoreBtn">Skip</button>
+    </div>
+  </div>
+  <div id="boardWrap" class="hidden">
+    <div class="boardTitle">Top Stackers</div>
+    <ol id="boardList"></ol>
+  </div>
   <button class="btn" id="againBtn">Stack Again</button>
   </div>
  </div>
@@ -591,6 +639,22 @@ function buildLevel(n){
 const dan = {x:60, y:0, w:26, h:40, vx:0, vy:0, onGround:false, face:1, walkT:0, inv:0, boost:0, small:false, star:0, swing:0, swingCd:0, swingHeld:false};
 let oz = 0, lives = 3, camX = 0, time = 0, state = 'title', introT = 0, introGo = false, introStage = 0;
 let spot = 61.40, spotT = 0, nextLifeAt = 100, checkpointX = 60;
+const PAR = {1:105, 2:95, 3:110, 4:110, 5:125};        // seconds; beat par to earn the bonus
+let levelStartMs = 0, ozAtLevelBegin = 0, runStartMs = 0;
+
+function awardSpeedBonus(){
+  const secs = (Date.now() - levelStartMs) / 1000;
+  const par = PAR[level] || 110;
+  const gained = Math.max(0, oz - ozAtLevelBegin);
+  // finish at par -> 1.0x. finish in half par -> 2.0x. slower than par -> no penalty, no bonus.
+  const mult = Math.max(1, Math.min(2, par / Math.max(1, secs)));
+  const bonus = Math.round(gained * (mult - 1));
+  if(bonus > 0){
+    oz += bonus;
+    setTimeout(()=> flash('SPEED BONUS +' + bonus + ' oz', '#3fae2a', true), 700);
+  }
+  return bonus;
+}
 let floatTexts = [];
 
 function riseText(x, y, txt, color){ floatTexts.push({x, y, txt, color:color||'#3fae2a', t:0}); }
@@ -1383,8 +1447,12 @@ function renderTrain(){
     // tumbling off
     const fx2 = rearX + 128 - S.fallT*2.6, fy2 = baseY - 12 + S.fallT*3.2;
     ctx.save(); ctx.translate(fx2, fy2); ctx.rotate(S.fallT*0.25); ctx.translate(-13, -20);
-    ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14, 22, 16);
     ctx.fillStyle='#b99a5f'; ctx.fillRect(4, 28, 8, 12); ctx.fillRect(14, 28, 8, 12);
+    ctx.fillStyle='#6b4423'; ctx.fillRect(3, 38, 10, 4); ctx.fillRect(13, 38, 10, 4);
+    ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14, 22, 16);
+    ctx.fillStyle='#f26a1b'; ctx.fillRect(3, 14, 20, 15);            // hi-viz stays on
+    ctx.fillStyle='#2e3d6b'; ctx.fillRect(11.5, 14, 3, 15);
+    ctx.fillStyle='#e8e8ec'; ctx.fillRect(3, 19, 20, 2.2); ctx.fillRect(3, 24, 20, 2.2);
     danHead();
     ctx.restore();
   }
@@ -1950,7 +2018,7 @@ function stepLevel5(){
     const k = S.king;
     if(!k.active && !k.done && dan.x > FLAG_X - 520){
       k.active = true; Audio8.S.audit ? Audio8.S.audit() : Audio8.S.bonk();
-      flash('VONN QUINN', '#8a1c14');
+      flash('VON QUINN', '#8a1c14');
     }
     if(k.active && !k.done && k.throne){
       k.throneT++;
@@ -2103,7 +2171,7 @@ function drawCaddy(){
   ctx.beginPath(); ctx.arc(L+5.5, gy-12, 5.5, 0, 7); ctx.arc(L+W-5.5, gy-12, 5.5, 0, 7); ctx.fill();
   ctx.strokeStyle='#9aa0a6'; ctx.lineWidth=0.8;
   for(let s2=0;s2<6;s2++){
-    const a = s2*0.52 + time*0.02;
+    const a = s2*0.52;
     ctx.beginPath(); ctx.moveTo(L+5.5, gy-12); ctx.lineTo(L+5.5+Math.cos(a)*5.5, gy-12+Math.sin(a)*5.5);
     ctx.moveTo(L+W-5.5, gy-12); ctx.lineTo(L+W-5.5+Math.cos(a)*5.5, gy-12+Math.sin(a)*5.5); ctx.stroke();
   }
@@ -2142,18 +2210,38 @@ function drawCaddy(){
   ctx.strokeStyle='#c8a03a'; ctx.lineWidth=1.2;
   ctx.beginPath(); ctx.arc(sx, gy-42, 7, 0.5, Math.PI-0.5); ctx.stroke();
 
-  // the plate
-  const px0 = sx - 24;
-  ctx.fillStyle='#f4d34a'; ctx.fillRect(px0, gy-34, 48, 17);
-  ctx.strokeStyle='#1b1b2f'; ctx.lineWidth=1.5; ctx.strokeRect(px0, gy-34, 48, 17);
-  ctx.fillStyle='#8a6f1c'; ctx.font='bold 4px Courier New'; ctx.textAlign='center';
-  ctx.fillText('KANSAS', px0+24, gy-29.5);
-  ctx.fillStyle='#1b1b2f'; ctx.font='bold 10px Courier New';
-  ctx.fillText('BULLET', px0+24, gy-20.5);
-  ctx.fillStyle='rgba(255,240,180,.5)';
-  ctx.fillRect(px0-4, gy-36, 3, 2); ctx.fillRect(px0+49, gy-36, 3, 2);
-
-  if((time>>4)%5===0){ ctx.fillStyle='#fff'; ctx.fillRect(L+W-24, gy-88, 4, 4); }
+  // === Kansas vanity plate, mid-2000s: white field, blue "Kansas" script, wheat sheaf ===
+  const pw = 54, ph = 20;
+  const px0 = sx - pw/2, py0 = gy - 36;
+  ctx.fillStyle='#fbfbfd'; ctx.fillRect(px0, py0, pw, ph);
+  // soft blue-to-white sky wash across the top
+  const pg = ctx.createLinearGradient(0, py0, 0, py0+ph);
+  pg.addColorStop(0, 'rgba(120,175,225,.55)'); pg.addColorStop(0.55, 'rgba(255,255,255,0)');
+  ctx.fillStyle = pg; ctx.fillRect(px0, py0, pw, ph);
+  // frame
+  ctx.strokeStyle='#3a3a44'; ctx.lineWidth=1; ctx.strokeRect(px0+0.5, py0+0.5, pw-1, ph-1);
+  // KANSAS across the top in blue
+  ctx.fillStyle='#1e4f8a'; ctx.font='bold 5px Courier New'; ctx.textAlign='center';
+  ctx.fillText('KANSAS', px0 + pw/2, py0 + 6);
+  // little wheat sheaf at the left, sunflower dot at the right
+  ctx.strokeStyle='#c8a03a'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(px0+5, py0+17); ctx.lineTo(px0+5, py0+10);
+  ctx.moveTo(px0+5, py0+11); ctx.lineTo(px0+3, py0+9);
+  ctx.moveTo(px0+5, py0+11); ctx.lineTo(px0+7, py0+9);
+  ctx.moveTo(px0+5, py0+14); ctx.lineTo(px0+3, py0+12);
+  ctx.moveTo(px0+5, py0+14); ctx.lineTo(px0+7, py0+12);
+  ctx.stroke();
+  ctx.fillStyle='#e8b83a'; ctx.beginPath(); ctx.arc(px0+pw-5, py0+13, 2.4, 0, 7); ctx.fill();
+  ctx.fillStyle='#6b4423'; ctx.beginPath(); ctx.arc(px0+pw-5, py0+13, 1, 0, 7); ctx.fill();
+  // the vanity number, embossed dark blue
+  ctx.fillStyle='#152f52'; ctx.font='bold 11px Courier New';
+  ctx.fillText('BULLET', px0 + pw/2, py0 + 17);
+  // county sticker
+  ctx.fillStyle='#3fae2a'; ctx.fillRect(px0+pw-9, py0+1.5, 6, 4);
+  // plate lamps
+  ctx.fillStyle='rgba(255,240,190,.35)';
+  ctx.fillRect(px0-4, py0-2, 3, 2); ctx.fillRect(px0+pw+1, py0-2, 3, 2);
 }
 
 function drawKing(){
@@ -2209,7 +2297,7 @@ function drawKing(){
     ctx.fillStyle='#0e0a08';
     ctx.fillRect(12, -17, 3, 5); ctx.fillRect(17, -16, 3, 6); ctx.fillRect(22, -17, 3, 5);
     ctx.restore();
-    drawBossBar('VONN QUINN', k.hp, 4, 0);
+    drawBossBar('VON QUINN', k.hp, 4, 0);
     drawBossLine('YOU KNOW WHO I AM?!');
     return;
   }
@@ -2269,7 +2357,7 @@ function drawKing(){
   ctx.fillRect(15, 15, 3, 5); ctx.fillRect(20, 16, 3, 6); ctx.fillRect(25, 15, 3, 5); ctx.fillRect(29, 14, 2.5, 4);
   ctx.fillStyle='#5a3a30'; ctx.fillRect(19, 13.5, 8, 2.5+Math.abs(jit)*0.6);
   ctx.restore();
-  drawBossBar('VONN QUINN', k.hp, 4, k.hurtT>75?1:0);
+  drawBossBar('VON QUINN', k.hp, 4, k.hurtT>75?1:0);
   drawBossLine(KING_LINES[Math.floor(time/240) % KING_LINES.length]);
 }
 
@@ -3654,6 +3742,7 @@ function retryLevel(){
 }
 function levelClear(){
   Audio8.S.fanfare();
+  awardSpeedBonus();
   if(level < 5){
     flash('LEVEL '+level+' COMPLETE!', '#3fae2a', true);
     ozAtLevelStart = oz;
@@ -3672,12 +3761,37 @@ function gameOver(){
 function winGame(){
   state='win';
   hide('controls'); Audio8.stop();
-  $('winText').textContent = 'Dan retired with ' + oz + ' oz of silver!';
+  const mins = Math.floor((Date.now()-runStartMs)/60000);
+  const secs = Math.floor(((Date.now()-runStartMs)%60000)/1000);
+  $('winText').textContent = 'Dan retired with ' + oz + ' oz of silver! (' + mins + 'm ' + secs + 's)';
+  myEntryAt = null;
+  $('nameInput').value = '';
+  $('submitScoreBtn').disabled = false;
+  $('submitScoreBtn').textContent = 'Submit';
+  show('nameEntry');
+  hide('boardWrap');
   show('winScreen');
 }
 $('startBtn').addEventListener('click', startGame);
 $('retryBtn').addEventListener('click', retryLevel);
 $('againBtn').addEventListener('click', ()=>{ hide('winScreen'); startGame(); });
+$('lbBtn').addEventListener('click', ()=>{ Audio8.unlock(); showLeaderboard(); });
+$('closeLbBtn').addEventListener('click', ()=> hide('lbScreen'));
+$('submitScoreBtn').addEventListener('click', async ()=>{
+  const nm = ($('nameInput').value || '').trim().toUpperCase().replace(/[^A-Z0-9 ._-]/g,'').slice(0,12);
+  if(!nm){ $('nameInput').focus(); return; }
+  $('submitScoreBtn').disabled = true;
+  $('submitScoreBtn').textContent = 'Saving...';
+  myEntryAt = Date.now();
+  const entry = {name: nm, score: oz, at: myEntryAt};
+  await Board.submit(entry.name, entry.score);
+  hide('nameEntry');
+  await renderBoard();
+});
+$('skipScoreBtn').addEventListener('click', async ()=>{
+  hide('nameEntry');
+  await renderBoard();
+});
 $('helpBtn').addEventListener('click', ()=>{ hide('titleScreen'); show('helpScreen'); });
 $('closeHelpBtn').addEventListener('click', ()=>{ hide('helpScreen'); show('titleScreen'); });
 const fsBtn = $('fsBtn');
@@ -3708,6 +3822,96 @@ addEventListener('keydown', armTitleMusic, {once:false});
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) Audio8.resume(); });
 addEventListener('focus', ()=>Audio8.resume());
 
+
+// ================= LEADERBOARD =================
+// Global scores need a server. Paste a URL below and it goes global; leave it blank
+// and scores are saved on this device only. Expected API:
+//   GET  <LB_ENDPOINT>          -> [{name, score}, ...]
+//   POST <LB_ENDPOINT> {name, score}
+const LB_ENDPOINT = '/api/scores';
+const LB_KEY = 'dansretirement_board_v1';
+
+const Board = (() => {
+  let mem = [];
+  async function load(){
+    if(LB_ENDPOINT){
+      try{
+        const r = await fetch(LB_ENDPOINT, {cache:'no-store'});
+        if(r.ok) return await r.json();
+      }catch(e){}
+    }
+    // Claude artifact storage, if present
+    try{
+      if(window.storage){
+        const r = await window.storage.get('board', true);
+        if(r && r.value) return JSON.parse(r.value);
+      }
+    }catch(e){}
+    // the player's own device
+    try{
+      const s = localStorage.getItem(LB_KEY);
+      if(s) return JSON.parse(s);
+    }catch(e){}
+    return mem;
+  }
+  async function submit(name, score){
+    const entry = {name: String(name).slice(0,12).toUpperCase(), score: Math.round(score), at: Date.now()};
+    if(LB_ENDPOINT){
+      try{
+        await fetch(LB_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json'},
+                                  body: JSON.stringify(entry)});
+        return await load();
+      }catch(e){}
+    }
+    const list = await load();
+    list.push(entry);
+    list.sort((a,b)=> b.score - a.score);
+    const top = list.slice(0, 25);
+    try{
+      if(window.storage){ await window.storage.set('board', JSON.stringify(top), true); }
+    }catch(e){}
+    try{ localStorage.setItem(LB_KEY, JSON.stringify(top)); }catch(e){ mem = top; }
+    mem = top;
+    return top;
+  }
+  return {load, submit};
+})();
+
+let myEntryAt = null;
+async function showLeaderboard(){
+  const ol = $('lbList');
+  ol.innerHTML = '<li><span class="nm">Loading...</span></li>';
+  show('lbScreen');
+  const list = (await Board.load()).slice().sort((a,b)=> b.score - a.score).slice(0, 10);
+  ol.innerHTML = '';
+  if(!list.length){
+    ol.innerHTML = '<li><span class="nm">No stackers yet. Be the first.</span></li>';
+    return;
+  }
+  for(const e of list){
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="nm">' + (e.name||'???') + '</span><span class="sc">' + e.score + ' oz</span>';
+    ol.appendChild(li);
+  }
+}
+async function renderBoard(){
+  const list = (await Board.load()).slice().sort((a,b)=> b.score - a.score).slice(0, 10);
+  const ol = $('boardList');
+  ol.innerHTML = '';
+  if(!list.length){
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="nm">No stackers yet. Be the first.</span>';
+    ol.appendChild(li);
+  }
+  for(const e of list){
+    const li = document.createElement('li');
+    if(myEntryAt && e.at === myEntryAt) li.className = 'me';
+    li.innerHTML = '<span class="nm">' + (e.name||'???') + '</span><span class="sc">' + e.score + ' oz</span>';
+    ol.appendChild(li);
+  }
+  $('boardWrap').classList.remove('hidden');
+}
+
 // ================= loop =================
 let last = 0, acc = 0; const DT = 1000/60;
 function loop(t){
@@ -3724,6 +3928,8 @@ function loop(t){
       if(matchMedia('(pointer:coarse)').matches) show('controls');
       if(kind==='silver') Audio8.play('level'); else if(kind==='skunk') Audio8.play('skunk');
       if(kind==='city') show('swingBtn'); else hide('swingBtn');
+      levelStartMs = Date.now(); ozAtLevelBegin = oz;
+      if(level === 1) runStartMs = Date.now();
     }
     last = t;
     return;
