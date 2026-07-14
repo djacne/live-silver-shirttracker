@@ -176,7 +176,7 @@
     <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
-  <p style="color:#5a6a8a;font-size:10px;">build 3.2</p>
+  <p style="color:#5a6a8a;font-size:10px;">build 3.3</p>
   </div>
  </div>
 </div>
@@ -1715,7 +1715,7 @@ function stepBoss1(){
         oz += 15;
         killPanel('DAS KAPITAL: DENIED!', 'KARL MARX HAS BEEN PRIVATIZED'); toast('+15 oz', '#3fae2a');
         setTimeout(()=>{ if(state==='play' && kind==='silver'){ Audio8.stop(); Audio8.play('level'); } }, 2600);
-        Audio8.stop(); Audio8.S.fanfare(); Audio8.play('level');
+        Audio8.stop(); Audio8.S.fanfare();   // the level theme comes back on the timer below
       } else {
         combat(b.hp===2 ? 'PRIVATE PROPERTY DEFENDED!' : 'THE MEANS REMAIN UNSEIZED!', b.x+15, b.y-14, '#3fae2a');
       }
