@@ -154,9 +154,18 @@
     top:calc(10px + env(safe-area-inset-top));
     right:calc(64px + env(safe-area-inset-right));
     width:42px;height:42px;border-radius:50%;border:2px solid #5a6a8a;
-    background:rgba(20,20,40,.75);color:#d7dde6;font-size:17px;cursor:pointer;
+    background:rgba(20,20,40,.75);cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
   #pauseBtn:active{background:#2b3550;}
+  .pauseIcon{display:flex;gap:4px;}
+  .pauseIcon::before,.pauseIcon::after{content:'';width:4px;height:15px;background:#d7dde6;
+    border-radius:1px;display:block;}
+  /* on phones the top-right corner already carries mute + the pause button crowds the
+     silver readout underneath it -- drop pause below mute instead, out of the way */
+  @media (pointer:coarse){
+    #pauseBtn{top:calc(60px + env(safe-area-inset-top));
+      right:calc(10px + env(safe-area-inset-right));}
+  }
   #updateBar{position:fixed;z-index:60;left:0;right:0;
     bottom:calc(0px + env(safe-area-inset-bottom));
     padding:11px 12px;text-align:center;cursor:pointer;
@@ -239,7 +248,7 @@
 <div id="wrap"><canvas id="game"></canvas></div>
 <div id="msg"></div>
 <button id="muteBtn" class="hidden">&#128266;</button>
-<button id="pauseBtn" class="hidden">&#9208;</button>
+<button id="pauseBtn" class="hidden"><span class="pauseIcon"></span></button>
 <div id="updateBar" class="hidden">NEW VERSION AVAILABLE &mdash; TAP TO UPDATE</div>
 
 <div id="titleScreen" class="overlay">
@@ -316,7 +325,7 @@
     <button id="pauseLbBtn" class="btn">Leaderboard</button>
     <button id="reloadBtn" class="btn">Reload Game</button>
   </div>
-  <p class="hint">Reload fetches the newest build from the server.</p>
+  <p class="hint" style="white-space:nowrap;">Reload fetches the newest build.</p>
 </div>
 
 <div id="lbScreen" class="overlay tight hidden">
@@ -832,7 +841,7 @@ function buildLevel(n){
       mkKaren(1080, 90), mkKaren(2640, 120), mkKaren(3960, 140),
       mkTwitch(1900, 100), mkTwitch(3300, 120),
     ];
-    cams = [862, 2150, 3080, 4200];
+    cams = [975, 2150, 3080, 4200];
     boss1 = {active:false, dead:false, done:false, x:4230, y:GROUND_Y-52, w:30, h:52,
              vx:0, vy:0, hp:3, hurtT:0, jumpT:110, deadT:0};
   } else if(kind === 'skunk'){
@@ -933,7 +942,7 @@ function buildLevel(n){
     boxes = [
       {x:820, y:212, used:false, bump:0},
       {x:1660, y:205, used:false, bump:0},
-      {x:2500, y:205, used:false, bump:0},
+      {x:2620, y:205, used:false, bump:0},   // pushed clear of the CRIME RATE sign at 2360
       {x:3600, y:205, used:false, bump:0},
     ];
     coins = [
@@ -1929,7 +1938,13 @@ function stepLevel2(){
         Audio8.S.splash();
         riseText(dan.x+dan.w/2, dan.y-12, '+$20', '#ffd94a');
       }
-      if(sk.y > 345){ sk.alive = false; sk.sunk = true; S.drownT = 0; }
+      if(sk.y > 345){
+        sk.alive = false; sk.sunk = true; S.drownT = 0;
+        // the fullscreen quip lands the instant he goes under -- everything freezes
+        // here, so the bubble-rise-and-pop gag that follows plays out in the clear,
+        // with nothing covering it.
+        killPanel('YOU DROWNED A SKUNK!', 'GREAT JOB, DAN'); toast('+$20', '#3fae2a');
+      }
     }
     if(sk.sunk){
       S.drownT++;
@@ -1944,7 +1959,6 @@ function stepLevel2(){
           Audio8.S.pop();
           S.windT = 80;
           Audio8.S.wind();
-          killPanel('YOU DROWNED A SKUNK!', 'GREAT JOB, DAN'); toast('+$20', '#3fae2a');
         }
       }
       if(S.stink && S.stink.popped) S.stink.popT++;
@@ -4137,105 +4151,66 @@ function drawAdBillboard(bx){
   ctx.strokeStyle='#5a4a2e'; ctx.lineWidth=4;
   ctx.strokeRect(px0, py0, w, panelH);
 
-  // === THE SCENE: Dan strangling a skunk over a trash can full of water ===
+  // === two big, unmistakable faces filling the panel: Dan, and a very surprised skunk ===
   ctx.save();
   ctx.beginPath(); ctx.rect(px0+4, py0+4, w-8, panelH-8); ctx.clip();
 
-  // little painted sky wash inside the ad
-  const g = ctx.createLinearGradient(0, py0, 0, py0+panelH);
-  g.addColorStop(0, '#bfe0f2'); g.addColorStop(1, '#fdf6e3');
-  ctx.fillStyle = g; ctx.fillRect(px0, py0, w, panelH*0.6);
+  const midY = py0 + panelH*0.44;
 
-  const cx = px0 + w/2, cy = py0 + panelH - 8;
-
-  // the trash can, full of water, skunk's bottom half submerged in it
-  const canW = 46, canH = 40;
-  const canX = cx - canW/2, canY = cy - canH;
-  ctx.fillStyle = '#8a93a8';
-  ctx.beginPath();
-  ctx.moveTo(canX+4, canY); ctx.lineTo(canX+canW-4, canY);
-  ctx.lineTo(canX+canW, canY+canH); ctx.lineTo(canX, canY+canH);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = '#5a6270'; ctx.lineWidth = 2; ctx.stroke();
-  // corrugated ribbing
-  ctx.strokeStyle = '#6b7484'; ctx.lineWidth = 1.5;
-  for(const ry of [canY+12, canY+22, canY+32]){
-    ctx.beginPath(); ctx.moveTo(canX+2, ry); ctx.lineTo(canX+canW-2, ry); ctx.stroke();
-  }
-  // the water line, sloshing
-  const waterY = canY + 13;
-  ctx.fillStyle = 'rgba(90,150,200,.55)';
-  ctx.beginPath();
-  ctx.moveTo(canX+3, waterY);
-  ctx.quadraticCurveTo(canX+canW*0.25, waterY-4, canX+canW*0.5, waterY);
-  ctx.quadraticCurveTo(canX+canW*0.75, waterY+4, canX+canW-3, waterY);
-  ctx.lineTo(canX+canW-3, canY+canH-2); ctx.lineTo(canX+3, canY+canH-2);
-  ctx.closePath(); ctx.fill();
-  // splash droplets flying off, because this is a WRESTLING MATCH
-  ctx.fillStyle = 'rgba(120,175,220,.8)';
-  for(const [dx,dy] of [[-6,-8],[8,-11],[-14,-4],[14,-3],[3,-14]]){
-    ctx.beginPath(); ctx.arc(cx+dx, waterY+dy, 1.6, 0, 7); ctx.fill();
-  }
-
-  // the skunk: lower half hidden below the can rim (submerged), upper half
-  // thrashing above it, mouth wide open yelling
+  // Dan, left side, thumbs up energy even here
   ctx.save();
-  ctx.beginPath(); ctx.rect(canX-2, py0, canW+4, waterY - py0 + 1); ctx.clip();
-  // skunk body rising out of the water at an angle -- he is NOT happy about this
+  ctx.translate(px0 + w*0.28, midY);
+  ctx.scale(1.9, 1.9);
+  ctx.translate(-13, -8);
+  ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(13, 10, 11, 0, 7); ctx.fill();
+  ctx.fillStyle='#7a5230';                                    // SD cap
+  ctx.beginPath(); ctx.arc(13, 6, 11.5, Math.PI, 0); ctx.fill();
+  ctx.fillRect(1.5, 4, 23, 3.4); ctx.fillRect(13, 4, 15, 3.4);
+  ctx.fillStyle='#e8d9a8'; ctx.font='bold 6px Courier New'; ctx.textAlign='center';
+  ctx.fillText('SD', 18, 3);
+  ctx.fillStyle='#fff'; ctx.fillRect(7, 9, 5, 3.6); ctx.fillRect(15, 9, 5, 3.6);
+  ctx.fillStyle='#000'; ctx.fillRect(9, 10, 2.4, 2.4); ctx.fillRect(17, 10, 2.4, 2.4);
+  ctx.fillStyle='#4a3018'; ctx.fillRect(6.5, 7.4, 6, 1.6); ctx.fillRect(14.5, 7.4, 6, 1.6);
+  // the horseshoe mustache
+  ctx.fillRect(7, 14.6, 12, 3.6);
+  ctx.fillRect(6.2, 16.4, 3.2, 6.4); ctx.fillRect(16.6, 16.4, 3.2, 6.4);
+  ctx.fillStyle='#8a4a3a'; ctx.fillRect(10.5, 19.4, 5, 1.8);
+  ctx.restore();
+
+  // the skunk, right side, mid-air, eyes wide, utterly betrayed by this line of work
   ctx.save();
-  ctx.translate(cx, waterY);
-  ctx.rotate(-0.15);
-  ctx.fillStyle = '#1b1b24';
-  ctx.beginPath(); ctx.ellipse(0, -10, 11, 15, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = '#fff';                                  // the stripe
-  ctx.beginPath(); ctx.ellipse(0, -14, 3, 13, 0, 0, 7); ctx.fill();
-  // his face, mid-yell
-  ctx.fillStyle = '#1b1b24';
-  ctx.beginPath(); ctx.arc(0, -22, 7, 0, 7); ctx.fill();
+  ctx.translate(px0 + w*0.72, midY);
+  ctx.scale(2.1, 2.1);
+  ctx.translate(-13, -12);
+  ctx.fillStyle='#1b1b24'; ctx.beginPath(); ctx.arc(13, 11, 11, 0, 7); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.fillRect(11, -2, 4.6, 24);          // the stripe, running right through
+  ctx.fillStyle='#1b1b24';
+  ctx.beginPath(); ctx.moveTo(4,3); ctx.lineTo(7,-4); ctx.lineTo(10,3); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(16,3); ctx.lineTo(19,-4); ctx.lineTo(22,3); ctx.closePath(); ctx.fill();
+  // eyes blown wide open -- surprise, not menace
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(9,10,4.2,0,7); ctx.arc(17,10,4.2,0,7); ctx.fill();
+  ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(9,10,2,0,7); ctx.arc(17,10,2,0,7); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(9.8,9.2,0.8,0,7); ctx.arc(17.8,9.2,0.8,0,7); ctx.fill();
+  // the little "oh" mouth
+  ctx.fillStyle='#8a1c14'; ctx.beginPath(); ctx.ellipse(13, 17.5, 2.6, 3.2, 0, 0, 7); ctx.fill();
+  ctx.restore();
+
+  // a jagged yellow "!!" starburst punched between them -- the whole joke in one symbol
+  ctx.save();
+  ctx.translate(px0 + w*0.5, py0 + panelH*0.24);
+  ctx.rotate(-0.08);
   ctx.fillStyle = '#f4d34a';
-  ctx.beginPath(); ctx.arc(-3, -24, 2.2, 0, 7); ctx.arc(3, -24, 2.2, 0, 7); ctx.fill();
-  ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.arc(-3, -24, 1, 0, 7); ctx.arc(3, -24, 1, 0, 7); ctx.fill();
-  ctx.fillStyle = '#8a1c14';                                // the wide-open yelling mouth
-  ctx.beginPath(); ctx.ellipse(0, -18, 3.2, 3.6, 0, 0, 7); ctx.fill();
-  // little front paws flailing, trying to climb out
-  ctx.fillStyle = '#1b1b24';
-  ctx.beginPath(); ctx.ellipse(-9, -16, 3, 5, 0.5, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(9, -16, 3, 5, -0.5, 0, 7); ctx.fill();
-  ctx.restore();
-  ctx.restore();
-
-  // DAN, gripping the skunk around the neck with both hands, straddling the can,
-  // leaning back with the effort, his own face mid-yell
-  ctx.save();
-  ctx.translate(cx + 14, cy - 40);
-  ctx.rotate(0.12);
-  // legs braced against the can
-  ctx.fillStyle = '#3a4d85';
-  ctx.beginPath(); ctx.ellipse(-6, 34, 5, 16, -0.3, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(10, 32, 5, 16, 0.15, 0, 7); ctx.fill();
-  // torso leaning back hard
-  ctx.fillStyle = '#a11c1c';
-  ctx.beginPath(); ctx.ellipse(2, 8, 12, 20, -0.12, 0, 7); ctx.fill();
-  // both arms straining downward, gripping the skunk's neck
-  ctx.strokeStyle = '#e8b68a'; ctx.lineWidth = 6; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-6, -4); ctx.lineTo(-16, 30); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(10, -4); ctx.lineTo(-4, 32); ctx.stroke();
-  ctx.fillStyle = '#e8b68a';
-  ctx.beginPath(); ctx.arc(-17, 32, 3.6, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.arc(-5, 34, 3.6, 0, 7); ctx.fill();
-  // Dan's head, thrown back, mouth wide open yelling right back at the skunk
-  ctx.translate(2, -14);
-  ctx.fillStyle = '#e8b68a';
-  ctx.beginPath(); ctx.arc(0, 0, 9, 0, 7); ctx.fill();
-  ctx.fillStyle = '#8a5a30'; ctx.fillRect(-8, -2, 16, 3.4);      // horseshoe mustache
-  ctx.fillRect(-9, -2, 3, 5); ctx.fillRect(6, -2, 3, 5);
-  ctx.fillStyle = '#4a3018';
-  ctx.beginPath(); ctx.arc(0, -6, 9.4, Math.PI, 0); ctx.fill();  // hairline
-  ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.arc(-3.4, -3, 1.2, 0, 7); ctx.arc(3.4, -3, 1.2, 0, 7); ctx.fill();
-  ctx.fillStyle = '#7a1c14';
-  ctx.beginPath(); ctx.ellipse(0, 5, 3.4, 4, 0, 0, 7); ctx.fill();  // Dan's own yelling mouth
+  ctx.beginPath();
+  const spikes = 8;
+  for(let i=0;i<spikes*2;i++){
+    const a = (i/(spikes*2)) * Math.PI * 2;
+    const r = (i%2===0) ? 15 : 8;
+    ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#1b1b2f'; ctx.font = 'bold 13px Courier New'; ctx.textAlign = 'center';
+  ctx.fillText('!!', 0, 4);
   ctx.restore();
 
   ctx.restore();  // end clip
@@ -4375,9 +4350,9 @@ function drawWelcomeArch(sx0){
 
 function drawCrimeSign(sx0){
   const sx = px(sx0);
-  if(sx < -200 || sx > VIEW_W+40) return;
+  if(sx < -220 || sx > VIEW_W+40) return;
   const gy = GROUND_Y;
-  const w = 168, h = 96, py0 = gy - 210;
+  const w = 210, h = 96, py0 = gy - 210;   // widened so the text has real room, clear of the gauge
 
   ctx.fillStyle = '#7a5a34';
   ctx.fillRect(sx+w/2-5, py0+h, 10, gy-(py0+h));
@@ -4387,30 +4362,32 @@ function drawCrimeSign(sx0){
   ctx.strokeStyle = '#5a4a2e'; ctx.lineWidth = 4;
   ctx.strokeRect(sx, py0, w, h);
 
-  // a little cartoon crime-o-meter dial, needle jammed hard right into the red
-  const gx = sx + 40, gy2 = py0 + 46, r = 28;
+  // the dial: yellow at the low end ramping straight to red at the high end,
+  // needle buried in the red because Trooper Dan has seen some things
+  const gx = sx + 46, gy2 = py0 + 46, r = 26;
   ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.arc(gx, gy2, r, Math.PI, 0); ctx.stroke();
-  const zones = [['#3fae2a', Math.PI, Math.PI*0.75], ['#e0a13a', Math.PI*0.75, Math.PI*0.35], ['#c0392b', Math.PI*0.35, 0]];
-  for(const [c,a0,a1] of zones){
-    ctx.strokeStyle = c; ctx.lineWidth = 8;
-    ctx.beginPath(); ctx.arc(gx, gy2, r-6, a0, a1); ctx.stroke();
-  }
+  const dialGrad = ctx.createLinearGradient(gx-r, 0, gx+r, 0);
+  dialGrad.addColorStop(0, '#f4d34a');   // low, left
+  dialGrad.addColorStop(1, '#c0392b');   // high, right -- where the needle sits
+  ctx.strokeStyle = dialGrad; ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.arc(gx, gy2, r-6, Math.PI, 0); ctx.stroke();
   ctx.save();
   ctx.translate(gx, gy2);
-  ctx.rotate(-0.25);                              // needle buried past max
+  ctx.rotate(-0.22);                              // needle buried past max, into the red
   ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r-2, 0); ctx.stroke();
   ctx.restore();
   ctx.fillStyle = '#1b1b2f';
   ctx.beginPath(); ctx.arc(gx, gy2, 3, 0, 7); ctx.fill();
 
-  // the text, blunt and unbothered
-  ctx.textAlign = 'center'; ctx.fillStyle = '#1b1b2f';
-  ctx.font = 'bold 15px Courier New';
-  ctx.fillText('CRIME RATE:', sx+w/2+18, py0+30);
-  ctx.font = 'bold 24px Courier New'; ctx.fillStyle = '#c0392b';
-  ctx.fillText('YES', sx+w/2+18, py0+55);
+  // text sits well clear of the gauge, in its own column to the right
+  const textX = gx + r + 24;
+  ctx.textAlign = 'left'; ctx.fillStyle = '#1b1b2f';
+  ctx.font = 'bold 14px Courier New';
+  ctx.fillText('CRIME RATE:', textX, py0+34);
+  ctx.font = 'bold 26px Courier New'; ctx.fillStyle = '#c0392b';
+  ctx.fillText('YES', textX, py0+62);
 }
 
 function drawSign(sx0, line1, line2){
@@ -6048,7 +6025,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '4.2';
+const BUILD = '4.5';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
