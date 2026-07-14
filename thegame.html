@@ -238,7 +238,17 @@
   <div class="sub"><span class="rule"></span>The Game<span class="rule"></span></div>
   <p>Stack silver. Stomp commies. Retire.</p>
   <div class="btnrow">
-    <button class="btn" id="startBtn">Start Stacking</button>
+    <div id="iosTip" class="tipCard hidden">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v12"/><path d="M8 7l4-4 4 4"/>
+      <path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/>
+    </svg>
+    <span>Play in fullscreen &mdash; tap for iPhone setup</span>
+    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+         stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+  </div>
+  <button class="btn" id="startBtn">Start Stacking</button>
     <button class="btn alt" id="lbBtn">Leaderboard</button>
     <button class="btn alt" id="helpBtn">Help</button>
     <button class="btn alt" id="fsBtn">Fullscreen</button>
@@ -5746,7 +5756,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '3.9';
+const BUILD = '4.0';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
