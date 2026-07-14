@@ -152,7 +152,7 @@
     <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
-  <p style="color:#5a6a8a;font-size:10px;">build 1.8</p>
+  <p style="color:#5a6a8a;font-size:10px;">build 1.9</p>
   </div>
  </div>
 </div>
@@ -814,7 +814,7 @@ const ICE_HITS = ['PAPERS, PLEASE!', 'NELSON ALMOST GOT DEPORTED!', 'DETAINED!']
 const ICE_STOMPS = ['NOT TODAY, FEDS!', 'NO QUOTA FOR YOU!'];
 const BP_HITS = ['CHECKPOINT VIOLATION!', 'TURNED AROUND AT THE BORDER!'];
 const BP_STOMPS = ['BORDER HOPPED!', 'CATCH AND RELEASE!'];
-const JOHNSON_HITS = ['NOBODY CROSSES ON MY WATCH!', 'DETAINED PENDING REVIEW!', 'FEDERAL CUSTODY: -5 oz!'];
+const JOHNSON_HITS = ['NOBODY CROSSES ON MY WATCH!', 'DETAINED PENDING REVIEW!', 'FEDERAL CUSTODY!'];
 const JOHNSON_LINES = ['NOBODY CROSSES ON MY WATCH!', 'STEP AWAY FROM THAT ILLEGAL!',
   'I HAVE JURISDICTION HERE!', 'THIS IS A FEDERAL MATTER!'];
 const TUNEUPS = ['TUNE-UP DELIVERED!', 'FREE ATTITUDE ADJUSTMENT!', 'COMPLIANCE ACHIEVED!', 'COURTESY OF THE KHP!'];
@@ -839,8 +839,8 @@ const STRETCHES = [
 ];
 const SAFETY_SLOGANS = ['SAFETY IS A CHOICE!', 'STRETCH TO SUCCESS!', 'REPORT ALL NEAR-MISSES!',
   'A LIMBER CREW IS A SAFE CREW!', 'ZERO IS ATTAINABLE!', 'THINK. PLAN. STRETCH.'];
-const KING_HITS = ['THE KING GOT YOU!', 'ROBBED IN BROAD DAYLIGHT!', 'STREET TAX: -5 oz!'];
-const BOSS1_HITS = ['SEIZED BY THE PROLETARIAT!', 'YOUR LABOR IS ALIENATED!', 'EXPROPRIATED: -5 oz!'];
+const KING_HITS = ['THE KING GOT YOU!', 'ROBBED IN BROAD DAYLIGHT!', 'STREET TAX!'];
+const BOSS1_HITS = ['SEIZED BY THE PROLETARIAT!', 'YOUR LABOR IS ALIENATED!', 'EXPROPRIATED!'];
 const BOSS_SPEECHES = [
   'ABOLISH ALL PRIVATE PROPERTY!',
   'WORKERS OF THE WORLD, UNITE!',
@@ -2299,7 +2299,7 @@ function bonusTweak(){
 }
 
 // ---- the crew, stretching badly and out of sync ----
-function drawCrewGuy(x, y, s, off, tint){
+function drawCrewGuy(x, y, s, off, tint, cap){
   const p = Math.sin((time + off) * 0.045 + off) ;
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
   // legs
@@ -2317,12 +2317,19 @@ function drawCrewGuy(x, y, s, off, tint){
   ctx.fillStyle='#f26a1b';
   ctx.save(); ctx.translate(3, 16); ctx.rotate(-0.5 - p * 1.1); ctx.fillRect(-3, 0, 4, 11); ctx.restore();
   ctx.save(); ctx.translate(22, 16); ctx.rotate(0.5 + p * 0.7); ctx.fillRect(-1, 0, 4, 11); ctx.restore();
-  // head + hardhat
+  // head + ballcap
   ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(12.5, 8, 6.4, 0, 7); ctx.fill();
-  ctx.fillStyle='#f4d34a';
-  ctx.beginPath(); ctx.arc(12.5, 6, 7, Math.PI, 0); ctx.fill();
-  ctx.fillRect(4.5, 5, 16, 2.4);
-  ctx.fillStyle='#000'; ctx.fillRect(10, 7.5, 1.6, 1.6); ctx.fillRect(14, 7.5, 1.6, 1.6);
+  if(cap){
+    ctx.fillStyle = cap;
+    ctx.beginPath(); ctx.arc(12.5, 6.4, 6.8, Math.PI, 0); ctx.fill();
+    ctx.fillRect(6, 5.4, 13, 2.6);
+    ctx.fillRect(12.5, 5.6, 9, 2.2);                 // the bill, forward
+    ctx.fillStyle='rgba(0,0,0,.18)'; ctx.fillRect(6, 7.2, 13, 1);
+  } else {
+    ctx.fillStyle='#3a2a1a';                          // one guy just has hair
+    ctx.beginPath(); ctx.arc(12.5, 6, 6.6, Math.PI, 0); ctx.fill();
+  }
+  ctx.fillStyle='#000'; ctx.fillRect(10, 8.4, 1.6, 1.6); ctx.fillRect(14, 8.4, 1.6, 1.6);
   ctx.restore();
 }
 
@@ -2587,9 +2594,9 @@ function renderBonus(){
   ctx.fillText(String(S.days), sgx+46, sgy+46);
 
   // the crew, all in hi-viz, all completely out of sync
-  drawCrewGuy(VIEW_W - 190, 196, 1.5, 0,   '#3a5f96');
-  drawCrewGuy(VIEW_W - 130, 200, 1.4, 90,  '#6b4a3a');
-  drawCrewGuy(VIEW_W - 74,  194, 1.55, 170, '#4a5a4a');
+  drawCrewGuy(VIEW_W - 190, 196, 1.5,  0,   '#3a5f96', '#2b2b38');
+  drawCrewGuy(VIEW_W - 130, 200, 1.4,  90,  '#6b4a3a', null);          // no cap, just hair
+  drawCrewGuy(VIEW_W - 74,  194, 1.55, 170, '#4a5a4a', '#5a2a24');
 
   drawBonusDan();
   drawFloatTexts();
@@ -2702,9 +2709,7 @@ function renderBonus(){
     // and the joke, small, underneath
     ctx.font = comicFont(13);
     ctx.strokeStyle='#12121c'; ctx.lineWidth=4;
-    const joke = S.fullSend
-      ? 'NOBODY SENDS IT FULLY. NOBODY.'
-      : 'FILE AN INJURY REPORT WITH TRAINMASTER LAUER';
+    const joke = 'ALL INJURIES ARE PREVENTABLE';
     ctx.strokeText(joke, VIEW_W/2, 330);
     ctx.fillStyle='#fdf6e3';
     ctx.fillText(joke, VIEW_W/2, 330);
