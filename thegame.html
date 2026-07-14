@@ -155,7 +155,7 @@
      nothing floats into canvas-drawn scenery (the sun, the HUD) this way. */
   #pauseBtn{position:fixed;z-index:25;
     top:calc(8.3vh + env(safe-area-inset-top));
-    left:calc(6px + env(safe-area-inset-left));
+    right:calc(62px + env(safe-area-inset-right));
     width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
     background:rgba(20,20,40,.6);cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
@@ -219,7 +219,7 @@
   #jumpBtn{width:86px;height:86px;background:rgba(63,174,42,.35);border-color:rgba(120,255,90,.6);}
 
   #muteBtn{position:fixed;top:calc(8.3vh + env(safe-area-inset-top));
-    left:calc(58px + env(safe-area-inset-left));z-index:25;
+    right:calc(6px + env(safe-area-inset-right));z-index:25;
     width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
     background:rgba(20,20,40,.6);color:#fff;font-size:20px;cursor:pointer;}
 
@@ -235,7 +235,7 @@
 
   #msg{position:fixed;z-index:15;pointer-events:none;
     left:calc(16px + env(safe-area-inset-left));
-    top:calc(8.3vh + 54px + env(safe-area-inset-top));
+    top:calc(74px + env(safe-area-inset-top));
     color:#fff;background:var(--red);padding:7px 14px;border-radius:8px;font-weight:bold;
     font-size:clamp(11px,2.5vw,15px);letter-spacing:1px;border:3px solid #fff;
     box-shadow:0 5px 0 rgba(0,0,0,.35);opacity:0;transition:opacity .18s;text-transform:uppercase;
@@ -1856,8 +1856,7 @@ function stepBoss1(){
   // he flings the tools of the revolution: hammers and sickles, alternating
   if(--b.throwT <= 0 && b.hurtT<=0){
     b.throwT = 130 + Math.random()*80;
-    b.thrown.push({x:b.x+b.w/2, y:b.y+8, vx: dan.x < b.x ? -4.2 : 4.2, vy:-6, spin:0,
-                    kind: (b.thrown.length % 2 === 0) ? 'hammer' : 'sickle'});
+    b.thrown.push({x:b.x+b.w/2, y:b.y+8, vx: dan.x < b.x ? -4.2 : 4.2, vy:-6, spin:0, kind:'hammer'});
     Audio8.S.whoosh();
   }
   for(let i=b.thrown.length-1;i>=0;i--){
@@ -2224,7 +2223,7 @@ function renderTrain(){
   g.addColorStop(0,'#2f6fd0'); g.addColorStop(0.7,'#79b8e8'); g.addColorStop(1,'#a8dcf0');
   ctx.fillStyle=g; ctx.fillRect(0,0,VIEW_W,VIEW_H);
   // sun with the shades
-  const sunX = VIEW_W-70;
+  const sunX = VIEW_W-190;
   ctx.fillStyle='#ffe98a'; ctx.beginPath(); ctx.arc(sunX, 52, 24, 0, 7); ctx.fill();
   ctx.fillStyle='#1b1b2f';
   ctx.fillRect(sunX-17, 44, 14, 9); ctx.fillRect(sunX+3, 44, 14, 9); ctx.fillRect(sunX-4, 47, 8, 3);
@@ -2927,7 +2926,7 @@ function renderBonus(){
   ctx.fillStyle=g; ctx.fillRect(0,0,VIEW_W,VIEW_H);
   // low sun
   ctx.fillStyle='rgba(255,240,190,.6)';
-  ctx.beginPath(); ctx.arc(VIEW_W*0.78, 84, 34, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(VIEW_W*0.58, 84, 34, 0, 7); ctx.fill();
 
   // a string of black tank cars behind him
   for(let c=0;c<5;c++){
@@ -3452,12 +3451,16 @@ function drawJohnson(){
   const sx = px(j.x);
   // the DENIED stamp, spinning through the air like a thrown hatchet
   for(const p of j.stamps){
+    // bigger, clearer, unmistakably a rubber stamp -- handle, block, ink pad, and all
     ctx.save(); ctx.translate(px(p.x), p.y); ctx.rotate(p.spin);
-    ctx.fillStyle='#5a3a1e'; ctx.fillRect(-3, -13, 6, 8);            // wooden handle
-    ctx.fillStyle='#8a1c14'; ctx.fillRect(-11, -5, 22, 14);          // the stamp block
-    ctx.strokeStyle='#4a0e0a'; ctx.lineWidth=1.4; ctx.strokeRect(-11,-5,22,14);
-    ctx.fillStyle='#fff'; ctx.font='bold 7px Courier New'; ctx.textAlign='center';
-    ctx.fillText('DENIED', 0, 3);
+    ctx.fillStyle='#5a3a1e'; ctx.fillRect(-4, -20, 8, 12);           // wooden handle
+    ctx.fillStyle='#3a2510'; ctx.beginPath(); ctx.ellipse(0,-20,5,3,0,0,7); ctx.fill();  // handle knob
+    ctx.fillStyle='#8a8a92'; ctx.fillRect(-16, -9, 32, 6);           // the metal mount
+    ctx.fillStyle='#8a1c14'; ctx.fillRect(-16, -3, 32, 18);          // the stamp block
+    ctx.strokeStyle='#4a0e0a'; ctx.lineWidth=2; ctx.strokeRect(-16,-3,32,18);
+    ctx.fillStyle='#c0392b'; ctx.fillRect(-16, 12, 32, 4);           // wet ink along the base
+    ctx.fillStyle='#fff'; ctx.font='bold 11px Courier New'; ctx.textAlign='center';
+    ctx.fillText('DENIED', 0, 9);
     ctx.restore();
   }
   if(j.dead){
@@ -3825,19 +3828,28 @@ function drawKing(){
   const S = L5S, k = S.king;
   // the airborne loyal subjects
   for(const p of S.thrown){
-    // Von Quinn does not throw his own people. He throws mini pitbulls.
-    ctx.save(); ctx.translate(px(p.x), p.y); ctx.rotate(p.spin);
-    ctx.fillStyle='#8a7a68';                                   // stocky little body
-    ctx.beginPath(); ctx.ellipse(0, 0, 10, 6.5, 0, 0, 7); ctx.fill();
-    ctx.fillStyle='#6b5c4a'; ctx.fillRect(-9, 4, 3, 5); ctx.fillRect(6, 4, 3, 5);   // legs, tucked mid-flight
-    ctx.fillStyle='#8a7a68'; ctx.beginPath(); ctx.arc(9, -1, 5.4, 0, 7); ctx.fill(); // block head up front
-    ctx.fillStyle='#4a3a2a';
-    ctx.beginPath(); ctx.moveTo(5,-5); ctx.lineTo(3,-9); ctx.lineTo(7,-6); ctx.closePath(); ctx.fill(); // ears
-    ctx.beginPath(); ctx.moveTo(11,-5); ctx.lineTo(14,-8); ctx.lineTo(12,-4); ctx.closePath(); ctx.fill();
-    ctx.fillStyle='#1b1b24'; ctx.fillRect(6.5,-2.6,1.6,1.6); ctx.fillRect(11,-2.6,1.6,1.6); // eyes
-    ctx.fillStyle='#c0392b'; ctx.fillRect(8, 1.5, 4, 1.6);      // studded collar
-    ctx.strokeStyle='#1b1b24'; ctx.lineWidth=1.6;
-    ctx.beginPath(); ctx.moveTo(4,-2); ctx.lineTo(13,-3); ctx.stroke();  // snarl line
+    // the same full pitbull used as a regular enemy, airborne and tumbling --
+    // recognizable at a glance because it's the exact same art the player already knows
+    ctx.save(); ctx.translate(px(p.x), p.y - 10); ctx.rotate(p.spin); ctx.translate(-15, -10);
+    ctx.fillStyle='#8a8078';
+    ctx.beginPath(); ctx.ellipse(12, 9, 13, 7.5, 0, 0, 7); ctx.fill();     // stocky body
+    ctx.fillStyle='#c9c2b8';
+    ctx.beginPath(); ctx.ellipse(20, 11, 5, 4.5, 0, 0, 7); ctx.fill();    // chest patch
+    ctx.fillStyle='#8a8078'; ctx.fillRect(20, -2, 13, 11);                // square head
+    ctx.fillStyle='#c9c2b8'; ctx.fillRect(26, 4, 8, 5);                   // jowls
+    ctx.fillStyle='#fff'; ctx.fillRect(27, 3.4, 2, 2); ctx.fillRect(30.5, 3.4, 2, 2);  // teeth
+    ctx.fillStyle='#6e665e';
+    ctx.beginPath(); ctx.moveTo(21,-2); ctx.lineTo(23,-6); ctx.lineTo(25,-2); ctx.closePath(); ctx.fill();  // ears
+    ctx.beginPath(); ctx.moveTo(27,-2); ctx.lineTo(29,-6); ctx.lineTo(31,-2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.fillRect(27, 0, 3.5, 2.6);
+    ctx.fillStyle='#000'; ctx.fillRect(29, 0.8, 1.6, 1.6);
+    ctx.fillStyle='#3a3028'; ctx.fillRect(26, -1, 6, 1.4);                // brow
+    ctx.fillStyle='#1c1c24'; ctx.fillRect(32, 1.5, 2.5, 2.5);             // nose
+    ctx.fillStyle='#c0392b'; ctx.fillRect(19, 5.5, 3.5, 8);               // studded collar
+    ctx.fillStyle='#ffd94a'; ctx.fillRect(20, 7, 1.6, 1.6); ctx.fillRect(20, 10.5, 1.6, 1.6);
+    ctx.fillStyle='#8a8078'; ctx.fillRect(-2, 5, 4, 3);                   // tail
+    ctx.fillStyle='#6e665e';                                              // legs, tucked mid-flight
+    ctx.fillRect(4, 16, 4, 5); ctx.fillRect(11, 17, 4, 5); ctx.fillRect(18, 16, 4, 5); ctx.fillRect(24, 17, 4, 5);
     ctx.restore();
   }
   if(!k.active) return;
@@ -3983,8 +3995,9 @@ function drawResignation(){
   ctx.strokeStyle='#2b1a10'; ctx.lineWidth=1.4;
   ctx.beginPath(); ctx.moveTo(5, -0.5); ctx.lineTo(8, 0.8); ctx.moveTo(15, -0.5); ctx.lineTo(12, 0.8); ctx.stroke();
   ctx.restore();
-  // the resignation paper in flight
-  if(S.phase==='quit' && S.paper){
+  // the resignation paper -- stays out of sight until it actually launches, so it
+  // can't look like Dan already quit before the captain even delivers the news
+  if(S.phase==='quit' && S.paper && S.t > 150){
     ctx.save(); ctx.translate(px(S.paper.x), S.paper.y); ctx.rotate(Math.sin(S.paper.t*0.3)*0.3);
     ctx.fillStyle='#fff'; ctx.fillRect(-5, -6, 10, 12);
     ctx.fillStyle='#8a93a8';
@@ -3993,9 +4006,6 @@ function drawResignation(){
   }
   // bubbles
   if(S.phase==='quit'){
-    if(S.t > 20 && S.t < 150){
-      drawBossLine("GREAT JOB TROOPER DAN, BUT YOUR PROMOTION ISN'T IN OUR BUDGET!");
-    }
     if(S.t > 160 && S.t < 400){
       drawBubble(px(dan.x)+dan.w/2, dan.y - 52, ['MY RESIGNATION!']);
     }
@@ -4068,7 +4078,7 @@ function drawBg(){
       ctx.fillRect(sxx, syy, tw, tw);
     }
     // moon wearing \u00a2 sunglasses, still bullish after dark
-    const mX = VIEW_W-80 - camX*0.02;
+    const mX = VIEW_W-200 - camX*0.02;
     ctx.fillStyle='rgba(220,228,240,.25)';
     ctx.beginPath(); ctx.arc(mX, 58, 38, 0, 7); ctx.fill();
     ctx.fillStyle='#d9dde4'; ctx.beginPath(); ctx.arc(mX, 58, 24, 0, 7); ctx.fill();
@@ -4082,7 +4092,7 @@ function drawBg(){
     ctx.beginPath(); ctx.arc(mX, 66, 8, 0.3, Math.PI-0.5); ctx.stroke();
   } else {
     // sun wearing \u00a2 sunglasses, permanently bullish
-    const sunX = VIEW_W-70 - camX*0.02;
+    const sunX = VIEW_W-190 - camX*0.02;
     ctx.fillStyle='rgba(255,236,150,.35)';
     ctx.beginPath(); ctx.arc(sunX, 58, 40+Math.sin(time*0.02)*3, 0, 7); ctx.fill();
     ctx.fillStyle='#ffe98a';
@@ -4444,10 +4454,24 @@ function drawCrimeSign(sx0){
   ctx.translate(sx+w/2, tapeY+tapeH/2+4);
   ctx.font = 'bold 12px Courier New'; ctx.textAlign = 'center';
   ctx.lineJoin = 'round';
+  const label = 'DAYS SINCE LAST SHOOTING:';
+  const labelW = ctx.measureText(label).width;
+  // the count gets its own bigger, brighter treatment right after the label
+  ctx.font = 'bold 20px Courier New';
+  const zeroW = ctx.measureText('0').width;
+  const totalW = labelW + 8 + zeroW;
+  const startX = -totalW/2;
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 12px Courier New';
   ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
-  ctx.strokeText('DAYS SINCE LAST SHOOTING: 0', 0, 0);
+  ctx.strokeText(label, startX, 0);
   ctx.fillStyle = '#fff';
-  ctx.fillText('DAYS SINCE LAST SHOOTING: 0', 0, 0);
+  ctx.fillText(label, startX, 0);
+  ctx.font = 'bold 20px Courier New';
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 4.5;
+  ctx.strokeText('0', startX + labelW + 8, 2);
+  ctx.fillStyle = '#ffd94a';
+  ctx.fillText('0', startX + labelW + 8, 2);
   ctx.restore();
 
   // the tagline -- flat, serious, the whole joke is the deadpan
@@ -5123,15 +5147,11 @@ function drawBoss1(){
   // the flying tools of the revolution
   for(const p of b.thrown){
     ctx.save(); ctx.translate(px(p.x), p.y); ctx.rotate(p.spin);
-    if(p.kind === 'hammer'){
-      ctx.fillStyle='#8a8a92'; ctx.fillRect(-2.4, -10, 4.8, 16);       // handle
-      ctx.fillStyle='#5a5a62'; ctx.fillRect(-8, -12, 16, 7);           // head
-      ctx.strokeStyle='#2b2b32'; ctx.lineWidth=1; ctx.strokeRect(-8,-12,16,7);
-    } else {
-      ctx.strokeStyle='#c8c8ce'; ctx.lineWidth=3.4;
-      ctx.beginPath(); ctx.arc(-1, -1, 9, Math.PI*0.1, Math.PI*1.65); ctx.stroke();
-      ctx.fillStyle='#8a5a30'; ctx.fillRect(4, -1, 9, 3);              // handle
-    }
+    // just a hammer -- a real, heavy, unambiguous hammer
+    ctx.fillStyle='#8a5a30'; ctx.fillRect(-2.4, -9, 4.8, 17);          // wooden handle
+    ctx.fillStyle='#5a5a62'; ctx.fillRect(-9, -13, 18, 9);             // steel head
+    ctx.strokeStyle='#2b2b32'; ctx.lineWidth=1.2; ctx.strokeRect(-9,-13,18,9);
+    ctx.fillStyle='#7a7a82'; ctx.fillRect(-9,-13,18,2.4);              // top highlight
     ctx.restore();
   }
   if(b.dead){
@@ -6106,7 +6126,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '5.2';
+const BUILD = '5.3';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
