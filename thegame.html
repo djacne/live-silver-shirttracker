@@ -155,7 +155,7 @@
      nothing floats into canvas-drawn scenery (the sun, the HUD) this way. */
   #pauseBtn{position:fixed;z-index:25;
     top:calc(8.3vh + 4px + env(safe-area-inset-top));
-    right:calc(58px + env(safe-area-inset-right));
+    right:calc(56px + env(safe-area-inset-right));
     width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
     background:rgba(20,20,40,.6);cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
@@ -219,7 +219,7 @@
   #jumpBtn{width:86px;height:86px;background:rgba(63,174,42,.35);border-color:rgba(120,255,90,.6);}
 
   #muteBtn{position:fixed;top:calc(8.3vh + 4px + env(safe-area-inset-top));
-    right:calc(2px + env(safe-area-inset-right));z-index:25;
+    right:calc(0px + env(safe-area-inset-right));z-index:25;
     width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
     background:rgba(20,20,40,.6);color:#fff;font-size:20px;cursor:pointer;}
 
@@ -1415,7 +1415,7 @@ function banner(text, color){                  // end of level
 function killPanel(text, sub){
   panel = {text, sub: sub || '', t:0};
   clearMsgs();
-  hide('controls'); hide('swingBtn'); hide('pauseBtn');   // nothing pokes through the cinematic
+  hide('controls'); hide('swingBtn'); hide('pauseBtn'); hide('muteBtn');   // nothing pokes through the cinematic
   Audio8.S.slam();
   setTimeout(()=> Audio8.S.gong(), 90);
 }
@@ -1427,7 +1427,7 @@ function drawKillPanel(){
     panel = null;
     if(matchMedia('(pointer:coarse)').matches) show('controls');
     if(kind==='city') show('swingBtn');
-    show('pauseBtn');
+    show('pauseBtn'); show('muteBtn');
     return;
   }
 
@@ -1906,7 +1906,7 @@ function stepLevel2(){
   if(!S.revealed && dan.x > WATER_L - 150){
     S.revealed = true;
     announceBoss('THE SKUNK', 'lurk');
-    setTimeout(()=> quip('YOUR $20 APPOINTMENT IS HERE!', '#3fae2a'), 9600);
+    setTimeout(()=> quip('YOUR $20 APPOINTMENT IS HERE!', '#4a90d9'), 9600);
   }
   // patrolling skunk on the bridge
   if(S.revealed && sk.alive && !sk.falling){
@@ -1921,7 +1921,7 @@ function stepLevel2(){
         if(S.sprayCd <= 0){
           S.sprayCd = 70; S.spray = 26;
           Audio8.S.wind();
-          quip('HE JUST SPRAYS! USE THE BRIDGE!', '#8cbe5a');
+          quip('HE JUST SPRAYS! USE THE BRIDGE!', '#7ab8e8');
         }
       } else if(dan.inv<=0 && dan.star<=0){
         return hurt('SKUNKED!', false, true);
@@ -2231,7 +2231,7 @@ function renderTrain(){
   g.addColorStop(0,'#2f6fd0'); g.addColorStop(0.7,'#79b8e8'); g.addColorStop(1,'#a8dcf0');
   ctx.fillStyle=g; ctx.fillRect(0,0,VIEW_W,VIEW_H);
   // sun with the shades -- identical to every other level's sun
-  const sunX = VIEW_W-180;
+  const sunX = VIEW_W-178;
   ctx.fillStyle='rgba(255,236,150,.35)';
   ctx.beginPath(); ctx.arc(sunX, 58, 40+Math.sin(time*0.02)*3, 0, 7); ctx.fill();
   ctx.fillStyle='#ffe98a';
@@ -3254,6 +3254,7 @@ function stepLevel4(){
           Audio8.S.bossHit();
           if(j.hp <= 0){
             j.dead = true; j.done = true; oz += 15;
+            j.stamps = [];   // no handcuffs left hanging frozen in the air
             killPanel('DEPORTATION DENIED!', 'THE BORDER CZAR IS OUT OF JURISDICTION'); toast('+15 oz', '#3fae2a');
             setTimeout(()=>{ if(state==='play' && kind==='border'){ Audio8.stop(); Audio8.play('canada'); } }, 2600);
             Audio8.S.fanfare();
@@ -4098,7 +4099,7 @@ function drawBg(){
       ctx.fillRect(sxx, syy, tw, tw);
     }
     // moon wearing \u00a2 sunglasses, still bullish after dark
-    const mX = VIEW_W-190 - camX*0.02;
+    const mX = VIEW_W-188 - camX*0.02;
     ctx.fillStyle='rgba(220,228,240,.25)';
     ctx.beginPath(); ctx.arc(mX, 58, 38, 0, 7); ctx.fill();
     ctx.fillStyle='#d9dde4'; ctx.beginPath(); ctx.arc(mX, 58, 24, 0, 7); ctx.fill();
@@ -4112,7 +4113,7 @@ function drawBg(){
     ctx.beginPath(); ctx.arc(mX, 66, 8, 0.3, Math.PI-0.5); ctx.stroke();
   } else {
     // sun wearing \u00a2 sunglasses, permanently bullish
-    const sunX = VIEW_W-180 - camX*0.02;
+    const sunX = VIEW_W-178 - camX*0.02;
     ctx.fillStyle='rgba(255,236,150,.35)';
     ctx.beginPath(); ctx.arc(sunX, 58, 40+Math.sin(time*0.02)*3, 0, 7); ctx.fill();
     ctx.fillStyle='#ffe98a';
@@ -6159,7 +6160,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '5.5';
+const BUILD = '5.6';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
