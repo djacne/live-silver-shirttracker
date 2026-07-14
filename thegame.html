@@ -150,22 +150,19 @@
   #lbList li:nth-child(1)::before{color:#ffd94a;}
   #lbList li:nth-child(2)::before{color:#d7dde6;}
   #lbList li:nth-child(3)::before{color:#c88a3a;}
-  #pauseBtn{position:fixed;z-index:16;
-    top:calc(10px + env(safe-area-inset-top));
-    right:calc(64px + env(safe-area-inset-right));
-    width:42px;height:42px;border-radius:50%;border:2px solid #5a6a8a;
-    background:rgba(20,20,40,.75);cursor:pointer;
+  /* pinned to the exact same row as the mute button on every device, always --
+     same top offset, same size, sitting directly to its left with an even gap.
+     nothing floats into canvas-drawn scenery (the sun, the HUD) this way. */
+  #pauseBtn{position:fixed;z-index:25;
+    top:calc(9.5vh + env(safe-area-inset-top));
+    right:calc(62px + env(safe-area-inset-right));
+    width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
+    background:rgba(20,20,40,.6);cursor:pointer;
     display:flex;align-items:center;justify-content:center;}
   #pauseBtn:active{background:#2b3550;}
   .pauseIcon{display:flex;gap:4px;}
   .pauseIcon::before,.pauseIcon::after{content:'';width:4px;height:15px;background:#d7dde6;
     border-radius:1px;display:block;}
-  /* on phones the top-right corner already carries mute + the pause button crowds the
-     silver readout underneath it -- drop pause below mute instead, out of the way */
-  @media (pointer:coarse){
-    #pauseBtn{top:calc(60px + env(safe-area-inset-top));
-      right:calc(10px + env(safe-area-inset-right));}
-  }
   #updateBar{position:fixed;z-index:60;left:0;right:0;
     bottom:calc(0px + env(safe-area-inset-bottom));
     padding:11px 12px;text-align:center;cursor:pointer;
@@ -221,7 +218,7 @@
   .cbtn:active{background:rgba(255,255,255,.4);}
   #jumpBtn{width:86px;height:86px;background:rgba(63,174,42,.35);border-color:rgba(120,255,90,.6);}
 
-  #muteBtn{position:fixed;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:25;
+  #muteBtn{position:fixed;top:calc(9.5vh + env(safe-area-inset-top));right:10px;z-index:25;
     width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.5);
     background:rgba(20,20,40,.6);color:#fff;font-size:20px;cursor:pointer;}
 
@@ -699,6 +696,9 @@ const touchKeys = {};   // which keys are currently held by touch, and by which 
 
 function bindBtn(id, k){
   const el = document.getElementById(id);
+  const killGesture = e => e.preventDefault();
+  el.addEventListener('touchstart', killGesture, {passive:false});
+  el.addEventListener('touchmove', killGesture, {passive:false});
   const on = e => {
     e.preventDefault();
     const id2 = e.pointerId !== undefined ? e.pointerId : 'm';
@@ -841,7 +841,7 @@ function buildLevel(n){
       mkKaren(1080, 90), mkKaren(2640, 120), mkKaren(3960, 140),
       mkTwitch(1900, 100), mkTwitch(3300, 120),
     ];
-    cams = [975, 2150, 3080, 4200];
+    cams = [1030, 2150, 3080, 4200];
     boss1 = {active:false, dead:false, done:false, x:4230, y:GROUND_Y-52, w:30, h:52,
              vx:0, vy:0, hp:3, hurtT:0, jumpT:110, deadT:0};
   } else if(kind === 'skunk'){
@@ -933,7 +933,7 @@ function buildLevel(n){
       [1180, GROUND_Y, 700, 60],
       [1960, GROUND_Y, 760, 60],
       [2800, GROUND_Y, 1400, 60],
-      [420, 240, 96, 20], [580, 190, 96, 20],
+      [480, 240, 96, 20], [640, 190, 96, 20],
       [1260, 235, 110, 20], [1430, 185, 110, 20],
       [2050, 240, 96, 20], [2210, 190, 96, 20],
       [2900, 235, 110, 20], [3080, 185, 110, 20], [3400, 235, 96, 20],
@@ -4122,7 +4122,7 @@ function drawLandmarks(){
     drawWaterTower(120);
     drawPropertySign(745);
   } else if(kind==='skunk'){
-    drawAdBillboard(1040);
+    drawAdBillboard(940);
   } else if(kind==='border'){
     for(const txx of [250, 876, 1480, 2008, 2560, 2928, 3244, 3760]) drawPine(txx);
     drawToronto();
@@ -4352,7 +4352,7 @@ function drawCrimeSign(sx0){
   const sx = px(sx0);
   if(sx < -220 || sx > VIEW_W+40) return;
   const gy = GROUND_Y;
-  const w = 210, h = 96, py0 = gy - 210;   // widened so the text has real room, clear of the gauge
+  const w = 210, h = 120, py0 = gy - 234;   // taller, so there's room for a second joke below
 
   ctx.fillStyle = '#7a5a34';
   ctx.fillRect(sx+w/2-5, py0+h, 10, gy-(py0+h));
@@ -4363,31 +4363,74 @@ function drawCrimeSign(sx0){
   ctx.strokeRect(sx, py0, w, h);
 
   // the dial: yellow at the low end ramping straight to red at the high end,
-  // needle buried in the red because Trooper Dan has seen some things
-  const gx = sx + 46, gy2 = py0 + 46, r = 26;
+  // needle buried in the red
+  const gx = sx + 46, gy2 = py0 + 42, r = 26;
   ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.arc(gx, gy2, r, Math.PI, 0); ctx.stroke();
   const dialGrad = ctx.createLinearGradient(gx-r, 0, gx+r, 0);
-  dialGrad.addColorStop(0, '#f4d34a');   // low, left
-  dialGrad.addColorStop(1, '#c0392b');   // high, right -- where the needle sits
+  dialGrad.addColorStop(0, '#f4d34a');
+  dialGrad.addColorStop(1, '#c0392b');
   ctx.strokeStyle = dialGrad; ctx.lineWidth = 8;
   ctx.beginPath(); ctx.arc(gx, gy2, r-6, Math.PI, 0); ctx.stroke();
   ctx.save();
   ctx.translate(gx, gy2);
-  ctx.rotate(-0.22);                              // needle buried past max, into the red
+  ctx.rotate(-0.22);
   ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r-2, 0); ctx.stroke();
   ctx.restore();
   ctx.fillStyle = '#1b1b2f';
   ctx.beginPath(); ctx.arc(gx, gy2, 3, 0, 7); ctx.fill();
 
-  // text sits well clear of the gauge, in its own column to the right
+  // text, clear of the gauge in its own column
   const textX = gx + r + 24;
   ctx.textAlign = 'left'; ctx.fillStyle = '#1b1b2f';
   ctx.font = 'bold 14px Courier New';
-  ctx.fillText('CRIME RATE:', textX, py0+34);
+  ctx.fillText('CRIME RATE:', textX, py0+30);
   ctx.font = 'bold 26px Courier New'; ctx.fillStyle = '#c0392b';
-  ctx.fillText('YES', textX, py0+62);
+  ctx.fillText('YES', textX, py0+58);
+
+  // a little burglar tucked in the remaining right-hand space -- ski mask, striped
+  // shirt, swag bag over the shoulder, tiptoeing off the edge of the sign
+  ctx.save();
+  ctx.translate(sx + w - 34, py0 + 46);
+  ctx.fillStyle = '#2b2b38';
+  ctx.beginPath(); ctx.ellipse(0, 0, 8, 9, 0, 0, 7); ctx.fill();      // ski-masked head
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(-6, -2, 12, 3);                                        // eye slit
+  ctx.fillStyle = '#3a4d85';
+  ctx.fillRect(-9, 8, 18, 15);                                        // striped shirt
+  ctx.strokeStyle = '#e8e8ec'; ctx.lineWidth = 1.6;
+  for(const ly of [11,15,19]){ ctx.beginPath(); ctx.moveTo(-9,ly); ctx.lineTo(9,ly); ctx.stroke(); }
+  ctx.fillStyle = '#8a1c14';                                           // the swag bag
+  ctx.beginPath(); ctx.ellipse(11, 14, 6, 7, 0.3, 0, 7); ctx.fill();
+  ctx.fillStyle = '#f4d34a'; ctx.font='bold 8px Courier New'; ctx.textAlign='center';
+  ctx.fillText('$', 11, 17);
+  ctx.strokeStyle = '#8a1c14'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(6, 6); ctx.lineTo(14, 9); ctx.stroke();  // the bag strap
+  ctx.restore();
+
+  // hazard tape running along the bottom, because SOMEBODY should rope this off
+  const tapeY = py0 + h - 22, tapeH = 16;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(sx, tapeY, w, tapeH); ctx.clip();
+  ctx.fillStyle = '#1b1b2f'; ctx.fillRect(sx, tapeY, w, tapeH);
+  ctx.fillStyle = '#f4d34a';
+  for(let i = -tapeH; i < w + tapeH; i += 16){
+    ctx.save();
+    ctx.translate(sx + i, tapeY + tapeH/2);
+    ctx.rotate(-0.5);
+    ctx.fillRect(-6, -tapeH, 12, tapeH*3);
+    ctx.restore();
+  }
+  ctx.restore();
+  ctx.fillStyle = '#1b1b2f'; ctx.font = 'bold 9px Courier New'; ctx.textAlign = 'center';
+  // punched through the tape, the running gag from the yard finally catches up with the street
+  ctx.fillStyle = 'rgba(20,20,30,.0)';   // (kept for future use; tape carries the joke alone)
+
+  // the second joke: a running tally, deadpan, right under the tape
+  ctx.textAlign = 'center'; ctx.fillStyle = '#5a4a2e';
+  ctx.font = 'bold 10px Courier New';
+  ctx.fillText('DAYS SINCE LAST SHOOTING: 0', sx+w/2, py0+h-4);
 }
 
 function drawSign(sx0, line1, line2){
@@ -6025,7 +6068,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '4.5';
+const BUILD = '4.7';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
