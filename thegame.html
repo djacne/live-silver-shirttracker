@@ -531,6 +531,10 @@ const BRIDGE_Y = 282, WATER_L = 2500, WATER_R = 3050;
 
 function buildLevel(n){
   level = n; kind = KINDS[n]; pops = []; floatTexts = []; checkpointX = 60;
+  camX = 0;
+  dan.x = 60; dan.y = GROUND_Y - dan.h; dan.vx = 0; dan.vy = 0;
+  dan.inv = 0; dan.boost = 0; dan.star = 0; dan.swing = 0; dan.swingCd = 0; dan.face = 1;
+  bursts = []; quipMsg = null; bannerMsg = null; streak = 0; streakShow = 0;
   if(kind === 'silver'){
     LEVEL_W = 4600; FLAG_X = 4430;
     plats = [
@@ -808,7 +812,7 @@ const STRETCHES = [
   {n:'CALF STRETCH',     reps:4},
   {n:'HIP FLEXOR',       reps:4},
   {n:'GROIN STRETCH',    reps:5},
-  {n:'THE FULL SEND',    reps:5},
+  {n:'THE FULL SEND',    reps:7},
 ];
 const SAFETY_SLOGANS = ['SAFETY IS A CHOICE!', 'STRETCH TO SUCCESS!', 'REPORT ALL NEAR-MISSES!',
   'A LIMBER CREW IS A SAFE CREW!', 'ZERO IS ATTAINABLE!', 'THINK. PLAN. STRETCH.'];
@@ -846,7 +850,30 @@ let combatMsg = null;    // {text, t, color}
 let bannerMsg = null;    // {text, t, color}
 let streak = 0, streakT = 0, streakShow = 0;
 
-const COMIC_FONT = '"Impact","Arial Black","Haettenschweiler",sans-serif';
+// Impact/Arial Black don't exist on iOS or Android, so the stack silently fell back to a
+// thin sans. We use a normal heavy stack and fatten the glyphs ourselves instead, which
+// looks identical on every platform.
+const COMIC_FONT = '900 %SIZE%px "Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif';
+const comicFont = size => COMIC_FONT.replace('%SIZE%', size);
+
+// draw chunky comic lettering: dark halo, fattened body, then the fill
+function comicText(txt, x, y, size, fill, outline){
+  ctx.font = comicFont(size);
+  ctx.textAlign = 'center';
+  ctx.lineJoin = 'round';
+  ctx.miterLimit = 2;
+  // 1. thick dark outline
+  ctx.strokeStyle = outline || '#12121c';
+  ctx.lineWidth = Math.max(5, size * 0.34);
+  ctx.strokeText(txt, x, y);
+  // 2. stroke in the fill colour to fatten the letterforms from the inside
+  ctx.strokeStyle = fill;
+  ctx.lineWidth = Math.max(2, size * 0.13);
+  ctx.strokeText(txt, x, y);
+  // 3. the fill itself
+  ctx.fillStyle = fill;
+  ctx.fillText(txt, x, y);
+}
 // tiers: 0 = normal hit, 1 = boss exchange, 2 = huge
 function burst(text, wx, wy, color, tier){
   if(bossIntro) return;
@@ -891,28 +918,27 @@ function drawStarburst(w, h, spikes, seed, fill, edge, lw){
 }
 
 function drawBursts(){
-  const LIFE = 92;                      // ~1.5s: snap, hold, pop
+  const LIFE = 96;
   for(let i=bursts.length-1;i>=0;i--){
     const b = bursts[i];
     b.t++;
     if(b.t > LIFE){ bursts.splice(i,1); continue; }
     const k = b.t;
 
-    // snap in with an overshoot, hold, then pop out
     let sc;
-    if(k < 5)        sc = 0.35 + k * 0.19;      // slam
-    else if(k < 9)   sc = 1.25 - (k-5) * 0.0625; // overshoot settling
-    else if(k > 80)  sc = 1 + (k-80) * 0.09;     // pop out
+    if(k < 5)        sc = 0.35 + k * 0.19;
+    else if(k < 9)   sc = 1.25 - (k-5) * 0.0625;
+    else if(k > 84)  sc = 1 + (k-84) * 0.09;
     else             sc = 1;
-    const a = k > 80 ? 1 - (k-80)/12 : 1;
-    const wobble = k > 9 && k < 80 ? Math.sin(k * 0.18 + b.seed) * 0.025 : 0;
+    const a = k > 84 ? 1 - (k-84)/12 : 1;
+    const wobble = k > 9 && k < 84 ? Math.sin(k * 0.18 + b.seed) * 0.022 : 0;
     const rise = Math.min(10, k * 0.28);
 
     const x = b.screen ? b.wx : px(b.wx);
     const y = b.wy - rise;
-    if(x < -140 || x > VIEW_W + 140) continue;
+    if(x < -150 || x > VIEW_W + 150) continue;
 
-    const size = b.tier === 2 ? 26 : b.tier === 1 ? 21 : 16;
+    const size = b.tier === 2 ? 26 : b.tier === 1 ? 22 : 18;
 
     ctx.save();
     ctx.globalAlpha = Math.max(0, a);
@@ -920,16 +946,16 @@ function drawBursts(){
     ctx.rotate(b.rot + wobble);
     ctx.scale(sc, sc);
 
-    ctx.font = '' + size + 'px ' + COMIC_FONT;
+    ctx.font = comicFont(size);
     ctx.textAlign = 'center';
     const tw = ctx.measureText(b.text).width;
-    const w = tw * 0.60 + 16;
-    const h = size * 0.92 + 10;
+    const w = tw * 0.58 + 18;
+    const h = size * 0.95 + 11;
 
-    // radiating speed lines shooting out of the impact
+    // speed lines on impact
     if(k < 34){
       const reach = 1 + k * 0.05;
-      ctx.strokeStyle = 'rgba(20,20,30,' + (0.5 - k*0.012) + ')';
+      ctx.strokeStyle = 'rgba(20,20,30,' + (0.45 - k*0.011) + ')';
       ctx.lineWidth = 2.5;
       for(let s=0; s<10; s++){
         const ang = (s/10) * Math.PI * 2 + b.seed;
@@ -940,41 +966,39 @@ function drawBursts(){
       }
     }
 
-    // layer 1: the big colored star, black outlined
-    drawStarburst(w * 1.20, h * 1.32, b.spikes, b.seed, b.color, '#12121c', 4);
-    // layer 2: the white star inset
-    drawStarburst(w * 0.98, h * 1.06, b.spikes, b.seed + 0.5, '#fdfaf0', null);
-
-    // halftone dots, clipped inside the white star
+    // the colour-coded outer star: green = good, red = damage, gold = boss/streak
+    drawStarburst(w * 1.22, h * 1.34, b.spikes, b.seed, b.color, '#12121c', 4.5);
+    // halftone, but ONLY in the outer ring -- never under the letters
     ctx.save();
     ctx.beginPath();
     const pts = b.spikes * 2;
     for(let p=0;p<pts;p++){
       const ang = (p/pts) * Math.PI * 2;
-      const jag = (p % 2 === 0) ? 1 : 0.52;
-      const xx = Math.cos(ang) * w * 0.98 * jag, yy = Math.sin(ang) * h * 1.06 * jag;
-      p === 0 ? ctx.moveTo(xx, yy) : ctx.lineTo(xx, yy);
+      const jag = (p % 2 === 0) ? 1.22 : 0.64;
+      ctx.lineTo(Math.cos(ang) * w * jag, Math.sin(ang) * h * (jag * 1.1));
     }
-    ctx.closePath(); ctx.clip();
-    ctx.fillStyle = 'rgba(20,20,30,.13)';
-    for(let dy=-h; dy<h; dy+=5){
-      for(let dx=-w; dx<w; dx+=5){
+    ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = 'rgba(20,20,30,.16)';
+    for(let dy=-h*1.4; dy<h*1.4; dy+=5)
+      for(let dx=-w*1.3; dx<w*1.3; dx+=5){
         ctx.beginPath(); ctx.arc(dx, dy, 1.1, 0, 7); ctx.fill();
       }
-    }
     ctx.restore();
 
-    // the lettering: hard offset shadow, thick black outline, colored fill
-    ctx.lineJoin = 'round';
-    ctx.fillStyle = 'rgba(20,20,30,.55)';
-    ctx.fillText(b.text, 2.5, size*0.35 + 2.5);            // drop shadow
-    ctx.strokeStyle = '#12121c'; ctx.lineWidth = 5;
-    ctx.strokeText(b.text, 0, size*0.35);
-    ctx.fillStyle = b.color === '#3fae2a' ? '#1f7a14' : '#b3202a';
-    ctx.fillText(b.text, 0, size*0.35);
+    // the cream field the letters sit on -- constant, so readability never changes
+    drawStarburst(w * 0.99, h * 1.07, b.spikes, b.seed + 0.5, '#fdf3d8', '#12121c', 2);
+
+    // BLACK LETTERS ON CREAM: the highest-contrast pairing there is
+    ctx.fillStyle = 'rgba(20,20,30,.35)';
+    ctx.font = comicFont(size);
+    ctx.textAlign = 'center';
+    ctx.fillText(b.text, 2, size*0.34 + 2);                    // drop shadow
+    comicText(b.text, 0, size*0.34, size, '#12121c', '#fdf3d8');  // cream halo, black body
     ctx.restore();
   }
 }
+
 function quip(text, color){                    // Dan's voice: centered
   if(bossIntro) return;
   quipMsg = {text, t:0, color: color || '#ffd94a'};
@@ -1061,13 +1085,7 @@ function drawChannels(){
     ctx.translate(VIEW_W/2, 74);
     ctx.scale(pop, pop);
     ctx.transform(1, 0, -0.16, 1, 0, 0);
-    ctx.font = (tier+4) + 'px ' + COMIC_FONT;
-    ctx.textAlign = 'center';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#1b1b2f'; ctx.lineWidth = 6;
-    ctx.strokeText(streakLabel(), 0, 0);
-    ctx.fillStyle = (k>>2)%2===0 ? '#fff' : '#ffd94a';
-    ctx.fillText(streakLabel(), 0, 0);
+    comicText(streakLabel(), 0, 0, tier + 6, (k>>2)%2===0 ? '#fff' : '#ffd94a', '#12121c');
     ctx.restore();
   }
 
@@ -1343,7 +1361,7 @@ function stepBoss1(){
         combat(b.hp===2 ? 'PRIVATE PROPERTY DEFENDED!' : 'THE MEANS REMAIN UNSEIZED!', b.x+15, b.y-14, '#3fae2a');
       }
     } else if(dan.inv<=0 && dan.star<=0){
-      return hurt(pick(BOSS1_HITS));
+      return hurt(pick(BOSS1_HITS), false, true);
     }
   }
 }
@@ -1373,7 +1391,7 @@ function stepLevel2(){
           quip('HE JUST SPRAYS! USE THE BRIDGE!', '#8cbe5a');
         }
       } else if(dan.inv<=0 && dan.star<=0){
-        return hurt('SKUNKED!');
+        return hurt('SKUNKED!', false, true);
       }
     }
   }
@@ -2039,12 +2057,15 @@ function bonusSeq(reps){
   for(let i=0;i<reps;i++) s.push(KEYNAMES[(Math.random()*KEYNAMES.length)|0]);
   return s;
 }
+const FULL_SEND = 12;
 function bonusWindow(idx){
   // roomy for the first stretch or six, then the wheels come off
-  if(idx < 3)  return 150;              // 2.5s. plenty.
+  if(idx === FULL_SEND) return 22;      // nobody has ever completed the full send
+  if(idx === 11)        return 54;      // the groin stretch: brutal, but honest work
+  if(idx < 3)  return 150;
   if(idx < 6)  return 130 - (idx-3)*8;
   if(idx < 9)  return 106 - (idx-6)*10;
-  return Math.max(46, 76 - (idx-9) * 6);
+  return Math.max(50, 78 - (idx-9) * 7);
 }
 function bonusPay(idx){
   return 6 + Math.floor(idx * 1.8);
@@ -2059,7 +2080,7 @@ function stepBonus(){
 
   if(S.phase === 'done' || S.phase === 'fail'){
     S.poseT++;
-    if(S.poseT > 150) return levelClear();
+    if(S.poseT > 70 && (introGo || S.poseT > 420)){ introGo = false; return levelClear(); }
     return;
   }
 
@@ -2143,6 +2164,7 @@ function stepBonus(){
 
 function bonusTweak(){
   const S = BS;
+  S.fullSend = (S.idx === FULL_SEND);
   S.phase = 'fail'; S.poseT = 0; S.days = 0; S.tweak = 1;
   Audio8.stop();
   Audio8.S.bonk(); Audio8.S.sadTrombone ? Audio8.S.sadTrombone() : Audio8.S.hurt();
@@ -2178,81 +2200,174 @@ function drawCrewGuy(x, y, s, off, tint){
   ctx.restore();
 }
 
-// ---- Dan, stretching (or not) ----
+// ---- Dan, actually doing the stretch he was asked to do ----
 function drawBonusDan(){
   const S = BS;
   const cx = VIEW_W/2 - 40, cy = 150;
-  const s = 2.6;
-  ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
+  const scale = 2.6;
   const performing = S.phase === 'perform';
-  const p = performing ? Math.sin(S.poseT * 0.1) : 0;
-  const idle = Math.sin(time * 0.05) * 1.2;
   const failed = S.phase === 'fail';
+  const p = performing ? Math.sin(S.poseT * 0.1) : 0;          // -1..1 slow oscillation
+  const pp = performing ? (1 - Math.cos(S.poseT * 0.1)) / 2 : 0; // 0..1 ease
+  const idle = Math.sin(time * 0.05) * 1.2;
+  const pose = performing ? S.pose : -1;
 
-  // legs
-  ctx.fillStyle='#b99a5f';
-  if(performing && (S.pose === 8 || S.pose === 9)){        // hamstring / calf: lunge
-    ctx.fillRect(2, 28, 8, 12); ctx.fillRect(16, 28, 8, 12 + p*3);
-  } else {
-    ctx.fillRect(4, 28, 8, 12); ctx.fillRect(14, 28, 8, 12);
-  }
-  ctx.fillStyle='#6b4423';
-  ctx.fillRect(3, 39, 10, 4); ctx.fillRect(13, 39, 10, 4);
-  // torso + hoodie
-  ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14 + idle*0.2, 22, 16);
-  ctx.fillStyle='#b99a5f'; ctx.fillRect(6, 20, 14, 10);
-  // the vest
-  ctx.fillStyle='#f26a1b'; ctx.fillRect(3, 14 + idle*0.2, 20, 15);
-  ctx.fillStyle='#2e3d6b'; ctx.fillRect(11.5, 14 + idle*0.2, 3, 15);
-  ctx.fillStyle='#e8e8ec'; ctx.fillRect(3, 19 + idle*0.2, 20, 2.2); ctx.fillRect(3, 24 + idle*0.2, 20, 2.2);
-
-  // arms: pose-dependent
-  const armL = (a, len) => { ctx.save(); ctx.translate(3, 17); ctx.rotate(a); ctx.fillStyle='#f26a1b'; ctx.fillRect(-3.4, 0, 4, len); ctx.fillStyle='#e8b68a'; ctx.fillRect(-3.4, len, 4, 3.4); ctx.restore(); };
-  const armR = (a, len) => { ctx.save(); ctx.translate(23, 17); ctx.rotate(a); ctx.fillStyle='#f26a1b'; ctx.fillRect(-0.6, 0, 4, len); ctx.fillStyle='#e8b68a'; ctx.fillRect(-0.6, len, 4, 3.4); ctx.restore(); };
+  // --- pose parameters ---
+  let torsoLean = 0, torsoTwist = 1, torsoDip = 0, headRot = 0, headDip = 0;
+  let legL = 0, legR = 0, stanceW = 0, crouch = 0;
+  let aL = 0.3, aR = -0.3, lenL = 11, lenR = 11;   // arm angle + length
+  let handsTogether = false, splits = 0;
 
   if(failed){
-    armL(2.4, 8); armR(-2.4, 8);                            // both hands to the lower back
-  } else if(!performing){
-    armL(0.3 + idle*0.03, 11); armR(-0.3 - idle*0.03, 11);
-  } else if(S.pose === 2 || S.pose === 3){                  // arm cross / back hug
-    armL(1.5 + p*0.2, 12); armR(-1.5 - p*0.2, 12);
-  } else if(S.pose === 4 || S.pose === 11){                 // overhead reach / full send
-    armL(-0.15 + p*0.1, 14); armR(0.15 - p*0.1, 14);
-  } else if(S.pose === 5 || S.pose === 6){                  // side bend / twist
-    armL(-0.4, 13); armR(1.2 + p*0.3, 10);
-  } else if(S.pose === 7){                                  // wrist circles
-    armL(1.1 + p*0.5, 9); armR(-1.1 - p*0.5, 9);
-  } else {
-    armL(0.9 + p*0.4, 11); armR(-0.9 - p*0.4, 11);
+    torsoLean = 0.24; torsoDip = 5; headRot = 0.3; headDip = 3;
+    aL = 2.5; aR = -2.5; lenL = 8; lenR = 8; crouch = 3;
+  } else if(pose === 0){          // NECK ROLLS
+    headRot = Math.sin(S.poseT * 0.14) * 0.55;
+    headDip = Math.abs(Math.sin(S.poseT * 0.14)) * 2;
+    aL = 0.25; aR = -0.25;
+  } else if(pose === 1){          // SHOULDER ROLLS
+    const r = S.poseT * 0.16;
+    aL = 0.4 + Math.sin(r) * 0.7; aR = -0.4 - Math.sin(r + 1) * 0.7;
+    lenL = 9; lenR = 9;
+    torsoDip = Math.sin(r) * 1.5;
+  } else if(pose === 2){          // ARM CROSS
+    aL = 1.55 + p * 0.12; lenL = 13;
+    aR = -1.1 - p * 0.1;  lenR = 9;
+  } else if(pose === 3){          // UPPER BACK HUG
+    aL = 1.75; aR = -1.75; lenL = 13; lenR = 13;
+    handsTogether = true;
+    torsoDip = 1 + pp * 1.5;
+  } else if(pose === 4){          // OVERHEAD REACH
+    aL = -0.12 - pp * 0.06; aR = 0.12 + pp * 0.06;
+    lenL = 15; lenR = 15;
+    torsoDip = -2 - pp * 2;
+  } else if(pose === 5){          // SIDE BEND
+    torsoLean = 0.3 * p;
+    aL = -0.3 + p * 0.5; lenL = 15;
+    aR = 1.4; lenR = 8;
+    headRot = 0.2 * p;
+  } else if(pose === 6){          // TRUNK TWIST
+    torsoTwist = Math.cos(S.poseT * 0.1) * 0.6 + 0.4;   // squash to fake rotation
+    aL = 1.35; aR = -1.35; lenL = 13; lenR = 13;
+    headRot = p * 0.18;
+  } else if(pose === 7){          // WRIST CIRCLES
+    const r = S.poseT * 0.3;
+    aL = 1.35 + Math.sin(r) * 0.22; aR = -1.35 - Math.cos(r) * 0.22;
+    lenL = 11; lenR = 11;
+  } else if(pose === 8){          // HAMSTRING
+    torsoLean = 0.75 + pp * 0.25;   // fold forward at the waist
+    aL = -0.5; aR = -0.7; lenL = 15; lenR = 15;
+    headRot = 0.3;
+    legL = 0; legR = 0;
+  } else if(pose === 9){          // CALF STRETCH
+    stanceW = 7 + pp * 3;           // back leg extended
+    aL = -0.9; aR = -1.0; lenL = 14; lenR = 14;
+    torsoLean = 0.28;
+  } else if(pose === 10){         // HIP FLEXOR
+    stanceW = 8; crouch = 6 + pp * 4;   // deep lunge
+    aL = 1.0; aR = -1.0; lenL = 10; lenR = 10;
+  } else if(pose === 11){         // GROIN STRETCH
+    stanceW = 12 + pp * 3; crouch = 9 + pp * 3;   // wide squat, no dignity
+    aL = 1.5; aR = -1.5; lenL = 11; lenR = 11;
+    torsoDip = 3;
+  } else if(pose === 12){         // THE FULL SEND
+    splits = 14 + pp * 8;
+    torsoLean = -0.2;
+    aL = -0.4; aR = 0.4; lenL = 16; lenR = 16;
+    torsoDip = 12;
   }
 
-  // head: tilts for neck rolls, hangs in shame on failure
   ctx.save();
-  if(failed) ctx.rotate(0.22);
-  else if(performing && S.pose === 0) ctx.rotate(Math.sin(S.poseT*0.12) * 0.4);
-  else if(performing && S.pose === 5) ctx.rotate(p * 0.25);
-  ctx.translate(0, idle*0.2);
+  ctx.translate(cx, cy + crouch);
+  ctx.scale(scale, scale);
+
+  const hipY = 28 + torsoDip;
+
+  // === legs ===
+  ctx.fillStyle = '#b99a5f';
+  if(splits > 0){
+    // he is doing the splits. he should not be doing the splits.
+    ctx.save(); ctx.translate(9, hipY); ctx.rotate(1.15);
+    ctx.fillRect(0, 0, 8, 14 + splits); ctx.restore();
+    ctx.save(); ctx.translate(17, hipY); ctx.rotate(-1.15);
+    ctx.fillRect(-8, 0, 8, 14 + splits); ctx.restore();
+    ctx.fillStyle = '#6b4423';
+    ctx.fillRect(-10 - splits*0.6, hipY + 10, 11, 4);
+    ctx.fillRect(25 + splits*0.6, hipY + 10, 11, 4);
+  } else if(stanceW > 0){
+    // lunge / wide stance
+    ctx.save(); ctx.translate(9, hipY); ctx.rotate(-0.05 * stanceW);
+    ctx.fillRect(0, 0, 8, 13); ctx.restore();
+    ctx.save(); ctx.translate(17, hipY); ctx.rotate(0.05 * stanceW);
+    ctx.fillRect(-8, 0, 8, 13); ctx.restore();
+    ctx.fillStyle = '#6b4423';
+    ctx.fillRect(3 - stanceW, hipY + 12, 10, 4);
+    ctx.fillRect(13 + stanceW, hipY + 12, 10, 4);
+  } else {
+    ctx.fillRect(4, hipY, 8, 12 + legL);
+    ctx.fillRect(14, hipY, 8, 12 + legR);
+    ctx.fillStyle = '#6b4423';
+    ctx.fillRect(3, hipY + 11 + legL, 10, 4);
+    ctx.fillRect(13, hipY + 11 + legR, 10, 4);
+  }
+
+  // === torso (leans and twists with the stretch) ===
+  ctx.save();
+  ctx.translate(13, hipY);
+  ctx.rotate(torsoLean);
+  ctx.scale(torsoTwist, 1);
+  ctx.translate(-13, -hipY);
+
+  const ty = 14 + torsoDip + idle * 0.2;
+  ctx.fillStyle = '#2e3d6b'; ctx.fillRect(2, ty, 22, 16);
+  ctx.fillStyle = '#b99a5f'; ctx.fillRect(6, ty + 6, 14, 10);
+  ctx.fillStyle = '#f26a1b'; ctx.fillRect(3, ty, 20, 15);            // the vest
+  ctx.fillStyle = '#2e3d6b'; ctx.fillRect(11.5, ty, 3, 15);
+  ctx.fillStyle = '#e8e8ec';
+  ctx.fillRect(3, ty + 5, 20, 2.2); ctx.fillRect(3, ty + 10, 20, 2.2);
+
+  // === arms ===
+  const arm = (x0, ang, len) => {
+    ctx.save(); ctx.translate(x0, ty + 3); ctx.rotate(ang);
+    ctx.fillStyle = '#f26a1b'; ctx.fillRect(-2, 0, 4.2, len);
+    ctx.fillStyle = '#e8b68a'; ctx.fillRect(-2, len, 4.2, 3.6);
+    ctx.restore();
+  };
+  arm(3, aL, lenL);
+  arm(23, aR, lenR);
+  if(handsTogether){                        // the self-hug, wrapping around
+    ctx.fillStyle = '#e8b68a';
+    ctx.fillRect(8, ty + 12, 10, 3.6);
+  }
+
+  // === head ===
+  ctx.save();
+  ctx.translate(0, headDip);
+  ctx.translate(13, ty - 2); ctx.rotate(headRot); ctx.translate(-13, -(ty - 2));
   danHead();
   ctx.restore();
+  ctx.restore();
 
-  // sweat beads while working
+  // sweat while he works
   if(performing || S.phase === 'input'){
     ctx.fillStyle = 'rgba(140,200,255,.75)';
     const sw = (time % 40) / 40;
-    ctx.fillRect(26, 4 + sw*10, 2, 3);
-    ctx.fillRect(-1, 6 + ((time+20) % 40)/40 * 10, 2, 3);
+    ctx.fillRect(27, 2 + sw * 10, 2, 3);
+    ctx.fillRect(-2, 4 + ((time + 20) % 40) / 40 * 10, 2, 3);
   }
   ctx.restore();
 
-  // the tweak: a red pop right at the lower back
-  if(failed && S.poseT < 40){
-    const a = 1 - S.poseT/40;
-    ctx.strokeStyle = 'rgba(255,60,50,' + a + ')'; ctx.lineWidth = 3;
-    for(let i=0;i<6;i++){
-      const ang = i * 1.05;
+  // the tweak, right in the lower back
+  if(failed && S.poseT < 46){
+    const a = 1 - S.poseT / 46;
+    ctx.strokeStyle = 'rgba(255,60,50,' + a + ')';
+    ctx.lineWidth = 3.5;
+    for(let i = 0; i < 7; i++){
+      const ang = i * 0.9 + 0.3;
+      const r0 = 14, r1 = 26 + S.poseT * 0.5;
       ctx.beginPath();
-      ctx.moveTo(cx + 52 + Math.cos(ang)*14, cy + 70 + Math.sin(ang)*14);
-      ctx.lineTo(cx + 52 + Math.cos(ang)*(24 + S.poseT*0.4), cy + 70 + Math.sin(ang)*(24 + S.poseT*0.4));
+      ctx.moveTo(cx + 50 + Math.cos(ang) * r0, cy + 78 + Math.sin(ang) * r0);
+      ctx.lineTo(cx + 50 + Math.cos(ang) * r1, cy + 78 + Math.sin(ang) * r1);
       ctx.stroke();
     }
   }
@@ -2387,8 +2502,13 @@ function renderBonus(){
     ctx.strokeText(st.n, 0, 0);
     ctx.fillStyle='#fff'; ctx.fillText(st.n, 0, 0);
     ctx.restore();
-    ctx.fillStyle='#5a4a2e'; ctx.font='bold 10px Courier New';
-    ctx.fillText(SAFETY_SLOGANS[S.slogan], VIEW_W/2, 292);
+    if(S.idx === FULL_SEND){
+      ctx.fillStyle='#c0392b'; ctx.font='bold 12px Courier New';
+      ctx.fillText('DAN. DO NOT.', VIEW_W/2, 292);
+    } else {
+      ctx.fillStyle='#5a4a2e'; ctx.font='bold 10px Courier New';
+      ctx.fillText(SAFETY_SLOGANS[S.slogan], VIEW_W/2, 292);
+    }
   }
 
   if(S.phase === 'input'){
@@ -2442,50 +2562,54 @@ function renderBonus(){
     ctx.translate(VIEW_W/2, 272);
     ctx.scale(pop, pop);
     ctx.rotate(Math.sin(S.poseT*0.07)*0.03);
-    ctx.font = '42px ' + COMIC_FONT;
-    ctx.textAlign='center'; ctx.lineJoin='round';
+    ctx.font = comicFont(42); ctx.textAlign='center';
     ctx.fillStyle='rgba(20,20,30,.5)'; ctx.fillText('TWEAKED IT!', 4, 4);
-    ctx.strokeStyle='#12121c'; ctx.lineWidth=9; ctx.strokeText('TWEAKED IT!', 0, 0);
-    ctx.fillStyle = (time>>3)%2===0 ? '#ff2b1c' : '#ffd94a';
-    ctx.fillText('TWEAKED IT!', 0, 0);
+    comicText('TWEAKED IT!', 0, 0, 42, (time>>3)%2===0 ? '#ff2b1c' : '#ffd94a', '#12121c');
     ctx.restore();
     // the payout, big and readable
-    ctx.font = '26px ' + COMIC_FONT;
+    ctx.font = comicFont(26);
     ctx.textAlign='center'; ctx.lineJoin='round';
     ctx.strokeStyle='#12121c'; ctx.lineWidth=7;
     ctx.strokeText(S.gained + ' oz EARNED', VIEW_W/2, 310);
     ctx.fillStyle='#4dff4d';
     ctx.fillText(S.gained + ' oz EARNED', VIEW_W/2, 310);
     // and the joke, small, underneath
-    ctx.font = '13px ' + COMIC_FONT;
+    ctx.font = comicFont(13);
     ctx.strokeStyle='#12121c'; ctx.lineWidth=4;
-    ctx.strokeText('FILE AN INJURY REPORT WITH TRAINMASTER LAUER', VIEW_W/2, 330);
+    const joke = S.fullSend
+      ? 'NOBODY SENDS IT FULLY. NOBODY.'
+      : 'FILE AN INJURY REPORT WITH TRAINMASTER LAUER';
+    ctx.strokeText(joke, VIEW_W/2, 330);
     ctx.fillStyle='#fdf6e3';
-    ctx.fillText('FILE AN INJURY REPORT WITH TRAINMASTER LAUER', VIEW_W/2, 330);
+    ctx.fillText(joke, VIEW_W/2, 330);
   }
   if(S.phase === 'done'){
     const pop = S.poseT < 9 ? 2.3 - S.poseT*0.145 : 1 + Math.sin(S.poseT*0.09)*0.03;
     ctx.save();
     ctx.translate(VIEW_W/2, 272);
     ctx.scale(pop, pop);
-    ctx.font = '42px ' + COMIC_FONT;
-    ctx.textAlign='center'; ctx.lineJoin='round';
+    ctx.font = comicFont(42); ctx.textAlign='center';
     ctx.fillStyle='rgba(20,20,30,.5)'; ctx.fillText('GET TO WORK!', 4, 4);
-    ctx.strokeStyle='#12121c'; ctx.lineWidth=9; ctx.strokeText('GET TO WORK!', 0, 0);
-    ctx.fillStyle = (time>>3)%2===0 ? '#4dff4d' : '#ffd94a';
-    ctx.fillText('GET TO WORK!', 0, 0);
+    comicText('GET TO WORK!', 0, 0, 42, (time>>3)%2===0 ? '#4dff4d' : '#ffd94a', '#12121c');
     ctx.restore();
-    ctx.font = '26px ' + COMIC_FONT;
+    ctx.font = comicFont(26);
     ctx.textAlign='center'; ctx.lineJoin='round';
     ctx.strokeStyle='#12121c'; ctx.lineWidth=7;
     ctx.strokeText(S.gained + ' oz EARNED', VIEW_W/2, 310);
     ctx.fillStyle='#4dff4d';
     ctx.fillText(S.gained + ' oz EARNED', VIEW_W/2, 310);
-    ctx.font = '13px ' + COMIC_FONT;
+    ctx.font = comicFont(13);
     ctx.strokeStyle='#12121c'; ctx.lineWidth=4;
     ctx.strokeText('NOBODY GOT HURT. NOBODY EVER DOES.', VIEW_W/2, 330);
     ctx.fillStyle='#fdf6e3';
     ctx.fillText('NOBODY GOT HURT. NOBODY EVER DOES.', VIEW_W/2, 330);
+  }
+
+  if((S.phase === 'fail' || S.phase === 'done') && S.poseT > 70 && (time>>4)%2===0){
+    ctx.font = comicFont(13);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffd94a';
+    ctx.fillText('TAP TO CONTINUE', VIEW_W/2, VIEW_H - 22);
   }
 
   drawChannels();
@@ -2570,7 +2694,7 @@ function stepLevel4(){
             combat(j.hp===2 ? 'BADGE DENTED!' : 'JURISDICTION LOST!', j.x+16, j.y-14, '#3fae2a');
           }
         } else if(dan.inv<=0 && dan.star<=0){
-          return hurt(pick(JOHNSON_HITS));
+          return hurt(pick(JOHNSON_HITS), false, true);
         }
       }
       return;
@@ -2948,7 +3072,7 @@ function stepLevel5(){
           combat(pick(TUNEUPS), k.x+22, k.y-16, '#3fae2a');
         }
       } else if(rectHit(dan, k) && dan.inv<=0 && dan.star<=0 && !stomp){
-        return hurt(pick(KING_HITS));
+        return hurt(pick(KING_HITS), false, true);
       }
     }
     if(k.dead) k.deadT++;
@@ -2959,7 +3083,7 @@ function stepLevel5(){
       if(p.y > GROUND_Y-20){ S.thrown.splice(i,1); continue; }
       if(rectHit(dan, p) && dan.inv<=0 && dan.star<=0){
         S.thrown.splice(i,1);
-        return hurt('HIT BY A FLYING PETE!');
+        return hurt('HIT BY A FLYING PETE!', false, true);
       }
     }
     if(k.done && dan.x + dan.w > FLAG_X - 30){
@@ -3319,21 +3443,24 @@ function drawTumbleweed(){
   }
 }
 
-function hurt(msg, forceLife){
+function hurt(msg, forceLife, asBurst){
   streak = 0; streakShow = 0;
   if(dan.star>0 && !forceLife) return;
   Audio8.S.hurt();
   const tax = Math.min(oz, 5); oz -= tax;
   const suffix = (tax>0 && msg.indexOf('oz')===-1 ? ' -'+tax+' oz' : '');
+  const say = () => asBurst
+    ? burst(msg + suffix, dan.x + dan.w/2, dan.y - 10, '#c0392b', 1)
+    : quip(msg + suffix, '#ff5a4e');
   if(!forceLife && !dan.small){
     setSize(true);            // shrink instead of dying
     dan.inv = 100;
-    quip(msg + suffix, '#ff5a4e');
+    say();
     return;
   }
   lives--;
   if(lives <= 0){ return gameOver(); }
-  quip(msg + suffix, '#ff5a4e');
+  say();
   resetDan();
 }
 
@@ -4247,14 +4374,22 @@ function bigFace(name, cx, cy, s){
     ctx.fillStyle='#fff'; ctx.fillRect(7, 9, 5, 3.6); ctx.fillRect(15, 9, 5, 3.6);
     ctx.fillStyle='#000'; ctx.fillRect(9, 10, 2.4, 2.4); ctx.fillRect(17, 10, 2.4, 2.4);
     ctx.fillStyle='#4a3018'; ctx.fillRect(6.5, 7.4, 6, 1.6); ctx.fillRect(14.5, 7.4, 6, 1.6);
-    // THE HANDLEBAR, in all its glory
+    // THE HANDLEBAR -- tips sweeping UPWARD
     ctx.fillStyle='#4a3018';
-    ctx.fillRect(7.5, 14.5, 11, 3.6);                       // the body of it
-    ctx.fillRect(4, 13.5, 4, 3.2); ctx.fillRect(18, 13.5, 4, 3.2);
-    // the curled tips
-    ctx.beginPath(); ctx.arc(4, 12.6, 2.2, Math.PI*0.5, Math.PI*1.9); ctx.fill();
-    ctx.beginPath(); ctx.arc(22, 12.6, 2.2, Math.PI*1.1, Math.PI*0.5); ctx.fill();
-    ctx.fillStyle='#8a4a3a'; ctx.fillRect(10, 19, 6, 1.6);
+    ctx.fillRect(8, 15, 10, 3.6);                            // the body across the lip
+    // the arms sweeping up and out
+    ctx.beginPath();
+    ctx.moveTo(8, 15); ctx.quadraticCurveTo(3, 15, 2.2, 10.5);
+    ctx.lineTo(5, 10.5); ctx.quadraticCurveTo(5.6, 13.4, 8.5, 13.4);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(18, 15); ctx.quadraticCurveTo(23, 15, 23.8, 10.5);
+    ctx.lineTo(21, 10.5); ctx.quadraticCurveTo(20.4, 13.4, 17.5, 13.4);
+    ctx.closePath(); ctx.fill();
+    // the curled tips, pointing skyward
+    ctx.beginPath(); ctx.arc(3.6, 9.6, 2, Math.PI*0.7, Math.PI*2.2); ctx.fill();
+    ctx.beginPath(); ctx.arc(22.4, 9.6, 2, Math.PI*0.8, Math.PI*2.3); ctx.fill();
+    ctx.fillStyle='#8a4a3a'; ctx.fillRect(10, 19.5, 6, 1.6);
   } else if(name === 'KARL MARX'){
     ctx.translate(-13, -12);
     ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(13, 9, 10, 0, 7); ctx.fill();
@@ -4884,11 +5019,22 @@ function retryLevel(){
   state = 'intro'; introT = 0; introGo = false; introStage = 0;
 }
 function levelClear(){
-  if(kind !== 'bonus') awardSpeedBonus();
+  if(kind === 'bonus'){
+    // nobody throws a party when you tweak your back. straight to work.
+    clearMsgs(); Audio8.stop();
+    level++;
+    buildLevel(level); resetDan();
+    ozAtLevelStart = oz;
+    bossIntro = null;
+    state = 'intro'; introT = 0; introGo = false; introStage = 0;
+    return;
+  }
+  awardSpeedBonus();
   clearMsgs();
   Audio8.stop();
   Audio8.play('levelwin');
   Audio8.S.fanfare();
+  introGo = false;
   LWS = {t:0, confetti:[], coins:[]};
   for(let i=0;i<40;i++){
     LWS.confetti.push({x:Math.random()*VIEW_W, y:-20-Math.random()*200,
@@ -4918,13 +5064,14 @@ function stepLevelWin(){
   }
   if(S.t === 30) Audio8.S.oneUp ? Audio8.S.oneUp() : Audio8.S.ding();
   // move on, either on a tap or after a good long celebration
-  if(S.t > 40 && (introGo || S.t > 300)){
+  if(S.t > 270 && (introGo || S.t > 480)){   // ~4.5s minimum, 8s cap
     introGo = false;
     Audio8.stop();
     if(level < 6){
       level++;
-      buildLevel(level);
+      buildLevel(level); resetDan();      // <- Dan starts at the START of the level
       ozAtLevelStart = oz;
+      bossIntro = null; clearMsgs();
       state = 'intro'; introT = 0; introGo = false; introStage = 0;
     } else {
       winGame();
@@ -5003,25 +5150,22 @@ function renderLevelWin(){
   ctx.scale(pop, pop);
   ctx.rotate(Math.sin(S.t*0.05) * 0.02);
   ctx.textAlign='center';
-  ctx.font = '40px ' + COMIC_FONT;
-  ctx.lineJoin='round';
+  ctx.font = comicFont(40);
   ctx.fillStyle='rgba(20,20,30,.5)'; ctx.fillText(label, 4, 4);
-  ctx.strokeStyle='#12121c'; ctx.lineWidth=9; ctx.strokeText(label, 0, 0);
-  ctx.fillStyle = (S.t>>3)%2===0 ? '#ffd94a' : '#4dff4d';
-  ctx.fillText(label, 0, 0);
+  comicText(label, 0, 0, 40, (S.t>>3)%2===0 ? '#ffd94a' : '#4dff4d', '#12121c');
   ctx.restore();
 
   // the take
   const gained = Math.max(0, oz - ozAtLevelStart);
-  ctx.font = '18px ' + COMIC_FONT;
+  ctx.font = comicFont(18);
   ctx.textAlign='center';
   ctx.strokeStyle='#12121c'; ctx.lineWidth=5; ctx.lineJoin='round';
   ctx.strokeText('+' + gained + ' oz THIS LEVEL  |  ' + oz + ' oz TOTAL', VIEW_W/2, VIEW_H/2 - 22);
   ctx.fillStyle='#fff';
   ctx.fillText('+' + gained + ' oz THIS LEVEL  |  ' + oz + ' oz TOTAL', VIEW_W/2, VIEW_H/2 - 22);
 
-  if(S.t > 60 && (time>>4)%2===0){
-    ctx.font = '14px ' + COMIC_FONT;
+  if(S.t > 270 && (time>>4)%2===0){
+    ctx.font = comicFont(14);
     ctx.fillStyle='#ffd94a';
     ctx.fillText('TAP TO CONTINUE', VIEW_W/2, VIEW_H - 30);
   }
@@ -5068,7 +5212,7 @@ function jumpToLevel(n){
   oz = 0; lives = 3; nextLifeAt = 100;
   bossIntro = null; clearMsgs();
   level = n;
-  buildLevel(n);
+  buildLevel(n); resetDan();
   ozAtLevelStart = oz;
   state = 'intro'; introT = 0; introGo = false; introStage = 0;
   show('controls');
