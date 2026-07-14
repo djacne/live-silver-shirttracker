@@ -176,7 +176,7 @@
     <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
-  <p style="color:#5a6a8a;font-size:10px;">build 3.0</p>
+  <p style="color:#5a6a8a;font-size:10px;">build 3.2</p>
   </div>
  </div>
 </div>
@@ -453,6 +453,18 @@ const Audio8 = (() => {
     sadTrombone(){ [233,220,207,185].forEach((f,i)=>tone(f,t()+i*0.36,i===3?0.9:0.32,'sawtooth',0.17,null,f*0.93)); },
     footstep(){ nz(t(),0.05,0.28); tone(85,t(),0.09,'sine',0.32,null,55); },
     checkpoint(){ tone(880,t(),0.07,'square',0.11); tone(1175,t()+0.07,0.14,'square',0.11); },
+    shutter(){                                   // a camera catching Dan in the act
+      nz(t(), 0.035, 0.16);
+      tone(2400, t(), 0.02, 'square', 0.07);
+      nz(t()+0.05, 0.05, 0.12);
+      tone(1600, t()+0.05, 0.03, 'square', 0.05);
+    },
+    payphone(){                                  // a phone ringing in the wasteland
+      for(let r=0;r<2;r++){
+        const t0 = t() + r*0.26;
+        for(let i=0;i<9;i++) tone(i%2 ? 1050 : 1400, t0 + i*0.022, 0.02, 'sine', 0.055);
+      }
+    },
     star(){ [523,659,784,1047,1319].forEach((f,i)=>tone(f,t()+i*0.05,0.1,'square',0.13)); },
     horn(){ tone(233,t(),1.0,'sawtooth',0.18); tone(277,t(),1.0,'sawtooth',0.18); tone(196,t()+0.05,0.95,'sawtooth',0.1); },
     ding(){ tone(1319,t(),0.12,'square',0.16); tone(1760,t()+0.09,0.16,'square',0.12); },
@@ -940,6 +952,7 @@ let msgTimer = null;
 // 5. BANNER   - end-of-level / announcer, big and readable
 
 let bursts = [];
+let cpBeam = null;    // the light off the flock camera
 let impacts = [];      // nightstick connects
 let hitStop = 0;       // frames of freeze on a solid hit
 let shake = 0;
@@ -1011,6 +1024,35 @@ function drawStarburst(w, h, spikes, seed, fill, edge, lw){
   ctx.fillStyle = fill;
   ctx.fill();
   if(edge){ ctx.strokeStyle = edge; ctx.lineWidth = lw || 3; ctx.lineJoin = 'round'; ctx.stroke(); }
+}
+
+function drawCheckpointBeam(){
+  if(!cpBeam) return;
+  const t = cpBeam.t++;
+  if(t > 80){ cpBeam = null; return; }
+  const x = px(cpBeam.x);
+  if(x < -80 || x > VIEW_W + 80) return;
+  const a = (t < 6 ? t/6 : t > 62 ? (80-t)/18 : 1) * 0.55;
+  const top = GROUND_Y - 150;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, a);
+  // a soft column of light rising off the camera
+  const g = ctx.createLinearGradient(0, top, 0, GROUND_Y);
+  g.addColorStop(0, 'rgba(232,238,244,0)');
+  g.addColorStop(0.45, 'rgba(232,238,244,.30)');
+  g.addColorStop(1, 'rgba(232,238,244,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(x - 8, top); ctx.lineTo(x + 8, top);
+  ctx.lineTo(x + 30, GROUND_Y); ctx.lineTo(x - 30, GROUND_Y);
+  ctx.closePath(); ctx.fill();
+  // and a bright bloom right at the lens
+  const bloom = 1 - Math.min(1, t / 26);
+  if(bloom > 0){
+    ctx.fillStyle = 'rgba(255,255,255,' + bloom * 0.7 + ')';
+    ctx.beginPath(); ctx.arc(x, top + 10, 6 + bloom * 14, 0, 7); ctx.fill();
+  }
+  ctx.restore();
 }
 
 function drawImpacts(){
@@ -1323,6 +1365,7 @@ function clearMsgs(){
   clearTimeout(msgTimer);
   msgEl.style.opacity = 0;
   cpFlash = null;
+  cpBeam = null;
   impacts = [];
   hitStop = 0;
   shake = 0;
@@ -1367,9 +1410,9 @@ function drawJagged(cx, cy, w, h, color, edge){
 }
 
 function drawChannels(){
+  drawCheckpointBeam();
   drawImpacts();
   drawBursts();
-  drawCheckpoint();
 
   // --- streak announcer ---
   if(streakT > 0 && --streakT <= 0) streak = 0;
@@ -1475,18 +1518,18 @@ function step(){
           e.dead = true; oz += 2;
           // THE CONNECT: freeze, shake, star -- but NO quip yet.
           const ix = e.x + e.w/2, iy = e.y + e.h*0.35;
-          hitStop = 5;
-          shake = 7;
+          hitStop = 4;
+          shake = 3;                       // a tap, not an earthquake
           impacts.push({x: ix, y: iy, t: 0});
           Audio8.S.bonk();
           Audio8.S.whoosh();
-          // he is now airborne. the punchline lands when HE lands.
+          // he is now airborne
           e.flyVX = dan.face * 9.5;
           e.flyVY = -7.2;
           e.spin = dan.face * 0.34;
           e.rot = 0;
           e.flyT = 0;
-          e.pendingQuip = (e.type==='dog' ? pick(DOG_STOMPS) : pick(TUNEUPS));
+          burst(e.type==='dog' ? pick(DOG_STOMPS) : pick(TUNEUPS), 0, 0, '#3fae2a');
           riseText(ix, e.y-6, '+2 oz');
           bumpStreak(ix, e.y);
         }
@@ -1574,9 +1617,9 @@ function step(){
   for(const fx of cams){
     if(dan.x > fx && checkpointX < fx){
       checkpointX = fx;
-      Audio8.S.checkpoint();
-      Audio8.S.bar();
-      cpFlash = {x: fx, t: 0};
+      if(kind === 'city') Audio8.S.payphone(); else Audio8.S.shutter();
+      toast('CHECKPOINT', '#8f97a6');            // silver box, same corner as the silver receipts
+      cpBeam = {x: fx, t: 0};
     }
   }
 
@@ -4812,7 +4855,9 @@ function drawBossIntro(){
   const name = bossIntro.name;
 
   if(t >= BOSS_INTRO_LEN){
+    const s = bossIntro.song;
     bossIntro = null;
+    if(s) Audio8.play(s);          // theme starts as the game resumes
     return;
   }
 
@@ -4914,9 +4959,9 @@ function drawBossIntro(){
   // the VS track cuts out early, leaving a beat of dead air. the gong lands in the
   // silence, THEN the boss theme drops on FIGHT!. a hard cut sounds intentional;
   // a crossfade would just sound like a mistake.
-  if(t === 336) Audio8.fadeOut(420);                             // the VS track dissolves
-  if(t === 368) Audio8.S.gong();                                 // the gong lands in the gap
-  if(t === 396 && bossIntro.song) Audio8.play(bossIntro.song);   // theme drops after it rings
+  // VS music runs all the way to FIGHT!, the gong hits, and the boss theme waits
+  // until the card is gone and the player has control back.
+  if(t === 384){ Audio8.stop(); Audio8.S.gong(); }
   if(t >= 384){
     const k = t - 384;
     const sc = k < 8 ? 2.4 - k * 0.18 : 1;
@@ -5467,14 +5512,23 @@ function drawDancingDan(cx, cy, s, t){
     ctx.fillStyle='#b99a5f'; ctx.fillRect(6, 20, 14, 10);
     ctx.fillRect(6, 15, 4, 7); ctx.fillRect(16, 15, 4, 7);
   }
-  // ARMS UP, unreservedly
-  const wave = Math.sin(t * 0.22) * 0.5;
-  ctx.save(); ctx.translate(3, 16); ctx.rotate(-2.3 + wave);
-  ctx.fillStyle = kind==='city' ? '#4a7ab8' : '#2e3d6b'; ctx.fillRect(-3, 0, 4.5, 12);
-  ctx.fillStyle='#e8b68a'; ctx.fillRect(-3, 12, 4.5, 4); ctx.restore();
-  ctx.save(); ctx.translate(23, 16); ctx.rotate(2.3 - wave);
-  ctx.fillStyle = kind==='city' ? '#4a7ab8' : '#2e3d6b'; ctx.fillRect(-1.5, 0, 4.5, 12);
-  ctx.fillStyle='#e8b68a'; ctx.fillRect(-1.5, 12, 4.5, 4); ctx.restore();
+  // ARMS UP, unreservedly. (the rotations were mirrored before, so both arms
+  // folded across his chest and disappeared into the shirt.)
+  const wave = Math.sin(t * 0.22) * 0.45;
+  const sleeve = kind === 'city' ? '#5f8fcc' : '#3a4d85';   // lighter than the shirt, so it reads
+  const armLen = 14;
+  // left arm: up and OUT to the left
+  ctx.save(); ctx.translate(4, 16); ctx.rotate(2.35 + wave);
+  ctx.fillStyle = '#12121c'; ctx.fillRect(-3.4, -0.6, 5.8, armLen + 5.2);   // outline
+  ctx.fillStyle = sleeve;    ctx.fillRect(-2.6, 0, 4.4, armLen);
+  ctx.fillStyle = '#e8b68a'; ctx.fillRect(-2.6, armLen, 4.4, 4.4);          // hand
+  ctx.restore();
+  // right arm: up and OUT to the right
+  ctx.save(); ctx.translate(22, 16); ctx.rotate(-2.35 - wave);
+  ctx.fillStyle = '#12121c'; ctx.fillRect(-2.4, -0.6, 5.8, armLen + 5.2);
+  ctx.fillStyle = sleeve;    ctx.fillRect(-1.8, 0, 4.4, armLen);
+  ctx.fillStyle = '#e8b68a'; ctx.fillRect(-1.8, armLen, 4.4, 4.4);
+  ctx.restore();
   danHead(kind === 'city');
   ctx.restore();
 }
