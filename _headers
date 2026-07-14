@@ -1,0 +1,5 @@
+/thegame.html
+  Cache-Control: no-cache, must-revalidate
+
+/version.json
+  Cache-Control: no-store
