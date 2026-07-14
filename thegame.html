@@ -118,11 +118,13 @@
     .btn{padding:12px 22px;font-size:15px;}
   }
 
-  #msg{position:fixed;top:18%;left:50%;transform:translateX(-50%);z-index:15;pointer-events:none;
-    color:#fff;background:var(--red);padding:8px 16px;border-radius:8px;font-weight:bold;
-    font-size:clamp(10px,2.9vw,20px);letter-spacing:1px;border:3px solid #fff;
-    box-shadow:0 6px 0 rgba(0,0,0,.35);opacity:0;transition:opacity .15s;text-transform:uppercase;
-    white-space:nowrap;max-width:98vw;text-align:center;}
+  #msg{position:fixed;z-index:15;pointer-events:none;
+    left:calc(16px + env(safe-area-inset-left));
+    top:calc(74px + env(safe-area-inset-top));
+    color:#fff;background:var(--red);padding:7px 14px;border-radius:8px;font-weight:bold;
+    font-size:clamp(11px,2.5vw,15px);letter-spacing:1px;border:3px solid #fff;
+    box-shadow:0 5px 0 rgba(0,0,0,.35);opacity:0;transition:opacity .18s;text-transform:uppercase;
+    white-space:nowrap;max-width:70vw;text-align:left;}
 </style>
 </head>
 <body>
@@ -296,10 +298,10 @@ const Audio8 = (() => {
     boss: { bpm:168,
       bass:[40,40,40,45,43,43,43,47, 40,40,40,45,48,47,45,43, 40,40,40,45,43,43,43,47, 50,-1,48,-1,47,-1,45,-1],
       lead:[76,-1,75,-1,76,75,76,-1, 79,-1,-1,76,-1,-1,72,-1, 76,-1,75,-1,76,79,81,-1, 83,81,79,76,75,-1,-1,-1] },
-    // rage: 16-bit side-street beat-em-up groove, straight off the Genesis
-    rage: { bpm:122,
-      bass:[33,-1,33,36,-1,33,39,-1, 33,-1,33,36,38,-1,36,33, 33,-1,33,36,-1,33,39,40, 41,-1,40,-1,39,-1,36,-1],
-      lead:[-1,-1,57,-1,-1,60,-1,-1, 63,-1,62,60,-1,-1,-1,-1, -1,-1,57,60,63,-1,65,63, 62,-1,60,-1,57,-1,-1,-1] },
+    // rage: retro dystopian gang-war -- minor key, driving, the streets are not okay
+    rage: { bpm:132,
+      bass:[33,33,-1,33,36,-1,33,-1, 33,33,-1,33,34,-1,36,-1, 31,31,-1,31,34,-1,31,-1, 33,-1,36,-1,38,-1,39,40],
+      lead:[-1,-1,68,-1,-1,-1,68,67, 65,-1,-1,63,-1,-1,-1,-1, -1,-1,63,-1,65,-1,66,-1, 68,-1,67,65,63,-1,-1,-1] },
     // canada: aggressively polite lumberjack polka, eh
     canada: { bpm:126,
       bass:[36,-1,48,-1,36,-1,48,-1, 41,-1,53,-1,41,-1,53,-1, 36,-1,48,-1,36,-1,48,-1, 43,-1,55,-1,43,-1,55,-1],
@@ -695,7 +697,7 @@ function awardSpeedBonus(){
   const bonus = Math.round(gained * (mult - 1));
   if(bonus > 0){
     oz += bonus;
-    setTimeout(()=> flash('SPEED BONUS +' + bonus + ' oz', '#3fae2a', true), 700);
+    flash('SPEED BONUS +' + bonus + ' oz', '#3fae2a');
   }
   return bonus;
 }
@@ -715,7 +717,7 @@ function checkMilestone(){
   while(oz >= nextLifeAt){
     nextLifeAt += 100;
     if(lives < 6) lives++;
-    flash((nextLifeAt-100)+' oz! +1 \u2665', '#3fae2a', kind==='train');
+    flash((nextLifeAt-100)+' oz! +1 \u2665', '#3fae2a');
     Audio8.S.oneUp();
   }
 }
@@ -768,26 +770,33 @@ function pick(a){ return a[(Math.random()*a.length)|0]; }
 // ================= messages =================
 const msgEl = document.getElementById('msg');
 let msgTimer = null;
-function flash(text, color, corner){
-  if(bossIntro) return;              // never cover the fight card
-  clearTimeout(msgTimer);
-  // hide first, THEN move: never reposition a message the player can still see
-  msgEl.style.opacity = 0;
-  msgEl.textContent = text;
-  msgEl.style.background = color || 'var(--red)';
-  if(corner){
-    msgEl.style.left = 'calc(16px + env(safe-area-inset-left))';
-    msgEl.style.top = 'calc(74px + env(safe-area-inset-top))';
-    msgEl.style.transform = 'none';
-    msgEl.style.fontSize = '13px';
-  } else {
-    msgEl.style.left = '50%'; msgEl.style.top = '18%';
-    msgEl.style.transform = 'translateX(-50%)';
-    msgEl.style.fontSize = '';
-  }
-  void msgEl.offsetWidth;              // force the reposition to land before we fade in
+// notifications queue up and cycle through one spot, so several can land back to back
+const msgQueue = [];
+let msgShowing = false;
+function flash(text, color){
+  if(bossIntro) return;                 // never cover the fight card
+  msgQueue.push({text, color: color || 'var(--red)'});
+  if(msgQueue.length > 4) msgQueue.splice(0, msgQueue.length - 4);
+  pumpMsg();
+}
+function pumpMsg(){
+  if(msgShowing || !msgQueue.length) return;
+  const m = msgQueue.shift();
+  msgShowing = true;
+  msgEl.textContent = m.text;
+  msgEl.style.background = m.color;
   msgEl.style.opacity = 1;
-  msgTimer = setTimeout(()=> msgEl.style.opacity = 0, 1200);
+  clearTimeout(msgTimer);
+  msgTimer = setTimeout(() => {
+    msgEl.style.opacity = 0;
+    setTimeout(() => { msgShowing = false; pumpMsg(); }, 220);   // brief gap, then the next one
+  }, 1400);
+}
+function clearMsgs(){
+  msgQueue.length = 0;
+  msgShowing = false;
+  clearTimeout(msgTimer);
+  msgEl.style.opacity = 0;
 }
 
 // ================= physics =================
@@ -1016,7 +1025,7 @@ function stepLevel2(){
   if(!S.revealed && dan.x > WATER_L - 150){
     S.revealed = true;
     announceBoss('THE SKUNK', 'skunk');
-    setTimeout(()=> flash('YOUR $20 APPOINTMENT IS HERE!', '#3fae2a'), 6800);
+    setTimeout(()=> flash('YOUR $20 APPOINTMENT IS HERE!', '#3fae2a'), 9600);
   }
   // patrolling skunk on the bridge
   if(S.revealed && sk.alive && !sk.falling){
@@ -2174,7 +2183,7 @@ function stepLevel5(){
       S.paper.y -= Math.sin(S.paper.t*0.16)*1.2;
     }
     if(S.t === 20) Audio8.S.ding();
-    if(S.t === 400){ flash('THE REST IS HISTORY.', '#3fae2a', true); }
+    if(S.t === 400){ flash('THE REST IS HISTORY.', '#3fae2a'); }
     if(S.t > 470) return levelClear();
     return;
   }
@@ -3406,12 +3415,11 @@ function drawBoss1(){
 }
 
 let bossIntro = null;   // {name, t, song}
-const BOSS_INTRO_LEN = 380;
+const BOSS_INTRO_LEN = 540;
 
 function announceBoss(name, song){
   bossIntro = {name, t:0, song: song || null};
-  msgEl.style.opacity = 0;          // nothing overlaps the fight card
-  clearTimeout(msgTimer);
+  clearMsgs();                      // nothing overlaps the fight card
   Audio8.stop();
   Audio8.S.riser();
 }
@@ -3426,12 +3434,20 @@ function bigFace(name, cx, cy, s){
   if(name === 'DAN'){
     ctx.translate(-13, -12);
     ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(13, 10, 11, 0, 7); ctx.fill();
-    // brown SD cap
-    ctx.fillStyle='#7a5230';
-    ctx.beginPath(); ctx.arc(13, 6, 11.5, Math.PI, 0); ctx.fill();
-    ctx.fillRect(1.5, 4, 23, 3.4); ctx.fillRect(13, 4, 15, 3.4);
-    ctx.fillStyle='#e8d9a8'; ctx.font='bold 6px Courier New'; ctx.textAlign='center';
-    ctx.fillText('SD', 18, 3);
+    if(kind === 'city'){
+      // Trooper Dan: KHP campaign hat
+      ctx.fillStyle='#1e2a4a';
+      ctx.fillRect(-3, 3.5, 32, 3.6);                                     // wide flat brim
+      ctx.beginPath(); ctx.moveTo(4, 3.5); ctx.lineTo(13, -8); ctx.lineTo(22, 3.5); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#ffd94a'; ctx.fillRect(5.5, 1, 15, 1.8);             // gold band
+    } else {
+      // brown SD cap
+      ctx.fillStyle='#7a5230';
+      ctx.beginPath(); ctx.arc(13, 6, 11.5, Math.PI, 0); ctx.fill();
+      ctx.fillRect(1.5, 4, 23, 3.4); ctx.fillRect(13, 4, 15, 3.4);
+      ctx.fillStyle='#e8d9a8'; ctx.font='bold 6px Courier New'; ctx.textAlign='center';
+      ctx.fillText('SD', 18, 3);
+    }
     // eyes, squinting with conviction
     ctx.fillStyle='#fff'; ctx.fillRect(7, 9, 5, 3.6); ctx.fillRect(15, 9, 5, 3.6);
     ctx.fillStyle='#000'; ctx.fillRect(9, 10, 2.4, 2.4); ctx.fillRect(17, 10, 2.4, 2.4);
@@ -3620,8 +3636,8 @@ function drawBossIntro(){
   }
 
   // ---- FIGHT! ----
-  if(t >= 290){
-    const k = t - 290;
+  if(t >= 440){
+    const k = t - 440;
     const sc = k < 8 ? 2.4 - k * 0.18 : 1;
     ctx.save();
     ctx.translate(VIEW_W/2, VIEW_H - 44);
@@ -4051,7 +4067,7 @@ function levelClear(){
   Audio8.S.fanfare();
   awardSpeedBonus();
   if(level < 5){
-    flash('LEVEL '+level+' COMPLETE!', '#3fae2a', true);
+    flash('LEVEL '+level+' COMPLETE!', '#3fae2a');
     ozAtLevelStart = oz;
     buildLevel(level+1); resetDan();
     Audio8.stop();
