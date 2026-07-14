@@ -1,0 +1,19 @@
+{
+  "name": "Dan's Retirement: The Game",
+  "short_name": "Dan's Retirement",
+  "description": "Stack silver. 401k is a lie. Retire.",
+  "start_url": "/thegame.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0f0f23",
+  "theme_color": "#0f0f23",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
