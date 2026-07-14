@@ -232,6 +232,7 @@
     <button class="btn" id="startBtn">Start Stacking</button>
     <button class="btn alt" id="lbBtn">Leaderboard</button>
     <button class="btn alt" id="helpBtn">Help</button>
+    <button class="btn alt hidden" id="iosBtn">Play Fullscreen</button>
     <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
@@ -5514,8 +5515,8 @@ function onTap(el, fn){
   el.addEventListener('click', go);
   el.addEventListener('pointerup', go);
 }
-function show(id){ $(id).classList.remove('hidden'); }
-function hide(id){ $(id).classList.add('hidden'); }
+function show(id){ const el=$(id); if(el) el.classList.remove('hidden'); }
+function hide(id){ const el=$(id); if(el) el.classList.add('hidden'); }
 
 function startGame(){
   hide('titleScreen'); hide('deadScreen'); hide('winScreen'); hide('helpScreen');
@@ -5738,7 +5739,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '3.7';
+const BUILD = '3.8';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
