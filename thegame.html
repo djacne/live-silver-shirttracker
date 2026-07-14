@@ -371,7 +371,14 @@ window.addEventListener('resize', resize); resize();
 const keys = {left:false, right:false, jump:false, swing:false};
 const km = {ArrowLeft:'left', a:'left', A:'left', ArrowRight:'right', d:'right', D:'right',
             ' ':'jump', ArrowUp:'jump', w:'jump', W:'jump', f:'swing', F:'swing', x:'swing', X:'swing'};
-addEventListener('keydown', e => { if(km[e.key]!==undefined){ keys[km[e.key]]=true; e.preventDefault(); if(state==='intro') introGo=true; }});
+function typingInField(e){
+  const t = e.target;
+  return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+}
+addEventListener('keydown', e => {
+  if(typingInField(e)) return;                       // let the player type their name
+  if(km[e.key]!==undefined){ keys[km[e.key]]=true; e.preventDefault(); if(state==='intro') introGo=true; }
+});
 addEventListener('keyup',   e => { if(km[e.key]!==undefined){ keys[km[e.key]]=false; }});
 const activePointers = new Set();
 const touchKeys = {};   // which keys are currently held by touch, and by which pointer
@@ -620,7 +627,6 @@ function buildLevel(n){
       ...coinRow(2070, 210, 2), ...coinRow(2230, 160, 2),
       ...coinRow(2730, 190, 2, 45),
       ...coinRow(2920, 205, 3), ...coinRow(3420, 205, 2),
-      ...coinRow(3660, 270, 4),
     ];
     bars = [ {x:625, y:158, got:false}, {x:2255, y:158, got:false}, {x:3130, y:152, got:false} ];
     subs = [ {x:1485, y:153, got:false}, {x:3448, y:203, got:false} ];
@@ -712,7 +718,7 @@ const JOHNSON_LINES = ['NOBODY CROSSES ON MY WATCH!', 'STEP AWAY FROM THAT ILLEG
 const TUNEUPS = ['TUNE-UP DELIVERED!', 'FREE ATTITUDE ADJUSTMENT!', 'COMPLIANCE ACHIEVED!', 'COURTESY OF THE KHP!'];
 const DOG_STOMPS = ['BAD DOG!', 'NO TREATS TODAY!'];
 const DOG_HITS = ['BIT BY A STRAY!', 'THE PITBULL WON!'];
-const KING_LINES = ['I RUN THESE STREETS!', "THAT'S MY CORNER, OFFICER!", "YOU CAN'T TUNE ME UP!",
+const KING_LINES = ['I RUN THESE STREETS!', 'THIS IS MY CORNER!', "YOU CAN'T TUNE ME UP!",
   'YOU KNOW WHO I AM?!'];
 const KING_HITS = ['THE KING GOT YOU!', 'ROBBED IN BROAD DAYLIGHT!', 'STREET TAX: -5 oz!'];
 const BOSS1_HITS = ['SEIZED BY THE PROLETARIAT!', 'YOUR LABOR IS ALIENATED!', 'EXPROPRIATED: -5 oz!'];
@@ -2409,10 +2415,6 @@ function drawResignation(){
   ctx.fillStyle='#9aa0a6'; ctx.fillRect(6, 3, 8, 2.4);
   ctx.strokeStyle='#2b1a10'; ctx.lineWidth=1.4;
   ctx.beginPath(); ctx.moveTo(5, -0.5); ctx.lineTo(8, 0.8); ctx.moveTo(15, -0.5); ctx.lineTo(12, 0.8); ctx.stroke();
-  // single tear during the quit
-  if(S.phase==='quit' && S.t > 140 && (time>>3)%2===0){
-    ctx.fillStyle='#8fd0ff'; ctx.fillRect(13, 2 + (S.t%20)*0.3, 1.6, 3);
-  }
   ctx.restore();
   // the resignation paper in flight
   if(S.phase==='quit' && S.paper){
@@ -3795,6 +3797,8 @@ $('startBtn').addEventListener('click', startGame);
 $('retryBtn').addEventListener('click', retryLevel);
 $('againBtn').addEventListener('click', ()=>{ hide('winScreen'); startGame(); });
 $('lbBtn').addEventListener('click', ()=>{ Audio8.unlock(); showLeaderboard(); });
+$('nameInput').addEventListener('keydown', e => { if(e.key==='Enter') $('submitScoreBtn').click(); });
+$('deadNameInput').addEventListener('keydown', e => { if(e.key==='Enter') $('deadSubmitBtn').click(); });
 $('closeLbBtn').addEventListener('click', ()=> hide('lbScreen'));
 $('submitScoreBtn').addEventListener('click', async ()=>{
   const nm = ($('nameInput').value || '').trim().toUpperCase().replace(/[^A-Z0-9 ._-]/g,'').slice(0,12);
@@ -3851,7 +3855,7 @@ function armTitleMusic(){
 armTitleMusic();
 addEventListener('pointerdown', ()=>{ armTitleMusic(); if(state==='intro') introGo=true; }, {once:false});
 addEventListener('touchend', ()=>Audio8.unlock(), {once:false});
-addEventListener('keydown', armTitleMusic, {once:false});
+addEventListener('keydown', e => { if(!typingInField(e)) armTitleMusic(); }, {once:false});
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) Audio8.resume(); });
 addEventListener('focus', ()=>Audio8.resume());
 
