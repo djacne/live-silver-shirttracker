@@ -176,7 +176,7 @@
     <button class="btn alt" id="fsBtn">Fullscreen</button>
   </div>
   <p id="rotateHint">Rotate to landscape for the full Dan experience</p>
-  <p style="color:#5a6a8a;font-size:10px;">build 2.9</p>
+  <p style="color:#5a6a8a;font-size:10px;">build 3.0</p>
   </div>
  </div>
 </div>
@@ -411,6 +411,19 @@ const Audio8 = (() => {
   function play(name){ songName=name; song=SONGS[name]; step=0; if(AC) nextT=AC.currentTime+0.06;
     if(!timer) timer=setInterval(sched, 30); }
   function stop(){ song=null; songName=null; }
+  function fadeOut(ms){
+    if(!AC || !mus){ stop(); return; }
+    const t0 = AC.currentTime;
+    try{
+      mus.gain.cancelScheduledValues(t0);
+      mus.gain.setValueAtTime(mus.gain.value, t0);
+      mus.gain.linearRampToValueAtTime(0.0001, t0 + ms/1000);
+    }catch(e){}
+    setTimeout(() => {
+      stop();
+      try{ mus.gain.cancelScheduledValues(AC.currentTime); mus.gain.value = 0.4; }catch(e){}
+    }, ms + 30);
+  }
   function sched(){
     if(!AC||!song||muted) return;
     const spb = 60/song.bpm/2;
@@ -497,7 +510,7 @@ const Audio8 = (() => {
     }catch(e){ check(); }
     setTimeout(check, 400);                   // if resume never settles, force the issue
   }
-  return { init, resume, unlock, play, stop, S, toggleMute, revive };
+  return { init, resume, unlock, play, stop, fadeOut, S, toggleMute, revive };
 })();
 function unlockAudio(){ Audio8.unlock(); }
 
@@ -961,38 +974,27 @@ function comicText(txt, x, y, size, fill, outline){
   ctx.fillStyle = fill;
   ctx.fillText(txt, x, y);
 }
+// Every combat callout -- stomps, clubs, boss hits given and taken -- pops from the
+// right side of the screen, clear of the play area. Stacks so several can land at once.
 // tiers: 0 = normal hit, 1 = boss exchange, 2 = huge
 function burst(text, wx, wy, color, tier){
   if(bossIntro || panel) return;
-  // nudge away from anything already on screen so streaks stay legible
-  let y = wy;
-  for(const b of bursts){
-    if(Math.abs(b.wx - wx) < 110 && Math.abs(b.wy - y) < 34) y = b.wy - 36;
-  }
-  // pick an escape arc: always upward, angled away from the HUD corner
-  const nearLeft = (wx - camX) < VIEW_W * 0.45;
-  const spread = 0.55 + Math.random() * 0.7;                    // how far sideways
-  const dir = nearLeft ? 1 : -1;                                // shove away from the near edge
-  const lean = (Math.random() < 0.25) ? -dir : dir;             // sometimes the other way
+  // find a free slot in the right-hand stack
+  const used = bursts.map(b => b.slot);
+  let slot = 0;
+  while(used.indexOf(slot) !== -1 && slot < 3) slot++;
+  if(slot > 2) { bursts.shift(); slot = 2; }
   bursts.push({
-    text, wx, wy: y, t: 0,
-    rot: (Math.random()-0.5) * 0.22,
+    text, t: 0, slot,
+    rot: (Math.random()-0.5) * 0.12,
     color: color || '#ffd94a',
     tier: tier || 0,
     spikes: 9 + ((Math.random()*3)|0),
-    seed: Math.random() * 6.28,
-    screen: false,
-    driftX: lean * spread * (70 + Math.random() * 90),
-    driftY: -(70 + Math.random() * 70)
+    seed: Math.random() * 6.28
   });
-  if(bursts.length > 5) bursts.shift();
+  if(bursts.length > 3) bursts.shift();
 }
-function burstScreen(text, sx, sy, color, tier){
-  if(bossIntro) return;
-  burst(text, sx, sy, color, tier);
-  const b = bursts[bursts.length-1];
-  if(b) b.screen = true;
-}
+function burstScreen(text, sx, sy, color, tier){ burst(text, sx, sy, color, tier); }
 
 function drawStarburst(w, h, spikes, seed, fill, edge, lw){
   ctx.beginPath();
@@ -1126,82 +1128,80 @@ function drawBursts(){
     if(b.t > LIFE){ bursts.splice(i,1); continue; }
     const k = b.t;
 
-    let sc;
-    if(k < 5)        sc = 0.35 + k * 0.19;
-    else if(k < 9)   sc = 1.25 - (k-5) * 0.0625;
-    else if(k > 84)  sc = 1 + (k-84) * 0.09;
-    else             sc = 1;
-    const a = k > 84 ? 1 - (k-84)/12 : 1;
-    const wobble = k > 9 && k < 84 ? Math.sin(k * 0.18 + b.seed) * 0.022 : 0;
-
-    // it lands on the target, then drifts away on its own random arc -- upward, but
-    // never into the top-left, which belongs to the silver channel and the boss bar.
-    const anchorX = b.screen ? b.wx : px(b.wx);
-    const ease = Math.min(1, Math.max(0, (k - 14) / 46));       // hold, then travel
-    const glide = ease * ease * (3 - 2 * ease);                  // smoothstep
-    const x = anchorX + b.driftX * glide;
-    const y = b.wy + b.driftY * glide;
-    // stay out of the HUD's corner: fade fast if it wanders in there anyway
-    const inHud = (x < 210 && y < 108);
-    if(x < -150 || x > VIEW_W + 150) continue;
-
-    const size = b.tier === 2 ? 26 : b.tier === 1 ? 22 : 18;
-
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, a * (inHud ? 0.35 : 1));
-    ctx.translate(x, y);
-    ctx.rotate(b.rot + wobble);
-    ctx.scale(sc, sc);
-
+    const size = b.tier === 2 ? 24 : b.tier === 1 ? 20 : 17;
     ctx.font = comicFont(size);
     ctx.textAlign = 'center';
     const tw = ctx.measureText(b.text).width;
     const w = tw * 0.58 + 18;
     const h = size * 0.95 + 11;
 
-    // speed lines on impact
-    if(k < 34){
-      const reach = 1 + k * 0.05;
-      ctx.strokeStyle = 'rgba(20,20,30,' + (0.45 - k*0.011) + ')';
+    // home position: right side, stacked, well clear of the HUD and of Dan
+    const homeX = VIEW_W - w * 1.25 - 14;
+    const homeY = 74 + b.slot * (h * 2.5 + 6);
+
+    // slide in from off the right edge, overshoot, settle, then slide back out
+    let x, sc = 1, a = 1;
+    if(k < 8){
+      const p = k / 8;
+      x = VIEW_W + w * 1.4 - (VIEW_W + w * 1.4 - homeX) * (p * p * (3 - 2 * p));
+      sc = 0.8 + p * 0.35;
+    } else if(k < 13){
+      x = homeX + (13 - k) * 3;                  // the little bounce on arrival
+      sc = 1.15 - (k - 8) * 0.03;
+    } else if(k > 82){
+      const p = (k - 82) / 14;
+      x = homeX + p * (VIEW_W - homeX + w * 1.5);
+      a = 1 - p;
+    } else {
+      x = homeX;
+      sc = 1 + Math.sin(k * 0.13 + b.seed) * 0.018;
+    }
+    const y = homeY;
+
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, a);
+    ctx.translate(x, y);
+    ctx.rotate(b.rot);
+    ctx.scale(sc, sc);
+
+    // speed lines trailing back toward the right edge as it flies in
+    if(k < 12){
+      ctx.strokeStyle = 'rgba(20,20,30,' + (0.4 - k * 0.033) + ')';
       ctx.lineWidth = 2.5;
-      for(let s=0; s<10; s++){
-        const ang = (s/10) * Math.PI * 2 + b.seed;
+      for(let s = 0; s < 4; s++){
+        const yy = -h * 0.6 + s * (h * 0.45);
         ctx.beginPath();
-        ctx.moveTo(Math.cos(ang) * w * 1.15, Math.sin(ang) * h * 1.15);
-        ctx.lineTo(Math.cos(ang) * w * (1.3 + reach*0.22), Math.sin(ang) * h * (1.4 + reach*0.3));
+        ctx.moveTo(w * 1.2, yy);
+        ctx.lineTo(w * 1.2 + 30 - k * 2.2, yy);
         ctx.stroke();
       }
     }
 
-    // the colour-coded outer star: green = good, red = damage, gold = boss/streak
     drawStarburst(w * 1.22, h * 1.34, b.spikes, b.seed, b.color, '#12121c', 4.5);
-    // halftone, but ONLY in the outer ring -- never under the letters
+    // halftone in the outer ring only
     ctx.save();
     ctx.beginPath();
     const pts = b.spikes * 2;
-    for(let p=0;p<pts;p++){
-      const ang = (p/pts) * Math.PI * 2;
-      const jag = (p % 2 === 0) ? 1.22 : 0.64;
+    for(let p2 = 0; p2 < pts; p2++){
+      const ang = (p2 / pts) * Math.PI * 2;
+      const jag = (p2 % 2 === 0) ? 1.22 : 0.64;
       ctx.lineTo(Math.cos(ang) * w * jag, Math.sin(ang) * h * (jag * 1.1));
     }
     ctx.closePath();
     ctx.clip();
     ctx.fillStyle = 'rgba(20,20,30,.16)';
-    for(let dy=-h*1.4; dy<h*1.4; dy+=5)
-      for(let dx=-w*1.3; dx<w*1.3; dx+=5){
+    for(let dy = -h * 1.4; dy < h * 1.4; dy += 5)
+      for(let dx = -w * 1.3; dx < w * 1.3; dx += 5){
         ctx.beginPath(); ctx.arc(dx, dy, 1.1, 0, 7); ctx.fill();
       }
     ctx.restore();
 
-    // the cream field the letters sit on -- constant, so readability never changes
     drawStarburst(w * 0.99, h * 1.07, b.spikes, b.seed + 0.5, '#fdf3d8', '#12121c', 2);
-
-    // BLACK LETTERS ON CREAM: the highest-contrast pairing there is
     ctx.fillStyle = 'rgba(20,20,30,.35)';
     ctx.font = comicFont(size);
     ctx.textAlign = 'center';
-    ctx.fillText(b.text, 2, size*0.34 + 2);                    // drop shadow
-    comicText(b.text, 0, size*0.34, size, '#12121c', '#fdf3d8');  // cream halo, black body
+    ctx.fillText(b.text, 2, size * 0.34 + 2);
+    comicText(b.text, 0, size * 0.34, size, '#12121c', '#fdf3d8');
     ctx.restore();
   }
 }
@@ -1671,6 +1671,7 @@ function stepBoss1(){
         b.dead = true; b.done = true;
         oz += 15;
         killPanel('DAS KAPITAL: DENIED!', 'KARL MARX HAS BEEN PRIVATIZED'); toast('+15 oz', '#3fae2a');
+        setTimeout(()=>{ if(state==='play' && kind==='silver'){ Audio8.stop(); Audio8.play('level'); } }, 2600);
         Audio8.stop(); Audio8.S.fanfare(); Audio8.play('level');
       } else {
         combat(b.hp===2 ? 'PRIVATE PROPERTY DEFENDED!' : 'THE MEANS REMAIN UNSEIZED!', b.x+15, b.y-14, '#3fae2a');
@@ -2833,9 +2834,11 @@ function renderBonus(){
     ctx.fillStyle='#fff'; ctx.fillText(st.n, 0, 0);
     ctx.restore();
     if(S.idx === FULL_SEND){
-      comicText('DAN. DO NOT.', VIEW_W/2, 296, 18, '#ff2b1c', '#12121c');
+      ctx.font='bold 13px Courier New'; ctx.textAlign='center';
+      ctx.fillStyle='#a01810'; ctx.fillText('DAN. DO NOT.', VIEW_W/2, 294);
     } else {
-      comicText(SAFETY_SLOGANS[S.slogan], VIEW_W/2, 296, 15, '#fdf3d8', '#12121c');
+      ctx.font='bold 12px Courier New'; ctx.textAlign='center';
+      ctx.fillStyle='#2e2415'; ctx.fillText(SAFETY_SLOGANS[S.slogan], VIEW_W/2, 294);
     }
   }
 
@@ -3010,6 +3013,7 @@ function stepLevel4(){
           if(j.hp <= 0){
             j.dead = true; j.done = true; oz += 15;
             killPanel('DEPORTATION DENIED!', 'THE BORDER CZAR IS OUT OF JURISDICTION'); toast('+15 oz', '#3fae2a');
+            setTimeout(()=>{ if(state==='play' && kind==='border'){ Audio8.stop(); Audio8.play('canada'); } }, 2600);
             Audio8.S.fanfare();
           } else {
             combat(j.hp===2 ? "HE'S WITH ME!" : 'JURISDICTION LOST!', j.x+16, j.y-14, '#3fae2a');
@@ -3388,6 +3392,7 @@ function stepLevel5(){
         if(k.hp <= 0){
           k.dead = true; k.done = true; oz += 20;
           killPanel('THE STREETS ARE TUNED!', 'VON QUINN ABDICATES'); toast('+20 oz', '#3fae2a');
+          setTimeout(()=>{ if(state==='play' && kind==='city'){ Audio8.stop(); Audio8.play('rage'); } }, 2600);
           Audio8.S.fanfare();
         } else {
           combat(pick(TUNEUPS), k.x+22, k.y-16, '#3fae2a');
@@ -4670,7 +4675,7 @@ function drawBoss1(){
 }
 
 let bossIntro = null;   // {name, t, song}
-const BOSS_INTRO_LEN = 480;
+const BOSS_INTRO_LEN = 496;
 
 function announceBoss(name, song){
   bossIntro = {name, t:0, song: song || null};
@@ -4909,11 +4914,11 @@ function drawBossIntro(){
   // the VS track cuts out early, leaving a beat of dead air. the gong lands in the
   // silence, THEN the boss theme drops on FIGHT!. a hard cut sounds intentional;
   // a crossfade would just sound like a mistake.
-  if(t === 352) Audio8.stop();                                   // dead air
-  if(t === 366) Audio8.S.gong();                                 // the hit that fills it
-  if(t === 380 && bossIntro.song) Audio8.play(bossIntro.song);   // and we're off
-  if(t >= 380){
-    const k = t - 380;
+  if(t === 336) Audio8.fadeOut(420);                             // the VS track dissolves
+  if(t === 368) Audio8.S.gong();                                 // the gong lands in the gap
+  if(t === 396 && bossIntro.song) Audio8.play(bossIntro.song);   // theme drops after it rings
+  if(t >= 384){
+    const k = t - 384;
     const sc = k < 8 ? 2.4 - k * 0.18 : 1;
     ctx.save();
     ctx.translate(VIEW_W/2, VIEW_H - 44);
