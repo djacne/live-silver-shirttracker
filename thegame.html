@@ -41,7 +41,10 @@
     .split{flex-direction:row;gap:26px;align-items:center;}
     .stack{max-width:55vw;gap:9px;}
     .overlay img{max-height:62vh;max-width:32vw;}
-    .overlay{gap:8px;}
+    .overlay{gap:8px;justify-content:center;
+      padding-top:calc(8.3vh + 54px + env(safe-area-inset-top));}
+    .overlay > :first-child{margin-top:0;}
+    .overlay > :last-child{margin-bottom:0;}
   }
   @media (max-height: 480px){
     .overlay h1{font-size:clamp(15px,4.5vh,26px);}
@@ -361,7 +364,10 @@
     <div class="boardTitle">Top Stackers</div>
     <ol id="deadBoardList"></ol>
   </div>
-  <button class="btn" id="retryBtn">Try Again Loser</button>
+  <div class="btnrow">
+    <button class="btn" id="retryBtn">Try Again Loser</button>
+    <button class="btn alt" id="deadTitleBtn">Title Screen</button>
+  </div>
 </div>
 
 <div id="winScreen" class="overlay hidden">
@@ -381,7 +387,10 @@
     <div class="boardTitle">Top Stackers</div>
     <ol id="boardList"></ol>
   </div>
-  <button class="btn" id="againBtn">Stack Again</button>
+  <div class="btnrow">
+    <button class="btn" id="againBtn">Stack Again</button>
+    <button class="btn alt" id="winTitleBtn">Title Screen</button>
+  </div>
   </div>
  </div>
 </div>
@@ -1922,7 +1931,7 @@ function stepLevel2(){
         if(S.sprayCd <= 0){
           S.sprayCd = 70; S.spray = 26;
           Audio8.S.wind();
-          quip('HE JUST SPRAYS! USE THE BRIDGE!', '#7ab8e8');
+          quip('HE JUST SPRAYS! USE THE BRIDGE!', '#3fae2a');
         }
       } else if(dan.inv<=0 && dan.star<=0){
         return hurt('SKUNKED!', false, true);
@@ -3043,11 +3052,11 @@ function renderBonus(){
   ctx.fillText(label, VIEW_W/2, 53);
 
   // combo + earnings
-  ctx.fillStyle='rgba(20,20,40,.85)'; ctx.fillRect(VIEW_W-136, 66, 120, 40);
+  ctx.fillStyle='rgba(20,20,40,.85)'; ctx.fillRect(VIEW_W-136, 118, 120, 40);
   ctx.fillStyle='#d7dde6'; ctx.font='bold 10px Courier New'; ctx.textAlign='left';
-  ctx.fillText('STRETCHES: ' + S.combo, VIEW_W-128, 80);
+  ctx.fillText('STRETCHES: ' + S.combo, VIEW_W-128, 132);
   ctx.fillStyle='#ffd94a';
-  ctx.fillText('EARNED: ' + S.gained + ' oz', VIEW_W-128, 96);
+  ctx.fillText('EARNED: ' + S.gained + ' oz', VIEW_W-128, 148);
   ctx.textAlign='center';
 
   if(S.phase === 'call'){
@@ -6151,6 +6160,8 @@ function winGame(){
 onTap('startBtn', startGame);
 onTap('retryBtn', retryLevel);
 onTap('againBtn', ()=>{ hide('winScreen'); startGame(); });
+onTap('winTitleBtn', ()=>{ hide('winScreen'); quitToTitle(); });
+onTap('deadTitleBtn', ()=>{ hide('deadScreen'); quitToTitle(); });
 let lbFrom = 'title';
 onTap('lbBtn', ()=>{ lbFrom = 'title'; Audio8.unlock(); showLeaderboard(); });
 $('nameInput').addEventListener('keydown', e => { if(e.key==='Enter') $('submitScoreBtn').click(); });
@@ -6162,7 +6173,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '5.9';
+const BUILD = '6.0';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
