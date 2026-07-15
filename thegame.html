@@ -983,7 +983,7 @@ function buildLevel(n){
     LEVEL_W = 800; FLAG_X = 800;
     plats = []; pits = []; boxes = []; coins = []; bars = []; subs = []; enemies = []; cams = [];
     BS = {phase:'call', t:0, idx:0, seq:[], at:0, win:0, winMax:0, timeLeft:3600,
-          combo:0, gained:0, days:69, tweak:0, pose:0, poseT:0, slogan:0, hitT:0, shine:0};
+          combo:0, gained:0, days:69, tweak:0, pose:0, poseT:0, slogan:0, hitT:0, shine:0, statPop:0};
   }
   if(kind === 'train'){
     LEVEL_W = 800; FLAG_X = 800;
@@ -2686,7 +2686,7 @@ function stepBonus(){
             const pay = bonusPay(S.idx);
             const combo = 1 + Math.min(1.5, S.combo * 0.12);
             const won = Math.round(pay * combo);
-            oz += won; S.gained += won; S.combo++;
+            oz += won; S.gained += won; S.combo++; S.statPop = 12;
             checkMilestone();
             riseText(VIEW_W/2 + 90, 150, '+' + won + ' oz');
             Audio8.S.bar();
@@ -3051,13 +3051,66 @@ function renderBonus(){
   ctx.textAlign='center';
   ctx.fillText(label, VIEW_W/2, 53);
 
-  // combo + earnings
-  ctx.fillStyle='rgba(20,20,40,.85)'; ctx.fillRect(VIEW_W-136, 118, 120, 40);
-  ctx.fillStyle='#d7dde6'; ctx.font='bold 10px Courier New'; ctx.textAlign='left';
-  ctx.fillText('STRETCHES: ' + S.combo, VIEW_W-128, 132);
-  ctx.fillStyle='#ffd94a';
-  ctx.fillText('EARNED: ' + S.gained + ' oz', VIEW_W-128, 148);
-  ctx.textAlign='center';
+  // ===== single-line stats readout, tucked in the clear strip up top between the
+  //       injury sign (left) and the pause/mute buttons (right) =====
+  if(S.statPop > 0) S.statPop--;
+  const pop = S.statPop > 0 ? 1 + Math.sin((12 - S.statPop) / 12 * Math.PI) * 0.16 : 1;
+  const stretchNum = String(S.combo).padStart(2, ' ');
+  const earnNum = String(S.gained).padStart(3, ' ');
+
+  ctx.textAlign = 'left';
+  // measure with the real fonts so the plate fits exactly
+  ctx.font = 'bold 10px Courier New';
+  const wLabel1 = ctx.measureText('STRETCHES ').width;
+  const wLabel2 = ctx.measureText('  EARNED ').width;
+  ctx.font = 'bold 14px Courier New';
+  const wNum1 = ctx.measureText(stretchNum).width;
+  const wNum2 = ctx.measureText(earnNum + ' oz').width;
+  const wDiv = 14;
+  const inner = wLabel1 + wNum1 + wDiv + wLabel2 + wNum2;
+  const plateW = inner + 24;
+  const plateH = 26;
+  const plateX = VIEW_W/2 - plateW/2;
+  const plateY = 30;
+  const midY = plateY + plateH/2;
+
+  // backing plate
+  ctx.fillStyle = 'rgba(16,18,32,.9)';
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(plateX, plateY, plateW, plateH, 7) : ctx.rect(plateX, plateY, plateW, plateH);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(plateX, plateY, plateW, plateH, 7) : ctx.rect(plateX, plateY, plateW, plateH);
+  ctx.stroke();
+
+  let x = plateX + 12;
+  ctx.textBaseline = 'middle';
+  // STRETCHES label (dim) + number (bright white, pops)
+  ctx.font = 'bold 10px Courier New'; ctx.fillStyle = '#8a93a8';
+  ctx.fillText('STRETCHES', x, midY); x += wLabel1;
+  ctx.save();
+  ctx.font = 'bold 14px Courier New'; ctx.fillStyle = '#ffffff';
+  ctx.translate(x + wNum1/2, midY); ctx.scale(pop, pop);
+  ctx.textAlign = 'center'; ctx.fillText(stretchNum, 0, 0);
+  ctx.restore();
+  x += wNum1;
+  ctx.textAlign = 'left';
+  // divider
+  ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x + wDiv/2, plateY + 6); ctx.lineTo(x + wDiv/2, plateY + plateH - 6); ctx.stroke();
+  x += wDiv;
+  // EARNED label (dim) + number (gold, pops)
+  ctx.font = 'bold 10px Courier New'; ctx.fillStyle = '#8a93a8';
+  ctx.fillText('EARNED', x + ctx.measureText('  ').width, midY); x += wLabel2;
+  ctx.save();
+  ctx.font = 'bold 14px Courier New'; ctx.fillStyle = '#ffd94a';
+  ctx.translate(x + wNum2/2, midY); ctx.scale(pop, pop);
+  ctx.textAlign = 'center'; ctx.fillText(earnNum + ' oz', 0, 0);
+  ctx.restore();
+
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'center';
 
   if(S.phase === 'call'){
     const st = STRETCHES[Math.min(S.idx, STRETCHES.length-1)];
@@ -3265,7 +3318,7 @@ function stepLevel4(){
           if(j.hp <= 0){
             j.dead = true; j.done = true; oz += 15;
             j.stamps = [];   // no handcuffs left hanging frozen in the air
-            killPanel('DEPORTATION DENIED!', 'THE BORDER CZAR IS OUT OF JURISDICTION'); toast('+15 oz', '#3fae2a');
+            killPanel('DEPORTATION DENIED!', '"LEGAL" IMMIGRATION STATUS: GRANTED'); toast('+15 oz', '#3fae2a');
             setTimeout(()=>{ if(state==='play' && kind==='border'){ Audio8.stop(); Audio8.play('canada'); } }, 2600);
             Audio8.S.fanfare();
           } else {
@@ -6047,9 +6100,22 @@ function drawDancingDan(cx, cy, s, t){
     ctx.fillStyle='#4a7ab8'; ctx.fillRect(2, 14, 22, 16);
     ctx.fillStyle='#3a2a14'; ctx.fillRect(2, 26, 22, 3.5);
   } else if(kind === 'train' || kind === 'bonus'){
+    // navy shirt underneath
     ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14, 22, 16);
-    ctx.fillStyle='#f26a1b'; ctx.fillRect(3, 14, 20, 15);
-    ctx.fillStyle='#e8e8ec'; ctx.fillRect(3, 19, 20, 2.2); ctx.fillRect(3, 24, 20, 2.2);
+    // the hi-viz vest: two front panels with a gap, so it reads as an open zip-up vest
+    ctx.fillStyle='#f26a1b';
+    ctx.fillRect(3, 14, 9.2, 15);                                  // left panel
+    ctx.fillRect(13.8, 14, 9.2, 15);                               // right panel
+    // the shirt showing through the center gap + an open collar V at the top
+    ctx.fillStyle='#2e3d6b';
+    ctx.fillRect(12.2, 16, 1.6, 13);                               // zipper gap
+    ctx.beginPath(); ctx.moveTo(9.5,14); ctx.lineTo(13,19); ctx.lineTo(16.5,14); ctx.closePath(); ctx.fill();  // collar V
+    // the metal zipper pull sitting in the gap
+    ctx.fillStyle='#c8c8ce'; ctx.fillRect(12.4, 19, 1.2, 2.2);
+    // reflective stripes, broken by the zipper gap
+    ctx.fillStyle='#e8e8ec';
+    ctx.fillRect(3, 21, 9.2, 2.2); ctx.fillRect(13.8, 21, 9.2, 2.2);
+    ctx.fillRect(3, 25.5, 9.2, 2.2); ctx.fillRect(13.8, 25.5, 9.2, 2.2);
   } else {
     ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14, 22, 16);
     ctx.fillStyle='#b99a5f'; ctx.fillRect(6, 20, 14, 10);
@@ -6173,7 +6239,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '6.0';
+const BUILD = '6.2';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
