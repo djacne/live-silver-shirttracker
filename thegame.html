@@ -354,7 +354,7 @@
   <p style="font-size:clamp(18px,5vw,26px);font-weight:bold;color:#fff;letter-spacing:1px;">GET BACK TO WORK!</p>
   <p id="deadText"></p>
   <div id="deadEntry">
-    <input id="deadNameInput" maxlength="12" placeholder="YOUR NAME" autocomplete="off" spellcheck="false">
+    <input id="deadNameInput" maxlength="15" placeholder="YOUR NAME" autocomplete="off" spellcheck="false">
     <div class="btnrow">
       <button class="btn" id="deadSubmitBtn">Submit Score</button>
       <button class="btn alt" id="deadSkipBtn">Skip</button>
@@ -377,7 +377,7 @@
   <h1><span class="ag">Retirement</span> Achieved</h1>
   <p id="winText"></p>
   <div id="nameEntry">
-    <input id="nameInput" maxlength="12" placeholder="YOUR NAME" autocomplete="off" spellcheck="false">
+    <input id="nameInput" maxlength="15" placeholder="YOUR NAME" autocomplete="off" spellcheck="false">
     <div class="btnrow">
       <button class="btn" id="submitScoreBtn">Submit</button>
       <button class="btn alt" id="skipScoreBtn">Skip</button>
@@ -430,6 +430,14 @@ window.addEventListener('error', function(ev){
 "use strict";
 const cvs = document.getElementById('game');
 const ctx = cvs.getContext('2d');
+const HALFTONE_PATTERN = (function(){
+  const tile = document.createElement('canvas');
+  tile.width = 5; tile.height = 5;
+  const tctx = tile.getContext('2d');
+  tctx.fillStyle = 'rgba(20,20,30,.16)';
+  tctx.beginPath(); tctx.arc(2.5, 2.5, 1.1, 0, 7); tctx.fill();
+  return ctx.createPattern(tile, 'repeat');
+})();
 
 // ================= AUDIO =================
 const Audio8 = (() => {
@@ -1084,8 +1092,8 @@ const SAFETY_SLOGANS = ['SAFETY IS A CHOICE!', 'STRETCH TO SUCCESS!', 'REPORT AL
 const KING_HITS = ['ROBBED IN BROAD DAYLIGHT!', 'STREET TAX!'];
 const BOSS1_HITS = ['SEIZED BY THE PROLETARIAT!', 'YOUR LABOR IS ALIENATED!', 'EXPROPRIATED!'];
 // the only pool you asked for: Dan, against Lauer
-const DAN_VS_LAUER = ['GO BACK TO THE CRAFT!', 'SAFETY FIRST!', 'GOOD FAITH CHALLENGE!'];
-const LAUER_HITS  = ['LEVEL S!', 'DECERTIFIED!', 'THAT IS A FAILURE!'];
+const DAN_VS_LAUER = ['NO MORE LIES!', 'SAFETY FIRST!', 'GOOD FAITH CHALLENGE!'];
+const LAUER_HITS  = ["YOU'RE PULLED FROM SERVICE!", 'HAND OVER YOUR SWITCH KEYS!', 'THAT IS A FAILURE!'];
 const BOSS_SPEECHES = [
   'ABOLISH ALL PRIVATE PROPERTY!',
   'WORKERS OF THE WORLD, UNITE!',
@@ -1392,11 +1400,10 @@ function drawBursts(){
     }
     ctx.closePath();
     ctx.clip();
-    ctx.fillStyle = 'rgba(20,20,30,.16)';
-    for(let dy = -h * 1.4; dy < h * 1.4; dy += 5)
-      for(let dx = -w * 1.3; dx < w * 1.3; dx += 5){
-        ctx.beginPath(); ctx.arc(dx, dy, 1.1, 0, 7); ctx.fill();
-      }
+    // one cached-pattern fill instead of hundreds of individual dot draws --
+    // that loop was the real cause of the Android/Fire-tablet stutter
+    ctx.fillStyle = HALFTONE_PATTERN;
+    ctx.fillRect(-w * 1.4, -h * 1.4, w * 2.8, h * 2.8);
     ctx.restore();
 
     drawStarburst(w * 0.99, h * 1.07, b.spikes, b.seed + 0.5, '#fdf3d8', '#12121c', 2);
@@ -1428,7 +1435,7 @@ function killPanel(text, sub){
   Audio8.S.slam();
   setTimeout(()=> Audio8.S.gong(), 90);
 }
-const PANEL_LEN = 132;
+const PANEL_LEN = 192;   // +1s so the punchline is actually readable
 function drawKillPanel(){
   if(!panel) return;
   const t = panel.t++;
@@ -2125,7 +2132,7 @@ function stepTrain(){
       const j = S.jl;
       j.x = VIEW_W + 50; j.y = GROUND_Y - 46; j.hp = 4; j.hurtT = 0; j.entering = true; j.throwT = 150;
       S.clips = [];
-      announceBoss('TRAINMASTER LAUER', 'lauer');
+      announceBoss('TRAINMASTER LIAR', 'lauer');
     }
     return;
   }
@@ -2216,7 +2223,7 @@ function stepBrawl(){
       j.hp--; j.hurtT = 90; S.dvy = -8; S.inv = 60;
       Audio8.S.bonk();
       burstScreen(pick(DAN_VS_LAUER), S.dx+13, S.dy-16, '#4a90d9', 1);
-      if(j.hp <= 0){ j.dead = true; j.deadT = 0; oz += 20; S.clips = []; killPanel('I HIRED OUT TO WORK!', 'HE HIRED OUT TOO, ONCE'); toast('+20 oz', '#3fae2a'); }
+      if(j.hp <= 0){ j.dead = true; j.deadT = 0; oz += 20; S.clips = []; killPanel('I HIRED OUT TO WORK!', 'AND YOU JUST DERAILED'); toast('+20 oz', '#3fae2a'); }
     } else if(S.inv <= 0 && !stomp){
       S.inv = 90;
       lives--;
@@ -2522,7 +2529,7 @@ function renderTrain(){
       ctx.fillStyle='#8a93a8'; ctx.fillRect(-3.5, -4, 7, 1); ctx.fillRect(-3.5, -1.5, 7, 1);
       ctx.restore();
     }
-    if(S.phase!=='won') drawBossBar('TRAINMASTER LAUER', Math.max(0,j.hp), 4, j.hurtT>75?1:0);
+    if(S.phase!=='won') drawBossBar('TRAINMASTER LIAR', Math.max(0,j.hp), 4, j.hurtT>75?1:0);
     if(!j.dead) drawBossLine(JL_LINES[j.line]);
     // === victory: fireworks + the slow crawl of vindication ===
     if(S.phase==='won'){
@@ -3036,30 +3043,19 @@ function renderBonus(){
   drawBonusDan();
   drawFloatTexts();
 
-  // ===== the briefing UI =====
+  // ===== the briefing UI: one combined box, countdown on top, stats below =====
   ctx.textAlign='center';
 
-  // shift clock
-  const secs = Math.max(0, Math.ceil(S.timeLeft/60));
-  const label = 'STRETCH FOR ' + secs + 's';
-  ctx.font='bold 17px Courier New';
-  const cw = ctx.measureText(label).width + 34;
-  ctx.fillStyle='rgba(20,20,40,.88)'; ctx.fillRect(VIEW_W/2-cw/2, 30, cw, 34);
-  ctx.strokeStyle = secs <= 10 ? '#ff2b1c' : '#e8e8ec'; ctx.lineWidth=2.5;
-  ctx.strokeRect(VIEW_W/2-cw/2, 30, cw, 34);
-  ctx.fillStyle = secs <= 10 && (time>>3)%2===0 ? '#ff2b1c' : '#ffd94a';
-  ctx.textAlign='center';
-  ctx.fillText(label, VIEW_W/2, 53);
-
-  // ===== single-line stats readout, tucked in the clear strip up top between the
-  //       injury sign (left) and the pause/mute buttons (right) =====
   if(S.statPop > 0) S.statPop--;
   const pop = S.statPop > 0 ? 1 + Math.sin((12 - S.statPop) / 12 * Math.PI) * 0.16 : 1;
+  const secs = Math.max(0, Math.ceil(S.timeLeft/60));
+  const label = 'STRETCH FOR ' + secs + 's';
   const stretchNum = String(S.combo).padStart(2, ' ');
   const earnNum = String(S.gained).padStart(3, ' ');
 
   ctx.textAlign = 'left';
-  // measure with the real fonts so the plate fits exactly
+  ctx.font = 'bold 17px Courier New';
+  const wLabel0 = ctx.measureText(label).width;
   ctx.font = 'bold 10px Courier New';
   const wLabel1 = ctx.measureText('STRETCHES ').width;
   const wLabel2 = ctx.measureText('  EARNED ').width;
@@ -3067,26 +3063,33 @@ function renderBonus(){
   const wNum1 = ctx.measureText(stretchNum).width;
   const wNum2 = ctx.measureText(earnNum + ' oz').width;
   const wDiv = 14;
-  const inner = wLabel1 + wNum1 + wDiv + wLabel2 + wNum2;
-  const plateW = inner + 24;
-  const plateH = 26;
+  const row2W = wLabel1 + wNum1 + wDiv + wLabel2 + wNum2;
+  const plateW = Math.max(wLabel0, row2W) + 28;
+  const plateH = 62;
   const plateX = VIEW_W/2 - plateW/2;
-  const plateY = 30;
-  const midY = plateY + plateH/2;
+  const plateY = 28;
 
-  // backing plate
   ctx.fillStyle = 'rgba(16,18,32,.9)';
   ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(plateX, plateY, plateW, plateH, 7) : ctx.rect(plateX, plateY, plateW, plateH);
+  ctx.roundRect ? ctx.roundRect(plateX, plateY, plateW, plateH, 8) : ctx.rect(plateX, plateY, plateW, plateH);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = secs <= 10 ? 'rgba(255,43,28,.7)' : 'rgba(255,255,255,.14)'; ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(plateX, plateY, plateW, plateH, 7) : ctx.rect(plateX, plateY, plateW, plateH);
+  ctx.roundRect ? ctx.roundRect(plateX, plateY, plateW, plateH, 8) : ctx.rect(plateX, plateY, plateW, plateH);
   ctx.stroke();
+  // a divider between the two rows
+  ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(plateX+10, plateY+32); ctx.lineTo(plateX+plateW-10, plateY+32); ctx.stroke();
 
-  let x = plateX + 12;
-  ctx.textBaseline = 'middle';
-  // STRETCHES label (dim) + number (bright white, pops)
+  // row 1: the countdown
+  ctx.textAlign = 'center'; ctx.font = 'bold 17px Courier New';
+  ctx.fillStyle = secs <= 10 && (time>>3)%2===0 ? '#ff2b1c' : '#ffd94a';
+  ctx.fillText(label, VIEW_W/2, plateY + 22);
+
+  // row 2: stretches + earned, same readable treatment as before
+  let x = plateX + 14;
+  const midY = plateY + 48;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   ctx.font = 'bold 10px Courier New'; ctx.fillStyle = '#8a93a8';
   ctx.fillText('STRETCHES', x, midY); x += wLabel1;
   ctx.save();
@@ -3096,11 +3099,9 @@ function renderBonus(){
   ctx.restore();
   x += wNum1;
   ctx.textAlign = 'left';
-  // divider
   ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(x + wDiv/2, plateY + 6); ctx.lineTo(x + wDiv/2, plateY + plateH - 6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + wDiv/2, midY - 9); ctx.lineTo(x + wDiv/2, midY + 9); ctx.stroke();
   x += wDiv;
-  // EARNED label (dim) + number (gold, pops)
   ctx.font = 'bold 10px Courier New'; ctx.fillStyle = '#8a93a8';
   ctx.fillText('EARNED', x + ctx.measureText('  ').width, midY); x += wLabel2;
   ctx.save();
@@ -5426,7 +5427,7 @@ function bigFace(name, cx, cy, s){
     ctx.fillStyle='#8a4a3a'; ctx.fillRect(9, 17, 8, 2);
     ctx.fillStyle='#fff'; ctx.fillRect(9, 20, 8, 4);
     ctx.fillStyle='#b3202a'; ctx.fillRect(11.5, 20, 3.4, 6);
-  } else {   // TRAINMASTER LAUER
+  } else {   // TRAINMASTER LIAR
     ctx.translate(-13, -12);
     ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(13, 10, 11, 0, 7); ctx.fill();
     ctx.fillStyle='#5a4028';
@@ -6239,7 +6240,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '6.2';
+const BUILD = '6.3';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
