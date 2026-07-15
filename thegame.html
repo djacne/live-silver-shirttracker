@@ -6263,7 +6263,8 @@ function winGame(){
   });
 }
 onTap('startBtn', startGame);
-onTap('retryBtn', retryLevel);
+onTap('retryBtn', startGame);   // full restart from Level 1, oz reset to 0 --
+                                 // no more retrying just the current level with banked oz
 onTap('againBtn', ()=>{ hide('winScreen'); startGame(); });
 onTap('winTitleBtn', ()=>{ hide('winScreen'); quitToTitle(); });
 onTap('deadTitleBtn', ()=>{ hide('deadScreen'); quitToTitle(); });
@@ -6278,7 +6279,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '6.9';
+const BUILD = '7.0';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
