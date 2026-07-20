@@ -632,6 +632,10 @@ const Audio8 = (() => {
     sadTrombone(){ [233,220,207,185].forEach((f,i)=>tone(f,t()+i*0.36,i===3?0.9:0.32,'sawtooth',0.17,null,f*0.93)); },
     footstep(){ nz(t(),0.05,0.28); tone(85,t(),0.09,'sine',0.32,null,55); },
     checkpoint(){ tone(880,t(),0.07,'square',0.11); tone(1175,t()+0.07,0.14,'square',0.11); },
+    // crosshair tracking beat (Trainmaster Liar fatality): a dry radar-style blip
+    // while the reticle searches, then a sharp, definitive lock-on chime
+    trackBeep(){ tone(1400,t(),0.045,'square',0.13); },
+    lockOn(){ tone(1760,t(),0.05,'square',0.20); tone(2350,t()+0.05,0.09,'square',0.16); nz(t()+0.05,0.03,0.14); },
     shutter(){                                   // a camera catching Dan in the act
       nz(t(), 0.035, 0.16);
       tone(2400, t(), 0.02, 'square', 0.07);
@@ -2024,6 +2028,11 @@ function startFatality(opts){
     positioner: opts.positioner, finisher: opts.finisher, vanish: opts.vanish,
     spartaWords: opts.spartaWords, onComplete: opts.onComplete,
     resumeSong: opts.resumeSong,
+    // opt-in crosshair-tracking beat (currently just Trainmaster Liar) -- a boss-agnostic
+    // "reticle searches, then locks" sequence that runs between darken and sparta.
+    // trackTarget() must return the screen-space {x,y} to lock onto.
+    trackAndLock: opts.trackAndLock || false, trackTarget: opts.trackTarget || null,
+    trackT: 0, trackLocked: false, trackPts: null, trackX: 0, trackY: 0,
     seq: [], at: 0, win: 0, winMax: 0, held: {}, shine: 0,
     darken: 0, animT: 0, posT: 0, stampT: 0, spartaI: 0, spartaT: 0, lastSpartaI: -1
   };
@@ -2072,6 +2081,49 @@ function stepFatality(){
   if(F.phase==='darken'){
     F.darken = Math.min(1, F.darken + 0.09);
     if(F.darken >= 1){
+      if(F.trackAndLock && F.trackTarget){
+        F.phase='tracking'; F.t=0; F.trackT=0; F.trackLocked=false;
+        // a handful of screen points the reticle darts between before finding the real target --
+        // fixed pattern (not random) so it reads as a deliberate search, not jitter
+        F.trackPts = [
+          {x: VIEW_W*0.22, y: VIEW_H*0.30}, {x: VIEW_W*0.74, y: VIEW_H*0.62},
+          {x: VIEW_W*0.40, y: VIEW_H*0.75}, {x: VIEW_W*0.65, y: VIEW_H*0.25},
+          {x: VIEW_W*0.30, y: VIEW_H*0.55}
+        ];
+        F.trackX = F.trackPts[0].x; F.trackY = F.trackPts[0].y;
+      }
+      else if(F.spartaWords && F.spartaWords.length){ F.phase='sparta'; F.t=0; F.spartaI=0; F.spartaT=0; F.lastSpartaI=-1; }
+      else { F.phase='anim'; F.t=0; F.animT=0; }
+    }
+    return;
+  }
+  if(F.phase==='tracking'){
+    F.trackT++;
+    const bounceEnd = 90, lockEnd = 115, holdEnd = 155;
+    if(F.trackT <= bounceEnd){
+      // dart between fixed points, snapping (not gliding) every ~18 frames -- slower
+      // dwell so the player actually registers each stop before it moves again
+      const idx = Math.min(F.trackPts.length-1, Math.floor(F.trackT/18));
+      F.trackX = F.trackPts[idx].x; F.trackY = F.trackPts[idx].y;
+      if(F.trackT % 12 === 0) Audio8.S.trackBeep();
+    } else if(F.trackT <= lockEnd){
+      // ease from the last bounce point onto the real target -- slower, more deliberate
+      const target = F.trackTarget();
+      const k = (F.trackT - bounceEnd) / (lockEnd - bounceEnd);
+      const ek = 1 - Math.pow(1-k, 2);   // ease-out
+      const from = F.trackPts[F.trackPts.length-1];
+      F.trackX = from.x + (target.x - from.x) * ek;
+      F.trackY = from.y + (target.y - from.y) * ek;
+      if(F.trackT % 6 === 0) Audio8.S.trackBeep();
+    } else if(!F.trackLocked){
+      // LOCK -- this is the trigger: legs spread the instant the reticle locks on
+      F.trackLocked = true;
+      const target = F.trackTarget();
+      F.trackX = target.x; F.trackY = target.y;
+      Audio8.S.lockOn();
+      L3S.jl.spread = 1;
+    }
+    if(F.trackT >= holdEnd){
       if(F.spartaWords && F.spartaWords.length){ F.phase='sparta'; F.t=0; F.spartaI=0; F.spartaT=0; F.lastSpartaI=-1; }
       else { F.phase='anim'; F.t=0; F.animT=0; }
     }
@@ -2181,6 +2233,30 @@ function drawFatalityOverlay(){
       }
       ctx.textAlign = 'left';
     }
+    return;
+  }
+  if(F.phase==='tracking'){
+    // the searching/locking reticle -- moves per F.trackX/trackY, computed in stepFatality
+    const pulse = F.trackLocked ? (0.7 + 0.3*Math.abs(Math.sin(F.trackT*0.4))) : 1;
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.strokeStyle = F.trackLocked ? '#ff1a1a' : '#ffd94a';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(F.trackX, F.trackY, F.trackLocked ? 22 : 16, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(F.trackX, F.trackY, F.trackLocked ? 10 : 8, 0, Math.PI*2); ctx.stroke();
+    // crosshair ticks
+    const r1 = F.trackLocked ? 22 : 16, r2 = r1 + 8;
+    ctx.beginPath();
+    ctx.moveTo(F.trackX, F.trackY-r1); ctx.lineTo(F.trackX, F.trackY-r2);
+    ctx.moveTo(F.trackX, F.trackY+r1); ctx.lineTo(F.trackX, F.trackY+r2);
+    ctx.moveTo(F.trackX-r1, F.trackY); ctx.lineTo(F.trackX-r2, F.trackY);
+    ctx.moveTo(F.trackX+r1, F.trackY); ctx.lineTo(F.trackX+r2, F.trackY);
+    ctx.stroke();
+    if(F.trackLocked){
+      ctx.fillStyle = '#ff1a1a'; ctx.font = 'bold 12px Courier New'; ctx.textAlign='center';
+      ctx.fillText('LOCKED', F.trackX, F.trackY - 32);
+    }
+    ctx.restore();
     return;
   }
   if(F.phase==='sparta'){
@@ -2324,7 +2400,9 @@ function trainmasterPositioner(t){
   const S = L3S, j = S.jl;
   const mark = j.x - 40;
   S.dface = 1;
-  j.spread = 1;                       // boss plants his legs wide and waits
+  // NOTE: he stays in his normal standing pose through position/wobble/prompt/input --
+  // same dazed wobble every other boss gets. The legs-apart target pose only snaps on
+  // the instant the QTE succeeds, in trainmasterKickFinisher below.
   j.vx = -1;                          // and turns to face Dan, who is on his left
   S.dx += (mark - S.dx) * 0.12;
   S.dground = true; S.dvy = 0; S.dy = GROUND_Y - 40;
@@ -3203,6 +3281,7 @@ function stepBrawl(){
           clearFlicker: () => { S.inv = 0; j.hurtT = 0; j.flashT = 0; S.clips = []; S.swing = 0; S.swingHeld = false; },
           resumeSong: 'lauer',
           positioner: trainmasterPositioner, finisher: trainmasterKickFinisher, vanish: trainmasterVanish,
+          trackAndLock: true, trackTarget: () => ({x: L3S.jl.x+15, y: L3S.jl.y+30}),
           spartaWords: ['THIS','IS','RAILROADING!!'],
           onComplete: (success) => { j.dead = true; j.deadT = 0; oz += 100; S.clips = []; toast('+100 oz', '#3fae2a'); S.quietWin = success; }
         });
@@ -3223,6 +3302,7 @@ function stepBrawl(){
           clearFlicker: () => { S.inv = 0; j.hurtT = 0; j.flashT = 0; S.clips = []; S.swing = 0; S.swingHeld = false; },
           resumeSong: 'lauer',
           positioner: trainmasterPositioner, finisher: trainmasterKickFinisher, vanish: trainmasterVanish,
+          trackAndLock: true, trackTarget: () => ({x: L3S.jl.x+15, y: L3S.jl.y+30}),
           spartaWords: ['THIS','IS','RAILROADING!!'],
           onComplete: (success) => { j.dead = true; j.deadT = 0; oz += 100; S.clips = []; toast('+100 oz', '#3fae2a'); S.quietWin = success; }
         });
@@ -3555,7 +3635,7 @@ function renderTrain(){
       } else {
         const stride = Math.sin(time*0.18)*3;
         const fat = j.fat || 0, fall = j.fatFall || 0;
-        ctx.translate(j.x+15, j.y); ctx.scale(j.vx>=0?1:-1, 1); ctx.translate(-15, 0);
+        ctx.translate(j.x+15+fatalityWobbleX(), j.y); ctx.scale(j.vx>=0?1:-1, 1); ctx.translate(-15, 0);
         if(fat > 0){
           // SQUAT: knees buckle and he drops straight down, no forward lean.
           // then he topples straight over backwards onto his back.
@@ -10344,7 +10424,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '16.2';
+const BUILD = '16.5';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
