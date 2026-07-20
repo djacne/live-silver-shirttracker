@@ -4432,7 +4432,7 @@ function stepBoss7(){
             clearFlicker: () => { n.hurtT=0; n.flashT=0; n.tampons=[]; n.pendingThrow=false; n.bagT=0; dan.swing=0; dan.swingHeld=false; },
             resumeSong: 'march',
             positioner: nastyPositioner, finisher: nastyHatFinisher, vanish: nastyVanish,
-            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; if(success){ n.runaway=true; dan.redHat=false; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
+            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; dan._hatJinglePlayed=false; if(success){ n.runaway=true; dan.redHat=false; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
           });
         } else {
           combat(pick(DAN_VS_NASTY), n.x+16, n.y-14, '#4a90d9');
@@ -4453,7 +4453,7 @@ function stepBoss7(){
             clearFlicker: () => { n.hurtT=0; n.flashT=0; n.tampons=[]; n.pendingThrow=false; n.bagT=0; },
             resumeSong: 'march',
             positioner: nastyPositioner, finisher: nastyHatFinisher, vanish: nastyVanish,
-            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; if(success){ n.runaway=true; dan.redHat=false; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
+            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; dan._hatJinglePlayed=false; if(success){ n.runaway=true; dan.redHat=false; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
           });
         } else {
           combat(pick(DAN_VS_NASTY), n.x+16, n.y-14, '#4a90d9');
@@ -8451,7 +8451,7 @@ function nastyVanish(){
   n.dead = true; n.deadT = 200;
   n.yellingT = 0; n.runaway = false; n.signDropped = false; n.scared = false; n.runVX = 0;
   L7S.signOnGround = false; L7S.signDropX = 0;
-  dan.reachFrac = 0; dan.tipHat = false; dan.waving = 0; dan.saluteProg = 0;
+  dan.reachFrac = 0; dan.tipHat = false; dan.waving = 0; dan.saluteProg = 0; dan._hatJinglePlayed = false;
   NASTY_HAT_PROP = null; NASTY_BOX = null; NASTY_GORE = null;
 }
 
@@ -8581,20 +8581,34 @@ function nastyHatFinisher(t){
     NASTY_HAT_PROP.y += NASTY_HAT_PROP.vy;
     NASTY_HAT_PROP.wx += Math.sin(NASTY_HAT_PROP.ht * 0.09) * 1.4;
     if(t > t_bonk + 20){
+      // Dan drifts toward the hat's x so it lands on him
       const targetX = NASTY_HAT_PROP.wx - 13;
       dan.x += (targetX - dan.x) * 0.04;
       dan.walkT += 0.5;
       dan.face = dan.x < NASTY_HAT_PROP.wx ? 1 : -1;
     }
-    const danHeadY = dan.y + 8;
-    if(NASTY_HAT_PROP.y >= danHeadY || t >= t_hatCatch){
+    // catch when hat's visual base (center+8) reaches Dan's head top (dan.y)
+    // -- this is the moment the hat visually sits on his crown, not 8px inside his head
+    const hatBaseY = NASTY_HAT_PROP.y + 8;
+    if(hatBaseY >= dan.y || t >= t_hatCatch){
+      // snap hat world-x to Dan's head center so the settle is pixel-perfect
+      NASTY_HAT_PROP.wx = dan.x + 13;
+      NASTY_HAT_PROP.y  = dan.y;          // rest hat base exactly on head top
       NASTY_HAT_PROP.caught = true;
-      dan.redHat = true;
+      NASTY_HAT_PROP.settleT = 0;         // brief settle: draw hat as prop for a few frames before redHat
+    }
+  }
+  // settle: draw hat sitting on Dan's head as a prop for 6 frames, THEN switch to redHat
+  if(NASTY_HAT_PROP && NASTY_HAT_PROP.caught){
+    NASTY_HAT_PROP.settleT++;
+    if(NASTY_HAT_PROP.settleT >= 6){
+      dan.redHat = true;   // now Dan's sprite draws the hat
+      NASTY_HAT_PROP = null;
     }
   }
 
-  // draw floating hat
-  if(NASTY_HAT_PROP && !NASTY_HAT_PROP.caught){
+  // draw floating hat OR settled hat (before redHat kicks in)
+  if(NASTY_HAT_PROP){
     const hsx = px(NASTY_HAT_PROP.wx), hy = NASTY_HAT_PROP.y;
     ctx.save(); ctx.translate(hsx, hy);
     ctx.fillStyle='#c0392b'; ctx.fillRect(-18, 6, 36, 4);
@@ -8602,20 +8616,28 @@ function nastyHatFinisher(t){
     ctx.fillRect(-14, 0, 28, 8);
     ctx.fillStyle='#fff'; ctx.font='bold 5px Arial'; ctx.textAlign='center';
     ctx.fillText('MAGA', 0, 7);
-    const gp = NASTY_HAT_PROP.ht;
-    ctx.fillStyle='#ffd94a';
-    for(let i=0;i<4;i++){
-      const ang = gp*0.18 + i*1.57, r=22;
-      ctx.beginPath(); ctx.arc(Math.cos(ang)*r, Math.sin(ang)*r-4, 2.5, 0, Math.PI*2); ctx.fill();
+    if(!NASTY_HAT_PROP.caught){   // sparkles only while floating, not during settle
+      const gp = NASTY_HAT_PROP.ht;
+      ctx.fillStyle='#ffd94a';
+      for(let i=0;i<4;i++){
+        const ang = gp*0.18 + i*1.57, r=22;
+        ctx.beginPath(); ctx.arc(Math.cos(ang)*r, Math.sin(ang)*r-4, 2.5, 0, Math.PI*2); ctx.fill();
+      }
     }
     ctx.restore();
   }
 
-  // ---- HAT CAUGHT: jingle, normal size, pause beat ----
-  if(t === t_hatCatch){
-    dan.face = 1; dan.onGround = true; dan.y = GROUND_Y - dan.h; dan.vy = 0;
-    dan.walkT = 0;
+  // ---- HAT CAUGHT: jingle fires at settle completion, pause beat ----
+  if(t === t_hatCatch && !dan.redHat && !NASTY_HAT_PROP){
+    // fallback: if physics catch hasn't fired yet by this timer, force it
+    dan.redHat = true;
     Audio8.S.breadPowerup();
+  }
+  // breadPowerup fires the frame redHat first becomes true (catch settle completes)
+  if(!dan._hatJinglePlayed && dan.redHat){
+    dan._hatJinglePlayed = true;
+    Audio8.S.breadPowerup();
+    dan.face = 1; dan.walkT = 0;
   }
   // hold still with hat on during the pause beat
   if(t >= t_hatCatch && t < t_holdHat){
@@ -9446,6 +9468,12 @@ function renderScene(){
   if(kind==='bonus') return renderBonus();
   if(kind==='train') return renderTrain();
   drawBg();
+  // fatality darken veil -- drawn right after background, before any sprites,
+  // so background dims but characters keep full brightness on top
+  if(FATALITY && FATALITY.darken > 0){
+    ctx.fillStyle = `rgba(6,6,14,${0.78*FATALITY.darken})`;
+    ctx.fillRect(0,0,VIEW_W,VIEW_H);
+  }
   if(kind==='march'){ drawMarchCrowd(); drawCityScrim(); }   // crowd behind a haze veil
   drawWater();
   drawPlats();
