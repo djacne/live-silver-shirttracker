@@ -716,6 +716,22 @@ const Audio8 = (() => {
       notes.forEach((f,i) => tone(f, t()+i*0.072, i<6?0.08:0.28, 'square', 0.18));
       tone(1568, t()+notes.length*0.072, 0.38, 'square', 0.22);
     },
+    // FINISH HIM/SHE/HER: deep MK-style sub-bass boom + metallic ring -- no voice, but the impact is there
+    mkSting(){
+      tone(40,t(),0.55,'sine',0.55,null,18);          // deep sub-bass thud
+      tone(60,t(),0.40,'square',0.28,null,22);         // body to the thud
+      tone(880,t()+0.04,0.22,'triangle',0.18,null,400); // metallic ring on top
+      tone(660,t()+0.06,0.18,'triangle',0.14,null,300);
+      nz(t(),0.14,0.50);                               // noise burst for impact texture
+    },
+    // Nasty Woman: womp womp -- two descending trombone glides, pure cartoon defeat
+    wompWomp(){
+      [0,0.45].forEach((delay,i)=>{
+        const base = i===0 ? 233 : 196;
+        tone(base,      t()+delay,      0.55, 'sawtooth', 0.20, null, base*0.78);
+        tone(base*0.82, t()+delay+0.18, 0.55, 'sawtooth', 0.16, null, base*0.72);
+      });
+    },
     // Von Quinn: aluminium-bat home run crack
     batCrack(){ tone(1100,t(),0.05,'square',0.30,null,420); tone(430,t()+0.01,0.14,'triangle',0.26,null,150);
                 tone(180,t()+0.03,0.26,'sine',0.20,null,70); nz(t(),0.05,0.34); },
@@ -2014,7 +2030,7 @@ function stepFatality(){
     return;
   }
   if(F.phase==='prompt'){
-    if(F.t===1) Audio8.S.ding();
+    if(F.t===1) Audio8.S.mkSting();   // deep MK-style boom when FINISH HIM/SHE/HER appears
     if(F.t >= 80){ F.phase='input'; F.t=0; }   // a full second longer beat before the QTE ring pops in
     return;
   }
@@ -8673,7 +8689,7 @@ function nastyHatFinisher(t){
   if(t === t_tiphat){
     dan.waving = 1;
     dan.saluteProg = 0;
-    Audio8.S.sadTrombone();
+    Audio8.S.wompWomp();   // womp womp as she bolts
   }
   // arm rises to salute over 20 frames, holds
   if(t > t_tiphat && t <= t_tiphat + 20){
@@ -8753,9 +8769,9 @@ function czarZamboniFinisher(t){
   } else if(t < t_hit){
     const frac = (t - t_roll) / (t_hit - t_roll);
     const ease = frac * frac * (3 - 2*frac);   // smoothstep, punchy finish
-    zx = parkSX + ease * (czarSX - parkSX - 12);
+    zx = parkSX + ease * (czarSX - 150 - parkSX);
   } else {
-    zx = czarSX - 12 + (t - t_hit) * 4.5;    // exits right
+    zx = (czarSX - 150) + (t - t_hit) * 4.5;    // exits right from contact point
   }
   CZAR_ZAMBONI_X = zx;
 
