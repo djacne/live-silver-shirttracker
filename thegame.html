@@ -1499,6 +1499,7 @@ let hitStop = 0;       // frames of freeze on a solid hit
 let shake = 0;
 let smashFX = null;    // {t, dur, x0, y0, hat, glasses} -- Karen face-plants the screen
 let killCount = 0;      // rolling counter for cartwheel frequency gating
+let cartwheelTarget = 3 + Math.floor(Math.random()*3);  // next cartwheel fires on this hit (3-5)
 let cpFlash = null;   // {x, t}
 let panel = null;   // {text, sub, t} -- the killing blow
 let quipMsg = null;      // {text, t, color}
@@ -1529,6 +1530,49 @@ function comicText(txt, x, y, size, fill, outline){
   // 3. the fill itself
   ctx.fillStyle = fill;
   ctx.fillText(txt, x, y);
+}
+// FINISH HIM/THEM -- a dedicated MK-style title card: slanted gold/yellow block
+// letters, wide tracking, hard offset drop-shadow, and a thin dark outline.
+// Kept separate from comicText so every other comic callout in the game keeps
+// its normal rounded look.
+function mkFinishText(txt, x, y, size){
+  const letters = txt.split('');
+  ctx.save();
+  ctx.font = '900 ' + size + 'px "Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  // measure total tracked width so the word stays centred on x
+  const tracking = size * 0.14;
+  let total = 0;
+  const widths = letters.map(ch => { const w = ctx.measureText(ch).width; total += w + tracking; return w; });
+  total -= tracking;
+  let cx = x - total/2;
+  for(let i=0;i<letters.length;i++){
+    const ch = letters[i];
+    const w = widths[i];
+    const lx = cx + w/2;
+    ctx.save();
+    ctx.translate(lx, y);
+    ctx.transform(1, 0, -0.18, 1, 0, 0);   // MK-style forward slant/italic shear
+    // hard offset drop shadow -- no blur, pure block shadow like the arcade title card
+    ctx.fillStyle = '#1a0402';
+    ctx.fillText(ch, 4, 5);
+    // dark outline
+    ctx.lineJoin = 'round'; ctx.miterLimit = 2;
+    ctx.strokeStyle = '#1a0a02';
+    ctx.lineWidth = Math.max(4, size*0.10);
+    ctx.strokeText(ch, 0, 0);
+    // blood-red vertical gradient fill -- classic MK "FINISH HIM" red
+    const g = ctx.createLinearGradient(0, -size*0.72, 0, size*0.1);
+    g.addColorStop(0, '#ff8a6a');
+    g.addColorStop(0.45, '#ff2b1c');
+    g.addColorStop(1, '#8a0e08');
+    ctx.fillStyle = g;
+    ctx.fillText(ch, 0, 0);
+    ctx.restore();
+    cx += w + tracking;
+  }
+  ctx.restore();
 }
 // Every combat callout -- stomps, clubs, boss hits given and taken -- pops from the
 // right side of the screen, clear of the play area. Stacks so several can land at once.
@@ -1969,7 +2013,7 @@ function stepFatality(){
   }
   if(F.phase==='prompt'){
     if(F.t===1) Audio8.S.ding();
-    if(F.t >= 20){ F.phase='input'; F.t=0; }
+    if(F.t >= 80){ F.phase='input'; F.t=0; }   // a full second longer beat before the QTE ring pops in
     return;
   }
   if(F.phase==='input'){
@@ -1998,10 +2042,11 @@ function stepFatality(){
     return;
   }
   if(F.phase==='sparta'){
-    // one word at a time, a hard dramatic beat between each -- "THIS. IS. SPARTA!" energy.
+    // one word at a time, a long, hard dramatic beat between each -- "THIS. IS. RAILROADING."
+    // energy. Each word needs to actually sit on screen long enough to be read.
     // sound fires exactly once per word (tracked by index change), not by frame count.
     F.spartaT++;
-    if(F.spartaT >= 22){
+    if(F.spartaT >= 60){
       F.spartaI++; F.spartaT = 0;
       if(F.spartaI >= F.spartaWords.length){ F.phase='anim'; F.t=0; F.animT=0; return; }
     }
@@ -2054,7 +2099,7 @@ function drawFatalityOverlay(){
   const F = FATALITY;
   if(F.phase==='position' || F.phase==='wobble') return;   // plain gameplay visuals, no overlay yet
   if(F.phase==='prompt' || F.phase==='input'){
-    comicText('FINISH ' + F.pronoun + '!!', VIEW_W/2, 120, 52, '#ff2b1c', '#12121c');
+    mkFinishText('FINISH ' + F.pronoun + '!!', VIEW_W/2, 120, 52);
     if(F.phase==='input'){
       // identical ring style to the Safety Stretch QTE -- same read, same feel
       const n = F.seq.length, gap = 62, x0 = VIEW_W/2 - (n-1)*gap/2;
@@ -2428,8 +2473,13 @@ function step(){
           hitStop = 4;
           shake = 3;
           killCount++;
-          // CARTWHEEL: random ~1-in-4 chance any slap send an enemy flying -- ALL levels
-          const isCartwheel = Math.random() < 0.27;
+          // CARTWHEEL: every 3-5 enemies hit (any slap in the sequence), guaranteed
+          // launch -- ALL levels. Not a per-hit dice roll: a real cadence counter.
+          const isCartwheel = killCount >= cartwheelTarget;
+          if(isCartwheel){
+            killCount = 0;
+            cartwheelTarget = 3 + Math.floor(Math.random()*3);   // re-roll next window (3-5)
+          }
           if(kind==='city'){
             Audio8.S.bonk();
           } else {
@@ -2606,6 +2656,20 @@ function step(){
       if(footX>a && footX<b){ e.dir*=-1; e.x += e.dir*2; break; }
     }
     if(e.x<2){ e.dir=1; } if(e.x>LEVEL_W-e.w-2){ e.dir=-1; }
+    // keep same-type patrollers (esp. dashing dogs) from stacking on top of each other
+    if(e.type==='dog'){
+      for(const o of enemies){
+        if(o===e || o.dead || o.type!=='dog') continue;
+        const dx = (e.x+e.w/2) - (o.x+o.w/2);
+        const minGap = (e.w+o.w)/2 + 4;
+        if(Math.abs(dx) < minGap && Math.abs(dx) > 0.001){
+          const push = (minGap - Math.abs(dx)) * (dx>0?1:-1) * 0.5;
+          e.x += push; o.x -= push;
+          if(dx>0 && e.dir<0) e.dir = 1;
+          if(dx<0 && e.dir>0) e.dir = -1;
+        }
+      }
+    }
     if(rectHit(dan, e)){
       const stomp = dan.vy > 1.5 && dan.y + dan.h - e.y < 18;
       if(stomp || dan.star>0){
@@ -3069,7 +3133,7 @@ function stepBrawl(){
       if(j.hp <= 0){
         startFatality({
           bx: j.x, by: j.y, pronoun: 'HIM',
-          quip1: 'I HIRED OUT TO WORK', quip2: 'NO MORE DENIED CLAIMS',
+          quip1: 'DAN HIRED OUT TO WORK', quip2: 'NO MORE DENIED CLAIMS',
           clearFlicker: () => { S.inv = 0; j.hurtT = 0; j.flashT = 0; S.clips = []; S.swing = 0; S.swingHeld = false; },
           resumeSong: 'lauer',
           positioner: trainmasterPositioner, finisher: trainmasterKickFinisher, vanish: trainmasterVanish,
@@ -3089,7 +3153,7 @@ function stepBrawl(){
       if(j.hp <= 0){
         startFatality({
           bx: j.x, by: j.y, pronoun: 'HIM',
-          quip1: 'I HIRED OUT TO WORK', quip2: 'NO MORE DENIED CLAIMS',
+          quip1: 'DAN HIRED OUT TO WORK', quip2: 'NO MORE DENIED CLAIMS',
           clearFlicker: () => { S.inv = 0; j.hurtT = 0; j.flashT = 0; S.clips = []; S.swing = 0; S.swingHeld = false; },
           resumeSong: 'lauer',
           positioner: trainmasterPositioner, finisher: trainmasterKickFinisher, vanish: trainmasterVanish,
@@ -5161,13 +5225,14 @@ function stepLevel5(){
     if(S.t > 150 && S.paper){
       if(S.paper.t < 60){
         S.paper.t++;
-        // arc: fast rightward toss that slows and lands on the desk
+        // arc: fast toss that slows and lands square on the desk in front of the captain,
+        // anchored to the desk's fixed world position (not Dan's, which varies at throw time)
         const progress = S.paper.t / 60;
-        const targetX = S.paper.x0 + 140;   // world-x of desk surface
+        const targetX = FLAG_X + 62;   // world-x of desk surface centre
         S.paper.x = S.paper.x0 + (targetX - S.paper.x0) * progress;
-        // parabolic arc: peak at t=30, lands at GROUND_Y-26
+        // parabolic arc: peak at t=30, lands right on the desktop
         const startY = S.paper.y0;
-        const endY   = GROUND_Y - 26;
+        const endY   = GROUND_Y - 29;
         const arc    = -28 * Math.sin(progress * Math.PI);
         S.paper.y    = startY + (endY - startY) * progress + arc;
         if(S.paper.t === 60) S.paper.landed = true;
@@ -5285,11 +5350,11 @@ function drawCaddy(){
   ctx.fillStyle='#c8cdd6'; ctx.fillRect(L, gy-54, W, 2);
   ctx.fillStyle='#8a93a8'; ctx.fillRect(L+22, gy-10, 11, 4); ctx.fillRect(L+W-33, gy-10, 11, 4);
 
-  // wreath-and-crest badge on the trunk -- centred on the trunk lid, well above the plate
+  // wreath-and-crest badge on the trunk -- centred on the trunk lid, just above the plate
   ctx.fillStyle='#c8a03a';
-  ctx.beginPath(); ctx.moveTo(sx, gy-62); ctx.lineTo(sx+4, gy-58); ctx.lineTo(sx, gy-54); ctx.lineTo(sx-4, gy-58); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(sx, gy-55); ctx.lineTo(sx+4, gy-51); ctx.lineTo(sx, gy-47); ctx.lineTo(sx-4, gy-51); ctx.closePath(); ctx.fill();
   ctx.strokeStyle='#c8a03a'; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.arc(sx, gy-58, 7, 0.5, Math.PI-0.5); ctx.stroke();
+  ctx.beginPath(); ctx.arc(sx, gy-51, 7, 0.5, Math.PI-0.5); ctx.stroke();
 
   // === Kansas vanity plate, mid-2000s: white field, blue "Kansas" script, wheat sheaf ===
   const pw = 54, ph = 20;
@@ -5712,18 +5777,18 @@ function drawBg(){
       const puffs = [[-cw*0.30,2,12],[-cw*0.12,-6,18],[cw*0.06,-3,16],[cw*0.26,3,12],[cw*0.01,5,15]];
       // 1. shadow belly -- wider and slightly offset below
       ctx.fillStyle = shadeFill;
-      ctx.beginPath(); ctx.ellipse(cx+1, cy+11, cw*0.46, 7, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx+1, cy+11, cw*0.46, 7, 0, 0, Math.PI*2); ctx.fill();
       // 2. main cloud mass
       ctx.fillStyle = cloudFill;
       ctx.beginPath();
-      for(const [dx,dy,r] of puffs){ ctx.moveTo(cx+dx+r, cy+dy); ctx.arc(cx+dx, cy+dy, r, 0, 7); }
+      for(const [dx,dy,r] of puffs){ ctx.moveTo(cx+dx+r, cy+dy); ctx.arc(cx+dx, cy+dy, r, 0, Math.PI*2); }
       ctx.fill();
       // 3. flat white base to seal bottom (no stroke lines)
       ctx.fillStyle = cloudFill;
       ctx.fillRect(cx - cw*0.42, cy+2, cw*0.84, 8);
       // 4. bright top-left highlight on tallest puff for depth
       ctx.fillStyle = hlightFill;
-      ctx.beginPath(); ctx.ellipse(cx-cw*0.08, cy-8, 10, 7, -0.3, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx-cw*0.08, cy-8, 10, 7, -0.3, 0, Math.PI*2); ctx.fill();
     }
   }
   if(winter){
@@ -6977,27 +7042,43 @@ function drawEnemy(e){
   if(e.dead && e.cartwheel){
     const csx = px(e.x);
     if(csx < -80 || csx > VIEW_W+80 || e.y > GROUND_Y+80) return;
+    const pivotX = csx + e.w/2, pivotY = e.y + e.h/2;
     ctx.save();
-    ctx.translate(csx + e.w/2, e.y + e.h/2);
+    ctx.translate(pivotX, pivotY);
     ctx.rotate(e.cwrot);
+    ctx.translate(-pivotX, -pivotY);
     // fade out as it flies off screen
     const fadeDist = Math.max(0, 1 - e.cwt/55);
     ctx.globalAlpha = fadeDist;
-    ctx.translate(-e.w/2, -e.h/2);
-    drawEnemyBody(e);
+    drawEnemyLiveSprite(e, csx);   // the actual tumbling character, not the flattened splat
     ctx.restore();
     return;
   }
   if(e.dead && e.rot){
+    const csx = px(e.x);
+    const pivotX = csx + e.w/2, pivotY = e.y + e.h/2;
     ctx.save();
-    ctx.translate(px(e.x) + e.w/2, e.y + e.h/2);
+    ctx.translate(pivotX, pivotY);
     ctx.rotate(e.rot);
-    ctx.translate(-(px(e.x) + e.w/2), -(e.y + e.h/2));
-    drawEnemyBody(e);
+    ctx.translate(-pivotX, -pivotY);
+    drawEnemyLiveSprite(e, csx);   // same fix: knockback spin should show the character, not a corpse smear
     ctx.restore();
     return;
   }
   drawEnemyBody(e);
+}
+// dispatches straight to the per-type character drawer, bypassing the dead/flattened-splat
+// branch in drawEnemyBody -- used whenever a "dead" enemy still needs to be drawn as a
+// tumbling/flying body (cartwheel launch, knockback spin) instead of roadkill on the ground.
+function drawEnemyLiveSprite(e, sx){
+  if(e.type==='karen') return drawKaren(e, sx);
+  if(e.type==='bullhorn') return drawBullhorn(e, sx);
+  if(e.type==='husband') return drawHusband(e, sx);
+  if(e.type==='twitch') return drawTwitch(e, sx);
+  if(e.type==='ice') return drawIce(e, sx);
+  if(e.type==='dog') return drawDog(e, sx);
+  if(e.type==='bp') return drawBP(e, sx);
+  return drawCommie(e, sx);
 }
 function drawEnemyBody(e){
   const sx=px(e.x); if(sx<-60||sx>VIEW_W+60) return;
@@ -8602,13 +8683,13 @@ function czarZamboniFinisher(t){
   // timeline:
   //   t=0-70:    zamboni drives in from left edge of SCREEN, decelerates behind Dan+Nelson
   //   t=70-90:   parked, Dan and Nelson turn, then "board"
-  //   t=90-120:  czar panics, waves arms
-  //   t=120-155: zamboni accelerates toward czar
-  //   t=155:     IMPACT -- slam sound, shake, czar hidden
-  //   t=175:     stain appears
-  //   t=155+:    zamboni exits right
-  //   t=230:     done
-  const t_arrive=70, t_board=90, t_wave=105, t_roll=118, t_hit=155, t_stain=175, t_done=230;
+  //   t=90-118:  czar panics, waves arms
+  //   t=118-210: zamboni accelerates toward czar -- slow, deliberate, for comedic dread
+  //   t=210:     IMPACT -- slam sound, shake, czar hidden
+  //   t=230:     stain appears
+  //   t=210+:    zamboni exits right
+  //   t=285:     done
+  const t_arrive=70, t_board=90, t_wave=105, t_roll=118, t_hit=210, t_stain=230, t_done=285;
 
   // zamboni SCREEN x (it drives across the screen regardless of camX)
   let zx;
@@ -8965,8 +9046,10 @@ function drawDanThumbsUp(){
   ctx.beginPath(); ctx.arc(13,6,9.5,Math.PI,0); ctx.fill();  // crown
   ctx.fillRect(3.5,4,19,3); ctx.fillRect(13,4,14,3);         // brim + rear extension
   ctx.fillStyle='#8a0a0a'; ctx.fillRect(13,6,14,1.5);       // under-brim shadow
-  ctx.fillStyle='#ffffff'; ctx.font='bold 4px Arial'; ctx.textAlign='center';
-  ctx.fillText('MAGA',18,3.5);
+  // text sized and centred on the crown so all 4 letters (incl. the "A") fit inside it
+  ctx.fillStyle='#ffffff'; ctx.font='bold 3.4px Arial'; ctx.textAlign='center';
+  ctx.fillText('MAGA', 13, 3.5);
+
   // mustache: solid dark brown handlebar, no goatee
   ctx.fillStyle='#4a3018';
   ctx.fillRect(8,12,11,3);          // centre bar
