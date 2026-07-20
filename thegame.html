@@ -1878,6 +1878,7 @@ function drawKillPanel(){
   if(PANEL_VANISH_CB && t === PANEL_VANISH_AT){ PANEL_VANISH_CB(); PANEL_VANISH_CB = null; }
   if(t > PANEL_LEN){
     panel = null;
+    if(PANEL_END_CB){ PANEL_END_CB(); PANEL_END_CB = null; }
     if(matchMedia('(pointer:coarse)').matches) show('controls');
     if(kind==='city' || kind==='march' || kind==='silver' || kind==='skunk' || kind==='border') show('swingBtn');
     show('pauseBtn'); show('muteBtn');
@@ -1980,6 +1981,7 @@ function streakSub(){
 // same timing as before, no flourish.
 let FATALITY = null;
 let PANEL_VANISH_CB = null, PANEL_VANISH_AT = null;   // fires once, partway through a quip panel
+let PANEL_END_CB = null;   // fires when the panel fully closes
 const FAT_KEYS = ['left','right'];
 function fatSeq(){ const n = 3 + ((Math.random()<0.5)?0:1); const s=[]; for(let i=0;i<n;i++) s.push(FAT_KEYS[(Math.random()*2)|0]); return s; }
 
@@ -2081,24 +2083,42 @@ function stepFatality(){
     return;
   }
   if(F.phase==='lighten'){
-    F.darken = Math.max(0, F.darken - 0.08);
-    if(F.darken <= 0){
-      Audio8.stop();
-      if(F.resumeSong) Audio8.play(F.resumeSong);   // the level theme comes back up
-      killPanel(F.quip1, F.quip2);
-      const cb = F.onComplete; FATALITY = null; if(cb) cb(true);
-    }
+    // Keep the veil fully up (darken stays at 1) while the quip panel runs.
+    // The panel has its own dark overlay so the dim underneath is invisible.
+    // We defer FATALITY=null to PANEL_END_CB so the veil never flashes off
+    // mid-panel or right before it.
+    F.darken = 1;
+    Audio8.stop();
+    if(F.resumeSong) Audio8.play(F.resumeSong);
+    const cb = F.onComplete;
+    PANEL_END_CB = () => { FATALITY = null; };
+    killPanel(F.quip1, F.quip2);
+    if(cb) cb(true);
+    F.phase = 'done';   // stop stepFatality from running again (FATALITY still exists but is inert)
     return;
   }
+  if(F.phase==='done') return;   // inert -- waiting for panel to close and PANEL_END_CB to null us
+}
+
+// Returns the x-offset a boss should sway during the fatality wobble phase.
+// Classic MK: slow, heavy side-to-side rocking as the boss stands stunned.
+function fatalityWobbleX(){
+  if(!FATALITY) return 0;
+  const p = FATALITY.phase;
+  // wobble during wobble + prompt + input -- stops the moment the QTE is resolved
+  if(p !== 'wobble' && p !== 'prompt' && p !== 'input') return 0;
+  // use a cumulative tick so oscillation is continuous across all three phases
+  if(!FATALITY._wobT) FATALITY._wobT = 0;
+  FATALITY._wobT++;
+  const ramp = Math.min(1, FATALITY._wobT / 20);
+  return Math.sin(FATALITY._wobT * 0.11) * 1.5 * ramp;
 }
 
 function fatalityFail(){
   const F = FATALITY;
-  // he stands there wobbling right up through the hit -- no flop animation.
-  // instead, he vanishes partway through the quip itself, so by the time the
-  // panel closes and gameplay resumes, he's simply not there anymore.
   PANEL_VANISH_CB = F.vanish || null;
   PANEL_VANISH_AT = Math.floor(PANEL_LEN/2);
+  PANEL_END_CB = null;
   killPanel(F.quip1, F.quip2);
   const cb = F.onComplete; FATALITY = null; if(cb) cb(false);
 }
@@ -2148,16 +2168,28 @@ function drawFatalityOverlay(){
     return;
   }
   if(F.phase==='sparta'){
-    // one word at a time, big and red -- "THIS. IS. RAILROADING." energy.
-    // the darken veil is already up (drawn behind the scene), so this reads
-    // as a hard dramatic beat before the finishing blow lands.
     const word = F.spartaWords[F.spartaI];
     if(word !== undefined){
       const k = Math.min(1, F.spartaT/8);
       const pop = k<1 ? 0.6+k*0.7 : 1;
       ctx.save();
       ctx.translate(VIEW_W/2, VIEW_H*0.46); ctx.scale(pop, pop);
-      comicText(word.toUpperCase(), 0, 0, 46, '#ff2b1c', '#12121c');
+      // clean tracked bold -- Impact-style but with outline and shadow so it's
+      // actually readable against the dark veil rather than a smeared blob
+      const sz = 54;
+      ctx.font = 'bold ' + sz + 'px Impact,"Arial Narrow",Arial,sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      // hard drop shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillText(word.toUpperCase(), 3, 3);
+      // dark outline
+      ctx.strokeStyle = '#1a0606';
+      ctx.lineWidth = 7; ctx.lineJoin = 'round';
+      ctx.strokeText(word.toUpperCase(), 0, 0);
+      // red fill
+      ctx.fillStyle = '#ff2b1c';
+      ctx.fillText(word.toUpperCase(), 0, 0);
+      ctx.textBaseline = 'alphabetic';
       ctx.restore();
     }
     return;
@@ -3419,7 +3451,7 @@ function renderTrain(){
   if(S.phase==='brawl' || S.phase==='won'){
     // the fatality veil goes down HERE -- behind the fighters, so the background
     // dims but Dan and the boss keep their normal shade and opacity
-    if(FATALITY && FATALITY.darken > 0){
+    if(FATALITY && FATALITY.darken > 0 && (FATALITY.phase !== 'done' || panel)){
       ctx.fillStyle = `rgba(6,6,14,${0.78*FATALITY.darken})`;
       ctx.fillRect(0,0,VIEW_W,VIEW_H);
     }
@@ -4432,7 +4464,7 @@ function stepBoss7(){
             clearFlicker: () => { n.hurtT=0; n.flashT=0; n.tampons=[]; n.pendingThrow=false; n.bagT=0; dan.swing=0; dan.swingHeld=false; },
             resumeSong: 'march',
             positioner: nastyPositioner, finisher: nastyHatFinisher, vanish: nastyVanish,
-            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; dan._hatJinglePlayed=false; if(success){ n.runaway=true; dan.redHat=false; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
+            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; dan._hatJinglePlayed=false; if(success){ n.runaway=true; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
           });
         } else {
           combat(pick(DAN_VS_NASTY), n.x+16, n.y-14, '#4a90d9');
@@ -4453,7 +4485,7 @@ function stepBoss7(){
             clearFlicker: () => { n.hurtT=0; n.flashT=0; n.tampons=[]; n.pendingThrow=false; n.bagT=0; },
             resumeSong: 'march',
             positioner: nastyPositioner, finisher: nastyHatFinisher, vanish: nastyVanish,
-            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; dan._hatJinglePlayed=false; if(success){ n.runaway=true; dan.redHat=false; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
+            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; dan._hatJinglePlayed=false; if(success){ n.runaway=true; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
           });
         } else {
           combat(pick(DAN_VS_NASTY), n.x+16, n.y-14, '#4a90d9');
@@ -4777,8 +4809,7 @@ function drawJohnson(){
   if(kind!=='border') return;
   const j = L4S.johnson;
   if(!j.active) return;
-  const sx = px(j.x);
-  // handcuffs, spinning through the air
+  const sx = px(j.x) + fatalityWobbleX();
   for(const p of j.stamps){
     // handcuffs -- an instantly recognizable silhouette even at small scale, and it
     // says everything his job is about without needing a single word of text
@@ -4971,7 +5002,8 @@ function drawNastyWoman(){
   if(kind!=='march') return;
   const n = L7S.nasty;
   if(!n.active) return;
-  const sx = px(n.x);
+  const wobX = (n.runaway || n.dead) ? 0 : fatalityWobbleX();
+  const sx = px(n.x) + wobX;
   // dropped sign stays on the ground for the rest of the level once it falls
   if(L7S.signOnGround){
     const sigSX = px(L7S.signDropX);
@@ -5618,7 +5650,7 @@ function drawVonLying(k, duragGone){
   ctx.fillRect(hx-6, hy+5, 2.5, 4); ctx.fillRect(hx-2, hy+6, 2.5, 5); ctx.fillRect(hx+2, hy+5, 2.5, 4);
 }
 
-  const sx = px(k.x);
+  const sx = px(k.x) + fatalityWobbleX();
   if((k.fatFall || 0) > 0){
     const fall = k.fatFall;
     if(fall >= 0.94){
@@ -7579,7 +7611,7 @@ function drawSkunkBoss(){
 function drawBoss1(){
   if(kind!=='silver' || !boss1.active) return;
   const b = boss1;
-  const sx = px(b.x);
+  const sx = px(b.x) + fatalityWobbleX();
   // the flying tools of the revolution
   for(const p of b.thrown){
     ctx.save(); ctx.translate(px(p.x), p.y); ctx.rotate(p.spin);
@@ -7823,11 +7855,17 @@ function bigFace(name, cx, cy, s){
     ctx.beginPath(); ctx.moveTo(1,-6); ctx.lineTo(1,-14); ctx.lineTo(8,-6); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(25,-6); ctx.lineTo(25,-14); ctx.lineTo(18,-6); ctx.closePath(); ctx.fill();
     ctx.fillStyle='#c94a8a'; ctx.fillRect(1, 2, 24, 2.4);
+    // glasses -- symmetric frames + bridge, centred on the face (matches in-game sprite exactly)
     ctx.fillStyle='#1b1b2f';
-    ctx.fillRect(4.5, 6, 7, 5.5); ctx.fillRect(16.5, 6, 7, 5.5); ctx.fillRect(11.5, 7, 3.5, 1.8);
-    ctx.fillStyle='rgba(160,200,240,.5)'; ctx.fillRect(5.5, 6.8, 4.5, 3.6); ctx.fillRect(17.5, 6.8, 4.5, 3.6);
-    ctx.strokeStyle='#8a4a3a'; ctx.lineWidth=1.4;
-    ctx.beginPath(); ctx.arc(13, 17, 3.6, 0.2, Math.PI-0.2); ctx.stroke();
+    ctx.fillRect(3, 7, 8, 5.5); ctx.fillRect(15, 7, 8, 5.5); ctx.fillRect(11, 8, 4, 2);
+    ctx.fillStyle='rgba(160,200,240,.5)';
+    ctx.fillRect(4, 7.8, 6, 3.8); ctx.fillRect(16, 7.8, 6, 3.8);
+    // mouth: a real frown -- corners down, dip up in the middle
+    ctx.strokeStyle='#6b2f22'; ctx.lineWidth=1.8; ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(9, 20.5);
+    ctx.quadraticCurveTo(13, 17.3, 17, 20.5);
+    ctx.stroke();
   } else if(name === 'TRAINMASTER LIAR'){
     ctx.translate(-13, -12);
     ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(13, 10, 11, 0, 7); ctx.fill();
@@ -8418,12 +8456,6 @@ function drawZamboni(sx){
   // blade edge highlight
   ctx.fillStyle='#d0d8e0'; ctx.fillRect(140,-9,22,2);
 
-  // ---- STEAM/EXHAUST from rear-left top ----
-  ctx.fillStyle='rgba(200,220,255,0.3)';
-  ctx.beginPath(); ctx.arc(8+Math.sin(pt*0.28)*2,-82,7,0,7); ctx.fill();
-  ctx.beginPath(); ctx.arc(2+Math.sin(pt*0.28+1)*3,-90,5,0,7); ctx.fill();
-  ctx.beginPath(); ctx.arc(12+Math.sin(pt*0.28+2)*2,-94,3.5,0,7); ctx.fill();
-
   ctx.restore();
 }
 
@@ -8587,27 +8619,16 @@ function nastyHatFinisher(t){
       dan.walkT += 0.5;
       dan.face = dan.x < NASTY_HAT_PROP.wx ? 1 : -1;
     }
-    // catch when hat's visual base (center+8) reaches Dan's head top (dan.y)
-    // -- this is the moment the hat visually sits on his crown, not 8px inside his head
+    // catch: the instant the hat base reaches Dan's head, flip redHat on and
+    // kill the prop in the same frame -- no settle overlap, no flash.
     const hatBaseY = NASTY_HAT_PROP.y + 8;
     if(hatBaseY >= dan.y || t >= t_hatCatch){
-      // snap hat world-x to Dan's head center so the settle is pixel-perfect
-      NASTY_HAT_PROP.wx = dan.x + 13;
-      NASTY_HAT_PROP.y  = dan.y;          // rest hat base exactly on head top
-      NASTY_HAT_PROP.caught = true;
-      NASTY_HAT_PROP.settleT = 0;         // brief settle: draw hat as prop for a few frames before redHat
-    }
-  }
-  // settle: draw hat sitting on Dan's head as a prop for 6 frames, THEN switch to redHat
-  if(NASTY_HAT_PROP && NASTY_HAT_PROP.caught){
-    NASTY_HAT_PROP.settleT++;
-    if(NASTY_HAT_PROP.settleT >= 6){
-      dan.redHat = true;   // now Dan's sprite draws the hat
+      dan.redHat = true;
       NASTY_HAT_PROP = null;
     }
   }
 
-  // draw floating hat OR settled hat (before redHat kicks in)
+  // draw floating hat (only while airborne)
   if(NASTY_HAT_PROP){
     const hsx = px(NASTY_HAT_PROP.wx), hy = NASTY_HAT_PROP.y;
     ctx.save(); ctx.translate(hsx, hy);
@@ -8616,24 +8637,16 @@ function nastyHatFinisher(t){
     ctx.fillRect(-14, 0, 28, 8);
     ctx.fillStyle='#fff'; ctx.font='bold 5px Arial'; ctx.textAlign='center';
     ctx.fillText('MAGA', 0, 7);
-    if(!NASTY_HAT_PROP.caught){   // sparkles only while floating, not during settle
-      const gp = NASTY_HAT_PROP.ht;
-      ctx.fillStyle='#ffd94a';
-      for(let i=0;i<4;i++){
-        const ang = gp*0.18 + i*1.57, r=22;
-        ctx.beginPath(); ctx.arc(Math.cos(ang)*r, Math.sin(ang)*r-4, 2.5, 0, Math.PI*2); ctx.fill();
-      }
+    const gp = NASTY_HAT_PROP.ht;
+    ctx.fillStyle='#ffd94a';
+    for(let i=0;i<4;i++){
+      const ang = gp*0.18 + i*1.57, r=22;
+      ctx.beginPath(); ctx.arc(Math.cos(ang)*r, Math.sin(ang)*r-4, 2.5, 0, Math.PI*2); ctx.fill();
     }
     ctx.restore();
   }
 
-  // ---- HAT CAUGHT: jingle fires at settle completion, pause beat ----
-  if(t === t_hatCatch && !dan.redHat && !NASTY_HAT_PROP){
-    // fallback: if physics catch hasn't fired yet by this timer, force it
-    dan.redHat = true;
-    Audio8.S.breadPowerup();
-  }
-  // breadPowerup fires the frame redHat first becomes true (catch settle completes)
+  // jingle fires once the frame redHat flips on
   if(!dan._hatJinglePlayed && dan.redHat){
     dan._hatJinglePlayed = true;
     Audio8.S.breadPowerup();
@@ -8650,9 +8663,10 @@ function nastyHatFinisher(t){
   // target: stop about 20px to her left (close enough to reach her thigh)
   if(t >= t_holdHat && t < t_walk){
     const targetX = n.x - 20;
-    dan.x += (targetX - dan.x) * 0.025;  // very slow lerp
+    const dist = Math.abs(dan.x - targetX);
+    dan.x += (targetX - dan.x) * 0.025;
     dan.face = 1;
-    dan.walkT++;
+    if(dist > 1.5) dan.walkT++;   // stop shuffling once he's essentially arrived
     dan.onGround = true; dan.y = GROUND_Y - dan.h; dan.vy = 0;
   }
   if(t === t_walk){
@@ -9469,8 +9483,9 @@ function renderScene(){
   if(kind==='train') return renderTrain();
   drawBg();
   // fatality darken veil -- drawn right after background, before any sprites,
-  // so background dims but characters keep full brightness on top
-  if(FATALITY && FATALITY.darken > 0){
+  // so background dims but characters keep full brightness on top.
+  // Only draw during active fatality phases -- never bleed into normal gameplay.
+  if(FATALITY && FATALITY.darken > 0 && (FATALITY.phase !== 'done' || panel)){
     ctx.fillStyle = `rgba(6,6,14,${0.78*FATALITY.darken})`;
     ctx.fillRect(0,0,VIEW_W,VIEW_H);
   }
@@ -9848,7 +9863,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '12.1';
+const BUILD = '12.8';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
@@ -9914,7 +9929,7 @@ function resumeGame(){
 function quitToTitle(){
   hide('pauseScreen'); hide('controls'); hide('pauseBtn');
   Audio8.stop();
-  bossIntro = null; panel = null; clearMsgs();
+  bossIntro = null; panel = null; PANEL_END_CB = null; clearMsgs();
   state = 'title';
   buildLevel(1); resetDan();
   show('titleScreen');
