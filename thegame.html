@@ -9227,6 +9227,8 @@ function czarVanish(){
   L4S._fatCamX = null;
 }
 
+let CZAR_ZAMBONI_X = 0;   // screen-space x of zamboni left edge, updated each finisher frame
+
 function czarZamboniFinisher(t){
   const j = L4S.johnson;
   // All positions are in SCREEN space (camX is locked from positioner)
@@ -10314,7 +10316,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '12.13';
+const BUILD = '12.14';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
