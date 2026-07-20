@@ -1346,7 +1346,9 @@ function buildLevel(n){
       endPhase:'none', endT:0, fade:0,
       police:[{dx:0,turn:0},{dx:0,turn:0}],
       nasty:{x:FLAG_X-90, y:GROUND_Y-58, w:34, h:58, vx:0, vy:0, hp:3, hurtT:0, jumpT:110,
-             active:false, dead:false, deadT:0, done:false, throwT:120, bagT:0, tampons:[]} };
+             active:false, dead:false, deadT:0, done:false, throwT:120, bagT:0, tampons:[],
+             runaway:false, runVX:0, signDropped:false, scared:false, yellingT:0},
+      signOnGround: false, signDropX: 0 };
   }
   if(kind === 'bonus'){
     LEVEL_W = 800; FLAG_X = 800;
@@ -1367,7 +1369,7 @@ function buildLevel(n){
 }
 
 // ================= player / state =================
-const dan = {x:60, y:0, w:26, h:40, vx:0, vy:0, onGround:false, face:1, walkT:0, inv:0, boost:0, small:false, star:0, swing:0, swingCd:0, swingHeld:false, redHat:false, heroPoseT:0};
+const dan = {x:60, y:0, w:26, h:40, vx:0, vy:0, onGround:false, face:1, walkT:0, inv:0, boost:0, small:false, star:0, swing:0, swingCd:0, swingHeld:false, redHat:false, heroPoseT:0, thighTouch:false, tipHat:false, reachFrac:0, waving:0, saluteProg:0};
 let oz = 0, lives = 3, camX = 0, time = 0, state = 'title', introT = 0, introGo = false, introStage = 0;
 let finalScore = 0;   // locked the instant a run ends -- the only value ever submitted
 let spot = 61.40, spotT = 0, nextLifeAt = 100, checkpointX = 60;
@@ -4409,12 +4411,12 @@ function stepBoss7(){
         if(n.hp <= 0){
           n.tampons = [];
           startFatality({
-            bx: n.x, by: n.y, pronoun: 'THEM',
+            bx: n.x, by: n.y, pronoun: 'SHE/HER',
             quip1: "HER BODY, DAN'S VOTE", quip2: 'THE MOVEMENT HAS BEEN MUTED',
             clearFlicker: () => { n.hurtT=0; n.flashT=0; n.tampons=[]; n.pendingThrow=false; n.bagT=0; dan.swing=0; dan.swingHeld=false; },
             resumeSong: 'march',
             positioner: nastyPositioner, finisher: nastyHatFinisher, vanish: nastyVanish,
-            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; if(success){ n.exploded=true; dan.x=FLAG_X-340; dan.y=GROUND_Y-dan.h; } else { n.dead=true; n.deadT=0; NASTY_GORE=null; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
+            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; if(success){ n.runaway=true; dan.redHat=false; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
           });
         } else {
           combat(pick(DAN_VS_NASTY), n.x+16, n.y-14, '#4a90d9');
@@ -4430,12 +4432,12 @@ function stepBoss7(){
         if(n.hp <= 0){
           n.tampons = [];
           startFatality({
-            bx: n.x, by: n.y, pronoun: 'THEM',
+            bx: n.x, by: n.y, pronoun: 'SHE/HER',
             quip1: "HER BODY, DAN'S VOTE", quip2: 'THE MOVEMENT HAS BEEN MUTED',
             clearFlicker: () => { n.hurtT=0; n.flashT=0; n.tampons=[]; n.pendingThrow=false; n.bagT=0; },
             resumeSong: 'march',
             positioner: nastyPositioner, finisher: nastyHatFinisher, vanish: nastyVanish,
-            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; if(success){ n.exploded=true; dan.x=FLAG_X-340; dan.y=GROUND_Y-dan.h; } else { n.dead=true; n.deadT=0; NASTY_GORE=null; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
+            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; if(success){ n.runaway=true; dan.redHat=false; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
           });
         } else {
           combat(pick(DAN_VS_NASTY), n.x+16, n.y-14, '#4a90d9');
@@ -4954,6 +4956,20 @@ function drawNastyWoman(){
   const n = L7S.nasty;
   if(!n.active) return;
   const sx = px(n.x);
+  // dropped sign stays on the ground for the rest of the level once it falls
+  if(L7S.signOnGround){
+    const sigSX = px(L7S.signDropX);
+    ctx.save(); ctx.translate(sigSX + 20, GROUND_Y);
+    ctx.rotate(-1.4);
+    ctx.fillStyle='#c9a876'; ctx.fillRect(-3,-4,6,24);
+    ctx.fillStyle='#f2eee6'; ctx.fillRect(-24,-22,40,18);
+    ctx.strokeStyle='#8a8078'; ctx.lineWidth=1.4; ctx.strokeRect(-24,-22,40,18);
+    ctx.fillStyle='#c0264c'; ctx.font='bold 7px Arial Black,Arial';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('MY',0,-17); ctx.fillText('BODY',0,-9);
+    ctx.textBaseline='alphabetic';
+    ctx.restore();
+  }
   // her tampon, thrown, then bursting on impact -- white, unmistakable
   for(const p of n.tampons){
     ctx.save(); ctx.translate(px(p.x), p.y);
@@ -4992,7 +5008,7 @@ function drawNastyWoman(){
     ctx.fillStyle='#f0c8a8'; ctx.beginPath(); ctx.arc(0, -34, 9, 0, 7); ctx.fill();
     ctx.restore(); return;
   }
-  // exploded -- entire body gone; only the sign lies flat on the ground
+  // exploded -- entire body gone; only the sign lies flat on the ground (legacy fail-path kept)
   if(n.exploded){
     ctx.save(); ctx.translate(sx+34, GROUND_Y);
     ctx.rotate(-1.5);
@@ -5003,6 +5019,47 @@ function drawNastyWoman(){
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText('MY',0,-17); ctx.fillText('BODY',0,-9);
     ctx.textBaseline='alphabetic';
+    ctx.restore();
+    return;
+  }
+  // runaway -- she bolted off-screen; n.x is updated by the finisher, just draw her running
+  // until she leaves the canvas, then skip (the finisher also draws the dropped sign separately)
+  if(n.runaway){
+    if(sx > VIEW_W + 60) return;   // off screen -- nothing to draw
+    // draw her running: same body but flipped right, open scared mouth, no sign
+    const runFace = 1;  // always running right
+    ctx.save(); ctx.translate(sx+17, n.y); ctx.scale(runFace, 1); ctx.translate(-17, 0);
+    const stride = Math.sin(time * 0.6) * 5;   // fast leg churn
+    ctx.fillStyle='#3a4d85';
+    ctx.fillRect(9, 42, 9, 14+stride*0.6); ctx.fillRect(19, 42, 9, 14-stride*0.6);
+    ctx.fillStyle='#e8e8ec';
+    ctx.fillRect(7, 54+stride*0.6, 12, 4); ctx.fillRect(19, 54-stride*0.6, 12, 4);
+    ctx.fillStyle='#17171f'; ctx.fillRect(4, 16, 30, 28);
+    // arms pumping while running
+    ctx.fillStyle='#e8c4a0';
+    ctx.fillRect(-2, 20 + Math.abs(stride)*0.3, 6, 14);
+    ctx.fillRect(30, 20 - Math.abs(stride)*0.3, 6, 14);
+    // hair
+    ctx.fillStyle='#5a3a1e';
+    ctx.beginPath(); ctx.arc(19, 12, 12.5, Math.PI*0.82, Math.PI*0.18); ctx.fill();
+    ctx.fillRect(5, 8, 5, 17); ctx.fillRect(28, 8, 5, 17);
+    // face
+    ctx.fillStyle='#f0c8a8'; ctx.beginPath(); ctx.arc(19, 11, 10, 0, Math.PI*2); ctx.fill();
+    // pussyhat
+    ctx.fillStyle='#e86ab0';
+    ctx.fillRect(4, -4, 30, 10);
+    ctx.beginPath(); ctx.moveTo(4, -4); ctx.lineTo(4, -13); ctx.lineTo(12, -4); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(34, -4); ctx.lineTo(34, -13); ctx.lineTo(26, -4); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#c94a8a'; ctx.fillRect(4, 2, 30, 3);
+    // scared wide-open mouth
+    ctx.fillStyle='#1a0808';
+    ctx.beginPath(); ctx.ellipse(19, 20, 5, 7, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='#e85a5a';
+    ctx.beginPath(); ctx.ellipse(19, 17, 1.5, 2.5, 0, 0, Math.PI*2); ctx.fill();
+    // glasses
+    ctx.fillStyle='#1b1b2f';
+    ctx.fillRect(9, 8, 8, 6); ctx.fillRect(21, 8, 8, 6); ctx.fillRect(17, 9, 4, 2);
+    ctx.fillStyle='rgba(160,200,240,.5)'; ctx.fillRect(10.5, 9, 5, 4); ctx.fillRect(22.5, 9, 5, 4);
     ctx.restore();
     return;
   }
@@ -8376,60 +8433,50 @@ function nastyVanish(){
   // failed fatality -- she vanishes mid-quip, nothing left
   const n = L7S.nasty;
   n.dead = true; n.deadT = 200;
-  n.yellingT = 0;
+  n.yellingT = 0; n.runaway = false; n.signDropped = false; n.scared = false; n.runVX = 0;
+  L7S.signOnGround = false; L7S.signDropX = 0;
+  dan.reachFrac = 0; dan.tipHat = false; dan.waving = 0; dan.saluteProg = 0;
   NASTY_HAT_PROP = null; NASTY_BOX = null; NASTY_GORE = null;
 }
 
 function nastyHatFinisher(t){
   const n = L7S.nasty;
   // All x positions in WORLD coords (px() to convert to screen). camX is stable during fatality.
-  const nastySX = px(n.x);
 
-  // Timeline:
-  //  t=1:      box spawns, falls slowly
-  //  t=1-60:   box falls, lands at coin-box height
-  //  t=60-83:  Dan walks to box
-  //  t=83:     jump launch
-  //  t=95:     bonk, coinBonk sound, hat pops out
-  //  t=95-175: hat floats down Mario-feather style
-  //  t=175:    hat caught, powerup jingle, DAN GROWS 3x
-  //  t=175-215:giant Dan winds up his biggest backhand slap
-  //  t=215:    SLAP connects -- MK explosion, chunks fly
-  //  t=216+:   NOOOOO banner (she's already gone), gore chunks flying
-  //  t=290:    done (gore settled, sign on ground)
-  // timeline:
-  //  t=0-10:   brief pause after positioner
-  //  t=1:      ? box drops
-  //  t=1-60:   box falls to coin-box height
-  //  t=60-83:  Dan walks to box
-  //  t=83:     Dan jumps
-  //  t=95:     Dan bonks box (coinBonk), hat pops out, box flashes+vanishes
-  //  t=95-175: hat drifts down Mario-feather style, Dan tracks it
-  //  t=175:    hat caught -- jingle, dan.redHat=true
-  //  t=175-215:giant 3x Dan appears, winds up the backhand slap
-  //  t=215:    SLAP CONNECTS -- smack+bossHit sounds, she explodes, NOOO scrolls
-  //  t=215-290:gore flies, NOOO banner scrolls, quip fires at lighten phase
-  //  t=290:    done
-  // Extended timeline -- giant Dan has room to WALK toward her, cock his arm,
-  // then swing in slow-motion before the thud and explosion.
+  // Timeline (60fps):
+  //  t=1:       ? box spawns
+  //  t=1-60:    box falls to coin-box height
+  //  t=60-83:   Dan walks to box
+  //  t=83:      jump launch
+  //  t=95:      bonk + coinBonk sound, hat pops out
+  //  t=95-175:  hat drifts down Mario-feather style, Dan tracks it
+  //  t=175:     hat caught -- breadPowerup jingle, redHat=true, NORMAL SIZE
+  //  t=175-220: Dan stands still a beat, grinning with hat on (hold)
+  //  t=220-360: Dan walks slowly toward her (140 frames ~2.3s)
+  //  t=360-440: Dan's arm extends VERY slowly toward her thigh (80 frames ~1.3s)
+  //  t=440:     touch lands -- whoosh sound
+  //  t=440-490: she stands frozen, shocked face (50 frames ~0.8s beat)
+  //  t=490:     sign drops (stays for the rest of the level), smack+hurt sounds
+  //  t=500:     she bolts RIGHT -- cartoonishly fast off screen
+  //  t=560:     Dan tips hat -- sadTrombone
+  //  t=640:     done
   const t_land=60, t_bonk=95, t_hatCatch=175,
-        t_hero=175,      // hat caught -- giant Dan appears
-        t_step=210,      // Dan walks 2 steps toward Nasty (35 frames)
-        t_windup=255,    // arm cocks back slowly (45 frames)
-        t_swing=295,     // slow-mo forward swing starts
-        t_slap=335,      // THUD -- arm fully extended, she explodes
-        t_noo=335, t_pop=335,
-        t_done=420;      // gore settles, done
+        t_holdHat=220,   // end of "hat-on" pause, start walking
+        t_walk=360,      // end of walk, start arm-reach
+        t_reach=440,     // arm fully extended, touch lands
+        t_react=490,     // sign drops, shocked
+        t_run=500,       // she bolts
+        t_tiphat=560,    // Dan tips hat
+        t_done=640;
 
-  // ---- BOX: drops from sky, stored in world coords ----
+  // ---- BOX: drops from sky ----
   if(t === 1){
-    // world x = Dan center, world y starts above screen top
     NASTY_BOX = { wx: dan.x + 13, y: -40, vy: 0, landed: false, blink: 0 };
   }
   if(NASTY_BOX && !NASTY_BOX.landed){
     NASTY_BOX.vy = Math.min(6, NASTY_BOX.vy + 0.35);
     NASTY_BOX.y += NASTY_BOX.vy;
-    const boxRestY = 208;   // standard coin-box y in this game -- top of box, 80px above ground
+    const boxRestY = 208;
     if(NASTY_BOX.y >= boxRestY){
       NASTY_BOX.y = boxRestY; NASTY_BOX.landed = true;
       Audio8.S.clank();
@@ -8437,22 +8484,14 @@ function nastyHatFinisher(t){
   }
   if(NASTY_BOX) NASTY_BOX.blink++;
 
-  // step box flash-and-vanish after bonk
-  if(NASTY_BOX && t >= t_bonk){
-    if(!NASTY_BOX.flashT) NASTY_BOX.flashT = 0;
-    NASTY_BOX.flashT++;
-    if(NASTY_BOX.flashT > 14) NASTY_BOX = null;   // gone after 14-frame flash
-  }
-
-  // draw ? box -- identical to game's drawBoxes style; white flash on bonk
+  // draw ? box
   if(NASTY_BOX){
-    const bsx = px(NASTY_BOX.wx) - T/2;
+    const bsx = px(NASTY_BOX.wx) - 16;
     const by  = NASTY_BOX.y;
-    const used = t >= t_bonk;
+    const used = !!NASTY_BOX.bonked;
     const blinkOn = (NASTY_BOX.blink>>2)%2===0;
     if(used){
-      // white flash, alternating, then gone
-      const flashOn = NASTY_BOX.flashT && (NASTY_BOX.flashT>>1)%2===0;
+      const flashOn = NASTY_BOX.flashT !== undefined && (NASTY_BOX.flashT>>1)%2===0;
       ctx.fillStyle = flashOn ? '#ffffff' : '#8d7a5a';
       ctx.fillRect(bsx, by, T, T);
       ctx.strokeStyle='#1b1b22'; ctx.lineWidth=2.5; ctx.strokeRect(bsx+1.25,by+1.25,T-2.5,T-2.5);
@@ -8470,7 +8509,7 @@ function nastyHatFinisher(t){
     }
   }
 
-  // ---- DAN WALKS TO BOX -- casual stroll ----
+  // ---- DAN WALKS TO BOX ----
   if(t >= t_land && t < t_bonk - 12 && NASTY_BOX){
     const targetX = NASTY_BOX.wx - 13;
     if(Math.abs(dan.x - targetX) > 2){
@@ -8479,19 +8518,19 @@ function nastyHatFinisher(t){
     }
     dan.face = 1;
   }
-  // wind-up jump: Dan launches upward ~12 frames before the bonk
+  // wind-up jump: Dan launches 12 frames before bonk
   if(t === t_bonk - 12){
-    dan.vy = -7.2;    // jump just enough to bonk box bottom at y=240, head stays below box top
+    dan.vy = -6.4;    // tuned: rises ~40px so head just touches box bottom (y=240) without clipping
     dan.onGround = false;
   }
-  // during the jump, apply gravity so Dan arcs naturally
+  // jump arc: gravity applied, ground check, NO forced grounding here
   if(t > t_bonk - 12 && t <= t_bonk + 6){
     dan.vy = Math.min(dan.vy + G, 10);
     dan.y += dan.vy;
     if(dan.y >= GROUND_Y - dan.h){ dan.y = GROUND_Y - dan.h; dan.onGround = true; dan.vy = 0; }
     dan.walkT++;
   }
-  // after bonk, bounce back down
+  // after bonk window, coast back down
   if(t > t_bonk + 6){
     if(!dan.onGround){
       dan.vy = Math.min(dan.vy + G, 10);
@@ -8500,33 +8539,37 @@ function nastyHatFinisher(t){
     }
   }
 
-  // ---- BONK ----
+  // ---- BONK (timer-based, fires at t_bonk regardless of exact position) ----
   if(t === t_bonk){
     Audio8.S.coinBonk();
-    dan.vy = 3;   // slight bounce back down from the box
+    dan.vy = 3;   // bounce back down
+    NASTY_BOX.bonked = true;
+    NASTY_BOX.flashT = 0;
     NASTY_HAT_PROP = {
-      wx: NASTY_BOX ? NASTY_BOX.wx : dan.x + 13,
-      y:  NASTY_BOX ? NASTY_BOX.y - 12 : 196,   // hat pops out just above the box
-      vy: -4, ht: 0, caught: false
+      wx: NASTY_BOX.wx,
+      y:  NASTY_BOX.y - 8,
+      vy: -3.5, ht: 0, caught: false
     };
   }
 
-  // ---- HAT: floats down very slowly with gentle left-right drift ----
+  // box flash and vanish after bonk
+  if(NASTY_BOX && NASTY_BOX.bonked){
+    NASTY_BOX.flashT++;
+    if(NASTY_BOX.flashT > 18) NASTY_BOX = null;
+  }
+
+  // ---- HAT: floats down ----
   if(NASTY_HAT_PROP && !NASTY_HAT_PROP.caught){
     NASTY_HAT_PROP.ht++;
-    NASTY_HAT_PROP.vy = Math.min(0.55, NASTY_HAT_PROP.vy + 0.06);   // very slow fall
+    NASTY_HAT_PROP.vy = Math.min(0.55, NASTY_HAT_PROP.vy + 0.06);
     NASTY_HAT_PROP.y += NASTY_HAT_PROP.vy;
-    NASTY_HAT_PROP.wx += Math.sin(NASTY_HAT_PROP.ht * 0.09) * 1.4;  // slow left-right
-
-    // Dan gently tracks hat -- only after bonk settles
-    if(t > t_bonk + 20 && !NASTY_HAT_PROP.caught){
+    NASTY_HAT_PROP.wx += Math.sin(NASTY_HAT_PROP.ht * 0.09) * 1.4;
+    if(t > t_bonk + 20){
       const targetX = NASTY_HAT_PROP.wx - 13;
-      dan.x += (targetX - dan.x) * 0.04;   // very gentle drift toward hat
+      dan.x += (targetX - dan.x) * 0.04;
       dan.walkT += 0.5;
       dan.face = dan.x < NASTY_HAT_PROP.wx ? 1 : -1;
     }
-
-    // catch when hat reaches Dan head height
     const danHeadY = dan.y + 8;
     if(NASTY_HAT_PROP.y >= danHeadY || t >= t_hatCatch){
       NASTY_HAT_PROP.caught = true;
@@ -8534,113 +8577,120 @@ function nastyHatFinisher(t){
     }
   }
 
-  // draw floating hat (screen-space converted from world x)
+  // draw floating hat
   if(NASTY_HAT_PROP && !NASTY_HAT_PROP.caught){
     const hsx = px(NASTY_HAT_PROP.wx), hy = NASTY_HAT_PROP.y;
     ctx.save(); ctx.translate(hsx, hy);
-    // brim
     ctx.fillStyle='#c0392b'; ctx.fillRect(-18, 6, 36, 4);
-    // crown
     ctx.beginPath(); ctx.arc(0, 0, 14, Math.PI, 0); ctx.fill();
     ctx.fillRect(-14, 0, 28, 8);
     ctx.fillStyle='#fff'; ctx.font='bold 5px Arial'; ctx.textAlign='center';
     ctx.fillText('MAGA', 0, 7);
-    // orbiting sparkles -- gentle rotation
     const gp = NASTY_HAT_PROP.ht;
     ctx.fillStyle='#ffd94a';
     for(let i=0;i<4;i++){
       const ang = gp*0.18 + i*1.57, r=22;
-      ctx.beginPath(); ctx.arc(Math.cos(ang)*r, Math.sin(ang)*r-4, 2.5, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(Math.cos(ang)*r, Math.sin(ang)*r-4, 2.5, 0, Math.PI*2); ctx.fill();
     }
     ctx.restore();
   }
 
-  // ---- GIANT DAN + BIG SLAP ----
-  if(t === t_hero){
+  // ---- HAT CAUGHT: jingle, normal size, pause beat ----
+  if(t === t_hatCatch){
     dan.face = 1; dan.onGround = true; dan.y = GROUND_Y - dan.h; dan.vy = 0;
-    dan.heroPoseT = 1;   // flag: >0 means draw giant Dan
-    dan.bigSlapFrac = 0; // arm neutral at sides
+    dan.walkT = 0;
     Audio8.S.breadPowerup();
   }
-
-  // PHASE 1: Giant Dan takes 2 casual steps toward Nasty Woman
-  // target: stop 80px left of her in world coords
-  if(t > t_hero && t < t_step && dan.heroPoseT > 0){
-    const targetX = n.x - 80;
-    dan.x += (targetX - dan.x) * 0.09;
+  // hold still with hat on during the pause beat
+  if(t >= t_hatCatch && t < t_holdHat){
     dan.face = 1;
-    dan.bigSlapFrac = 0;   // arm at rest during walk
-    // step walk animation via walkT
-    dan.walkT += 1.5;
+    dan.walkT = 0;
+    dan.onGround = true; dan.y = GROUND_Y - dan.h; dan.vy = 0;
   }
-  if(t === t_step && dan.heroPoseT > 0){
-    dan.x = n.x - 80;   // snap to exact position
+
+  // ---- DAN WALKS SLOWLY TOWARD HER ----
+  // target: stop about 20px to her left (close enough to reach her thigh)
+  if(t >= t_holdHat && t < t_walk){
+    const targetX = n.x - 20;
+    dan.x += (targetX - dan.x) * 0.025;  // very slow lerp
+    dan.face = 1;
+    dan.walkT++;
+    dan.onGround = true; dan.y = GROUND_Y - dan.h; dan.vy = 0;
+  }
+  if(t === t_walk){
+    dan.x = n.x - 20;
     dan.walkT = 0;
   }
 
-  // PHASE 2: Arm cocks back -- bigSlapFrac goes -1 (fully cocked) over 45 frames
-  if(t >= t_step && t < t_windup && dan.heroPoseT > 0){
-    const prog = (t - t_step) / (t_windup - t_step);
-    dan.bigSlapFrac = -prog;   // negative = arm pulled back behind body
-  }
-
-  // PHASE 3: Slow-motion forward swing -- bigSlapFrac goes -1 → 1 over 40 frames
-  // Uses a heavy ease-in: arm stays back most of the window, then SNAPS forward
-  if(t >= t_windup && t < t_slap && dan.heroPoseT > 0){
-    const rawProg = (t - t_windup) / (t_slap - t_windup);   // 0→1
-    // very slow at start (held back), then fast snap at the end
-    const easedProg = Math.pow(rawProg, 3);   // cubic ease-in: crawls then rockets
-    dan.bigSlapFrac = -1 + easedProg * 2;     // -1 → 1
-  }
-
-  // IMPACT
-  if(t === t_slap){
-    // THE BIGGEST BACKHAND IN MARCH HISTORY
-    Audio8.S.smack(); Audio8.S.bossHit(); Audio8.S.headPop();
-    shake = 28;
-    n.exploded = true; n.yellingT = 0;
-    // MK-style gore explosion
-    const cx = n.x + 17, cy = n.y + 29;
-    NASTY_GORE = [];
-    const colors = ['#e86ab0','#17171f','#f0c8a8','#3a4d85','#e8c4a0','#c94a8a','#f2c0d6','#1b1b2f','#e86ab0'];
-    for(let i=0;i<28;i++){
-      const ang = (i/28)*Math.PI*2 + (Math.random()-0.5)*0.4;
-      const spd = 5 + Math.random()*10;
-      NASTY_GORE.push({
-        x: cx+(Math.random()-0.5)*16, y: cy+(Math.random()-0.5)*30,
-        vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd-7,
-        spin: (Math.random()-0.5)*0.6, rot: 0,
-        color: colors[i%colors.length], size: 4+Math.random()*12, t: 0
-      });
-    }
-    // heroPoseT NOT reset here -- Dan stays 3x during the quip panel; onComplete resets it.
-    dan.bigSlapFrac = 0;
-  }
-
-  // keep Dan grounded and facing right during the entire giant-Dan sequence
-  if(dan.heroPoseT > 0){
-    dan.onGround = true; dan.vy = 0; dan.y = GROUND_Y - dan.h;
+  // ---- ARM REACHES SLOWLY TOWARD HER THIGH ----
+  // reachFrac goes 0→1 over 80 frames -- stored on dan so drawDan can use it
+  if(t >= t_walk && t < t_reach){
+    const prog = (t - t_walk) / (t_reach - t_walk);
+    dan.reachFrac = Math.pow(prog, 1.6);  // ease-in: slow at start, settles at end
     dan.face = 1;
+    dan.onGround = true; dan.y = GROUND_Y - dan.h; dan.vy = 0;
   }
 
-  // step and draw gore chunks from the slap explosion
-  if(NASTY_GORE && NASTY_GORE.length > 0){
-    for(let i=NASTY_GORE.length-1;i>=0;i--){
-      const g = NASTY_GORE[i];
-      g.t++;
-      g.vy += 0.55;
-      g.x += g.vx; g.y += g.vy; g.rot += g.spin;
-      if(g.y > GROUND_Y+40){ NASTY_GORE.splice(i,1); continue; }
-      const alpha = Math.max(0, 1 - g.t/55);
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.translate(px(g.x), g.y);
-      ctx.rotate(g.rot);
-      ctx.fillStyle = g.color;
-      ctx.fillRect(-g.size/2, -g.size/2, g.size, g.size);
-      ctx.restore();
-    }
-    if(NASTY_GORE.length === 0) NASTY_GORE = null;
+  // ---- TOUCH LANDS ----
+  if(t === t_reach){
+    dan.reachFrac = 1;
+    Audio8.S.whoosh();
+  }
+  // hold touch pose until she reacts
+  if(t >= t_reach && t < t_react){
+    dan.reachFrac = 1;
+    dan.face = 1;
+    dan.onGround = true; dan.y = GROUND_Y - dan.h; dan.vy = 0;
+  }
+
+  // ---- SHE FREEZES SHOCKED ----
+  if(t === t_react){
+    n.scared = true;
+    n.yellingT = 1;
+    Audio8.S.smack();
+    Audio8.S.hurt();
+    // permanently mark sign as dropped at her current position
+    L7S.signOnGround = true;
+    L7S.signDropX = n.x;   // snapshot before she runs
+  }
+  if(t >= t_react && t < t_run){
+    n.yellingT++;  // mouth stays wide open during shock beat
+  }
+
+  // ---- SHE BOLTS ----
+  if(t === t_run){
+    n.runaway = true;
+    n.runVX = 6;   // starts fast
+    dan.reachFrac = 0;
+  }
+  if(t >= t_run && n.runaway){
+    n.runVX = Math.min(28, n.runVX + 1.2);  // rapid cartoon acceleration
+    n.x += n.runVX;
+    n.yellingT++;
+  }
+
+  // ---- DAN SALUTES BYE ----
+  if(t === t_tiphat){
+    dan.waving = 1;
+    dan.saluteProg = 0;
+    Audio8.S.sadTrombone();
+  }
+  // arm rises to salute over 20 frames, holds
+  if(t > t_tiphat && t <= t_tiphat + 20){
+    dan.saluteProg = (t - t_tiphat) / 20;
+  }
+  if(t > t_tiphat + 20 && t <= t_tiphat + 40){
+    dan.saluteProg = 1;   // hold salute
+  }
+  if(t > t_tiphat + 40){
+    dan.waving = 0;
+    dan.saluteProg = 0;
+    dan.tipHat = false;
+  }
+
+  // ground Dan outside the jump window
+  if(t < t_bonk - 12 || t > t_bonk + 30){
+    if(dan.onGround){ dan.vy = 0; dan.y = GROUND_Y - dan.h; }
   }
 
   if(t >= t_done) return true;
@@ -8936,9 +8986,31 @@ function drawDan(){
     ctx.fillStyle='#a58850'; ctx.fillRect(9, 24, 8, 5);
     const slapping = dan.swing>0;   // any Equalizer level (this branch never runs for city)
     if(!slapping){
-      // resting forward arm
-      ctx.fillStyle='#2e3d6b'; ctx.fillRect(18, 16, 7, 10);
-      ctx.fillStyle='#e8b68a'; ctx.fillRect(20, 25, 5, 4);
+      // forward arm -- resting, reaching toward her thigh, or saluting
+      const rf = dan.reachFrac || 0;
+      const wv = dan.waving || 0;
+      if(wv > 0){
+        // SALUTE: arm pivots up from shoulder to forehead level
+        // shoulder is at local (20, 16); hand finishes at (~20, 2) touching brow
+        const salProg = Math.min(1, dan.saluteProg || 0);
+        ctx.save();
+        ctx.translate(20, 16);                        // pivot at shoulder
+        const angle = -1.2 * salProg;                // 0 → -1.2 rad (hand rises to brow)
+        ctx.rotate(angle);
+        ctx.fillStyle='#2e3d6b'; ctx.fillRect(-2, 0, 5, 10);   // forearm
+        ctx.fillStyle='#e8b68a'; ctx.fillRect(-3, 10, 7, 4);   // flat hand at brow
+        ctx.restore();
+      } else {
+        // resting or reaching -- arm extends rightward (positive local X) toward her thigh
+        // at rf=0: sleeve at (18,16) w=7 h=10, hand at (20,26)
+        // at rf=1: sleeve extends further right by ~14px to reach across the gap
+        const sleeveX = 18;
+        const sleeveW = 7 + rf * 6;   // small extension rightward -- he's already close
+        const armY    = 16;
+        const armH    = 10;
+        ctx.fillStyle='#2e3d6b'; ctx.fillRect(sleeveX, armY, sleeveW, armH);
+        ctx.fillStyle='#e8b68a'; ctx.fillRect(sleeveX + sleeveW - 2, armY + armH - 5, 6, 5);  // hand
+      }
     } else if(dan.slapStraight){
       // STRAIGHT SLAP -- a quick straight-arm jab forward, palm-first. this is the
       // one that launches an enemy face-first into the screen on connect.
@@ -9732,7 +9804,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '12.0';
+const BUILD = '12.1';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
