@@ -1363,7 +1363,7 @@ function buildLevel(n){
       police:[{dx:0,turn:0},{dx:0,turn:0}],
       nasty:{x:FLAG_X-90, y:GROUND_Y-58, w:34, h:58, vx:0, vy:0, hp:3, hurtT:0, jumpT:110,
              active:false, dead:false, deadT:0, done:false, throwT:120, bagT:0, tampons:[],
-             runaway:false, runVX:0, signDropped:false, scared:false, yellingT:0},
+             runaway:false, runVX:0, signDropped:false, scared:false, yellingT:0, exploded:false},
       signOnGround: false, signDropX: 0 };
   }
   if(kind === 'bonus'){
@@ -1438,7 +1438,7 @@ const INSULTS = ['YOU SUCK!', "YOU'RE REALLY BAD AT THIS!", 'PATHETIC, DAN!', 'E
 const KAREN_HITS = ['CHECK YOUR PRIVILEGE, DAN!', 'THIS IS PROBLEMATIC, DAN!', 'DAN HAS BEEN CANCELED!'];
 const HUSBAND_HITS = ['SHE HAS MY WALLET!', "I'M JUST HOLDING THIS!", 'HAPPY WIFE, HAPPY... OW!', 'CAN WE GO HOME NOW?', 'YES, DEAR!'];
 const BULLHORN_HITS = ['THIS. IS. WHAT. DEMOCRACY. SOUNDS LIKE!', 'CAN YOU HEAR ME NOW?!', 'REEEEEEEEE!'];
-const DAN_VS_NASTY = ['KNOCKED OFF HER PEDESTAL!', "THAT'S NOT VERY EMPOWERING!", 'MAIN CHARACTER MOMENT: OVER!'];
+const DAN_VS_NASTY = ['KNOCKED OFF HER PEDESTAL!', "THAT'S NOT VERY EMPOWERING!"];
 const NASTY_HITS = ["I DON'T NEED A MAN!", 'TOXIC MASCULINITY DETECTED!', 'CHECK YOUR ENERGY!', 'LOW VIBRATION, DAN!'];
 const MARCH_QUIPS = ['TRIGGERED!', 'GET A JOB!', "SILVER DON'T CARE!", 'SILVER > FEELINGS!', 'REEEE-TIRED!',
                      'COPE HARDER!', 'STAY MAD!', 'SEETHE!', 'MOSTLY PEACEFUL!', 'SEIZE THE PAVEMENT!',
@@ -2819,7 +2819,7 @@ function stepBoss1(){
           clearFlicker: () => { b.hurtT = 0; b.flashT = 0; b.thrown = []; dan.swing = 0; dan.swingHeld = false; },
           resumeSong: 'level',
           positioner: marxPositioner, finisher: marxBreadFinisher, vanish: marxVanish,
-                    onComplete: (success) => { b.done = true; if(success){ b.headGone = true; b.flailing = true; setTimeout(()=>{ if(state==='play') Audio8.play('level'); }, 400); } else { b.dead = true; b.deadT = 0; setTimeout(()=>{ if(state==='play') Audio8.play('level'); }, 1800); } oz += 100; toast('+100 oz', '#3fae2a'); }
+                    onComplete: (success) => { b.done = true; BREAD_POSE=null; if(success){ b.headGone = true; b.flailing = true; setTimeout(()=>{ if(state==='play') Audio8.play('level'); }, 400); } else { b.dead = true; b.deadT = 0; setTimeout(()=>{ if(state==='play') Audio8.play('level'); }, 1800); } oz += 100; toast('+100 oz', '#3fae2a'); }
         });
       } else {
         combat(b.hp===2 ? 'PRIVATE PROPERTY DEFENDED!' : 'THE MEANS REMAIN UNSEIZED!', b.x+15, b.y-14, '#4a90d9');
@@ -2843,7 +2843,7 @@ function stepBoss1(){
           clearFlicker: () => { b.hurtT = 0; b.flashT = 0; b.thrown = []; },
           resumeSong: 'level',
           positioner: marxPositioner, finisher: marxBreadFinisher, vanish: marxVanish,
-                    onComplete: (success) => { b.done = true; if(success){ b.headGone = true; b.flailing = true; setTimeout(()=>{ if(state==='play') Audio8.play('level'); }, 400); } else { b.dead = true; b.deadT = 0; setTimeout(()=>{ if(state==='play') Audio8.play('level'); }, 1800); } oz += 100; toast('+100 oz', '#3fae2a'); }
+                    onComplete: (success) => { b.done = true; BREAD_POSE=null; if(success){ b.headGone = true; b.flailing = true; setTimeout(()=>{ if(state==='play') Audio8.play('level'); }, 400); } else { b.dead = true; b.deadT = 0; setTimeout(()=>{ if(state==='play') Audio8.play('level'); }, 1800); } oz += 100; toast('+100 oz', '#3fae2a'); }
         });
       } else {
         combat(b.hp===2 ? 'PRIVATE PROPERTY DEFENDED!' : 'THE MEANS REMAIN UNSEIZED!', b.x+15, b.y-14, '#4a90d9');
@@ -4463,8 +4463,8 @@ function stepBoss7(){
             quip1: "HER BODY, DAN'S VOTE", quip2: 'THE MOVEMENT HAS BEEN MUTED',
             clearFlicker: () => { n.hurtT=0; n.flashT=0; n.tampons=[]; n.pendingThrow=false; n.bagT=0; dan.swing=0; dan.swingHeld=false; },
             resumeSong: 'march',
-            positioner: nastyPositioner, finisher: nastyHatFinisher, vanish: nastyVanish,
-            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; dan._hatJinglePlayed=false; if(success){ n.runaway=true; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
+            positioner: nastyPositioner, finisher: nastyHatFinisherBallot, vanish: nastyVanish,
+            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; dan._hatJinglePlayed=false; BALLOT_POSE=null; BALLOT_CARD=null; if(!success){ n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
           });
         } else {
           combat(pick(DAN_VS_NASTY), n.x+16, n.y-14, '#4a90d9');
@@ -4484,8 +4484,8 @@ function stepBoss7(){
             quip1: "HER BODY, DAN'S VOTE", quip2: 'THE MOVEMENT HAS BEEN MUTED',
             clearFlicker: () => { n.hurtT=0; n.flashT=0; n.tampons=[]; n.pendingThrow=false; n.bagT=0; },
             resumeSong: 'march',
-            positioner: nastyPositioner, finisher: nastyHatFinisher, vanish: nastyVanish,
-            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; dan._hatJinglePlayed=false; if(success){ n.runaway=true; } else { n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
+            positioner: nastyPositioner, finisher: nastyHatFinisherBallot, vanish: nastyVanish,
+            onComplete: (success) => { n.done = true; NASTY_BOX=null; NASTY_HAT_PROP=null; dan.heroPoseT=0; dan.reachFrac=0; dan.waving=0; dan.saluteProg=0; dan.tipHat=false; dan._hatJinglePlayed=false; BALLOT_POSE=null; BALLOT_CARD=null; if(!success){ n.dead=true; n.deadT=0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('march'); }, 600); }
           });
         } else {
           combat(pick(DAN_VS_NASTY), n.x+16, n.y-14, '#4a90d9');
@@ -5002,7 +5002,7 @@ function drawNastyWoman(){
   if(kind!=='march') return;
   const n = L7S.nasty;
   if(!n.active) return;
-  const wobX = (n.runaway || n.dead) ? 0 : fatalityWobbleX();
+  const wobX = (n.runaway || n.dead || n.exploded) ? 0 : fatalityWobbleX();
   const sx = px(n.x) + wobX;
   // dropped sign stays on the ground for the rest of the level once it falls
   if(L7S.signOnGround){
@@ -5056,18 +5056,10 @@ function drawNastyWoman(){
     ctx.fillStyle='#f0c8a8'; ctx.beginPath(); ctx.arc(0, -34, 9, 0, 7); ctx.fill();
     ctx.restore(); return;
   }
-  // exploded -- entire body gone; only the sign lies flat on the ground (legacy fail-path kept)
+  // exploded -- entire body gone; the persistent sign block at the top of this
+  // function already draws the dropped sign via L7S.signOnGround, so there's
+  // nothing left to draw here once she's gone.
   if(n.exploded){
-    ctx.save(); ctx.translate(sx+34, GROUND_Y);
-    ctx.rotate(-1.5);
-    ctx.fillStyle='#c9a876'; ctx.fillRect(-3,-4,6,24);
-    ctx.fillStyle='#f2eee6'; ctx.fillRect(-24,-22,40,18);
-    ctx.strokeStyle='#8a8078'; ctx.lineWidth=1.4; ctx.strokeRect(-24,-22,40,18);
-    ctx.fillStyle='#c0264c'; ctx.font='bold 7px Arial Black,Arial';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('MY',0,-17); ctx.fillText('BODY',0,-9);
-    ctx.textBaseline='alphabetic';
-    ctx.restore();
     return;
   }
   // runaway -- she bolted off-screen; n.x is updated by the finisher, just draw her running
@@ -8231,84 +8223,128 @@ function marxPositioner(t){
 function marxVanish(){
   // failed fatality: Karl vanishes mid-quip, body gone when panel closes
   boss1.dead = true; boss1.deadT = 200;   // skip the fall animation entirely -- just gone
+  BREAD_POSE = null; MARX_HEAD = null; BREAD_PROP = null;
 }
+
+// the baguette itself -- shared by the finisher's throw sequence and the
+// Zelda-style held-overhead pose
+function drawBaguette(sx, sy, ang){
+  ctx.save(); ctx.translate(sx, sy); ctx.rotate(ang);
+  ctx.fillStyle='#c8820a';
+  ctx.beginPath(); ctx.ellipse(0, 0, 22, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#f4b830';
+  ctx.beginPath(); ctx.ellipse(0, -1.5, 19, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#8a5a0a'; ctx.lineWidth=1.2;
+  for(let i=-2;i<=2;i++){
+    ctx.beginPath(); ctx.moveTo(i*8-3,-3.5); ctx.lineTo(i*8+3,0.5); ctx.stroke();
+  }
+  ctx.fillStyle='#c8820a';
+  ctx.beginPath(); ctx.moveTo(22,-2); ctx.lineTo(28,0); ctx.lineTo(22,2); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+// Karl Marx fatality: Dan raises the baguette straight overhead with both arms --
+// the exact same Zelda item-get mechanic as the ballot pose above, just holding
+// bread instead of paper. danHead() already draws the plain SD cap here since
+// dan.redHat is false outside the march level, so no hat mismatch.
+function drawDanBaguettePose(t, riseStart, riseEnd){
+  const dsx = px(dan.x), dsy = Math.round(dan.y);
+  const liftFrac = Math.max(0, Math.min(1, (t - riseStart) / (riseEnd - riseStart)));
+  const lift = 1 - Math.pow(1 - liftFrac, 3);   // ease-out, a little snap at the top
+
+  ctx.save();
+  ctx.translate(dsx + dan.w/2, dsy + dan.h);
+  ctx.scale(dan.face, 1);
+  ctx.translate(-13, -40);
+
+  // legs -- planted straight, no walk cycle, this is a held pose
+  ctx.fillStyle='#b99a5f';
+  ctx.fillRect(4, 28, 8, 12); ctx.fillRect(14, 28, 8, 12);
+  ctx.fillStyle='#6b4423';
+  ctx.fillRect(3, 38, 10, 4); ctx.fillRect(13, 38, 10, 4);
+
+  // torso -- hoodie + overalls, matches normal Dan exactly
+  ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14, 22, 16);
+  ctx.fillStyle='#b99a5f'; ctx.fillRect(6, 20, 14, 10);
+  ctx.fillRect(6, 15, 4, 7); ctx.fillRect(16, 15, 4, 7);
+  ctx.fillStyle='#8a6f3c'; ctx.fillRect(7, 16, 2, 2); ctx.fillRect(17, 16, 2, 2);
+  ctx.fillStyle='#a58850'; ctx.fillRect(9, 24, 8, 5);
+
+  // both arms sweep up together, same as the ballot pose
+  for(const shoulderX of [6, 20]){
+    ctx.save();
+    ctx.translate(shoulderX, 16);
+    ctx.rotate(-Math.PI * lift);
+    ctx.fillStyle='#2e3d6b'; ctx.fillRect(-2.5, 0, 5, 11);
+    ctx.fillStyle='#e8b68a'; ctx.fillRect(-2.5, 11, 5, 4);
+    ctx.restore();
+  }
+
+  // head + plain SD cap (dan.redHat is false here, so no MAGA mismatch)
+  danHead();
+
+  ctx.restore();
+
+  // the baguette itself, rising into place above the raised hands
+  if(lift > 0.04){
+    const bx = dsx + dan.w/2;
+    const holdY = dsy + dan.h - 40 - 8 - lift*24;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, lift*1.8);
+    drawBaguette(bx, holdY, -0.15);
+    ctx.restore();
+
+    // sparkle glow once fully raised, Zelda item-get flourish
+    if(liftFrac >= 1){
+      ctx.fillStyle='#ffd94a';
+      for(let i=0;i<4;i++){
+        const ang = t*0.15 + i*1.57;
+        ctx.beginPath();
+        ctx.arc(bx + Math.cos(ang)*24, holdY + Math.sin(ang)*14, 2, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
 
 function marxBreadFinisher(t){
   const b = boss1;
   const markDan = b.x - 110;
-  // timeline:
-  //   t=0-18:    Dan turns back (dramatic pause)
-  //   t=18-30:   turns around, bread RISES out of chest and floats up above his head
-  //   t=30:      bread at apex, hovering detached above Dan
-  //   t=31:      breadPowerup zelda jingle fires
-  //   t=31-160:  bread HOVERS above Dan with sparkles (Zelda item display)
-  //   t=160-172: Dan's arm rises UP to grab the hovering bread
-  //   t=172-186: wind-up -- arm cocks back, bread on arm
-  //   t=186:     throw! BREAD_PROP spawns
-  //   t=191:     IMPACT -- bigBonk, head launches
-  //   t=191+:    head flies, body headless
-  //   t=250+:    done
-  const t_turnBack=18, t_apex=30,
-        t_hold=160, t_grab=172, t_windup=186, t_throw=187, t_hit=191;
-
-  function drawBaguette(sx, sy, ang){
-    ctx.save(); ctx.translate(sx, sy); ctx.rotate(ang);
-    ctx.fillStyle='#c8820a';
-    ctx.beginPath(); ctx.ellipse(0, 0, 22, 5, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle='#f4b830';
-    ctx.beginPath(); ctx.ellipse(0, -1.5, 19, 3, 0, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#8a5a0a'; ctx.lineWidth=1.2;
-    for(let i=-2;i<=2;i++){
-      ctx.beginPath(); ctx.moveTo(i*8-3,-3.5); ctx.lineTo(i*8+3,0.5); ctx.stroke();
-    }
-    ctx.fillStyle='#c8820a';
-    ctx.beginPath(); ctx.moveTo(22,-2); ctx.lineTo(28,0); ctx.lineTo(22,2); ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
+  // timeline (60fps):
+  //   t=0-18:     Dan turns back (dramatic pause)
+  //   t=18-38:    ZELDA POSE -- arms rise, bread comes up with them (0.33s)
+  //   t=38-108:   pose HOLDS at full extension, sparkles, chime at start (1.17s)
+  //   t=108-120:  arm lowers from the pose into a throwing grip
+  //   t=120-134:  wind-up -- arm cocks back, bread on arm
+  //   t=135:      throw! BREAD_PROP spawns
+  //   t=139:      IMPACT -- bigBonk, head launches
+  //   t=139+:     head flies, body headless
+  //   t=199+:     done
+  const t_turnBack=18, t_riseStart=18, t_riseEnd=38, t_holdEnd=108,
+        t_grab=120, t_windup=134, t_throw=135, t_hit=139;
 
   if(t <= t_turnBack){
     dan.face = -1; dan.x = markDan;
+    BREAD_POSE = null;
   }
-  // bread rises free from Dan's chest into the air above him
-  else if(t <= t_apex){
+  // ZELDA POSE: rise + hold, handled by BREAD_POSE state + drawDanBaguettePose
+  // (called from the main render dispatch, same mechanic as the ballot pose)
+  else if(t <= t_holdEnd){
     dan.face = 1; dan.x = markDan;
-    const rise = (t - t_turnBack) / (t_apex - t_turnBack);
-    const sx = px(dan.x);
-    const breadY = (dan.y + 16) - rise * 58;   // floats up ~58px above chest
-    drawBaguette(sx + 13, breadY, -0.2);
+    if(t === t_riseStart + 1){ BREAD_POSE = { t, riseStart: t_riseStart, riseEnd: t_riseEnd }; Audio8.S.breadPowerup(); }
+    if(BREAD_POSE) BREAD_POSE.t = t;
   }
-  // HOVER: bread floats above Dan's head with zelda sparkle
-  else if(t <= t_hold){
-    if(t === t_apex + 1) Audio8.S.breadPowerup();
-    dan.face = 1; dan.x = markDan;
-    const bob = Math.sin((t - t_apex) * 0.13) * 2.5;
-    const sx = px(dan.x);
-    const breadY = dan.y - 52 + bob;
-    drawBaguette(sx + 13, breadY, -0.18);
-    // orbiting sparkles
-    const gp = t - t_apex;
-    ctx.fillStyle = '#ffd94a';
-    for(let i=0;i<5;i++){
-      const ang = gp*0.15 + i*(Math.PI*2/5), r = 30 + Math.sin(gp*0.08+i)*4;
-      ctx.save(); ctx.globalAlpha = 0.65 + Math.sin(gp*0.2+i)*0.3;
-      ctx.beginPath(); ctx.arc(sx+13+Math.cos(ang)*r, breadY+Math.sin(ang)*r*0.45, 2.5, 0, 7);
-      ctx.fill(); ctx.restore();
-    }
-    // soft glow under the bread
-    ctx.save(); ctx.globalAlpha = 0.16 + Math.sin(t*0.18)*0.07;
-    ctx.fillStyle = '#fff7a0';
-    ctx.beginPath(); ctx.ellipse(sx+13, breadY+4, 28, 8, 0, 0, Math.PI*2); ctx.fill();
-    ctx.restore();
-  }
-  // Dan's arm rises to grab the hovering bread
+  // Dan's arm lowers from the raised pose into a throwing grip
   else if(t <= t_grab){
+    BREAD_POSE = null;
     dan.face = 1; dan.x = markDan;
-    const frac = (t - t_hold) / (t_grab - t_hold);
+    const frac = (t - t_holdEnd) / (t_grab - t_holdEnd);
     const sx = px(dan.x);
-    const breadY = dan.y - 52 + frac * 42;   // bread descends to meet arm
-    drawBaguette(sx + 13, breadY, -0.18);
-    // arm sleeve reaching up
-    const armAng = -0.35 - (1-frac)*1.1;
+    const breadY = (dan.y - 52) + frac * 42;   // descends from overhead to grip height
+    drawBaguette(sx + 13, breadY, -0.18 + frac*0.3);
+    // arm sleeve lowering to meet it
+    const armAng = -1.45 + frac*1.1;
     ctx.save(); ctx.translate(sx + 18, dan.y + 16); ctx.rotate(armAng);
     ctx.fillStyle='#2e3d6b'; ctx.fillRect(-3, -20, 6, 20);
     ctx.fillStyle='#e8b68a'; ctx.fillRect(-3, -24, 6, 5);
@@ -8482,12 +8518,17 @@ function nastyVanish(){
   const n = L7S.nasty;
   n.dead = true; n.deadT = 200;
   n.yellingT = 0; n.runaway = false; n.signDropped = false; n.scared = false; n.runVX = 0;
+  n.exploded = false;
   L7S.signOnGround = false; L7S.signDropX = 0;
   dan.reachFrac = 0; dan.tipHat = false; dan.waving = 0; dan.saluteProg = 0; dan._hatJinglePlayed = false;
   NASTY_HAT_PROP = null; NASTY_BOX = null; NASTY_GORE = null;
+  BALLOT_POSE = null; BALLOT_CARD = null;
 }
 
-function nastyHatFinisher(t){
+// LEGACY (kept per Danny's request in case the new ballot version doesn't land well) --
+// the original "walk up, touch her thigh, she runs off" ending. Not currently wired
+// to startFatality; nastyHatFinisherBallot below is the active version.
+function nastyHatFinisherLegacyRunaway(t){
   const n = L7S.nasty;
   // All x positions in WORLD coords (px() to convert to screen). camX is stable during fatality.
 
@@ -8749,7 +8790,417 @@ function nastyHatFinisher(t){
   return false;
 }
 
-let CZAR_ZAMBONI_X = 0;   // screen-space x of zamboni left edge, updated each finisher frame
+// ---- LEVEL 7 boss: Nasty Woman fatality -- ACTIVE VERSION ----
+// Box + jump + bonk + hat-float are identical to the legacy version above.
+// After the hat catches: Dan gets an item-get popup (Zelda-style), a full
+// ballot card appears showing he voted for Trump, then Nasty Woman screams
+// and explodes MK-style, leaving only her sign on the ground.
+let BALLOT_POSE = null;    // {t, riseStart, riseEnd} -- Dan's held-overhead Zelda-style item pose
+let BREAD_POSE  = null;    // {t, riseStart, riseEnd} -- same mechanic, Karl Marx's baguette
+let BALLOT_CARD  = null;   // {t, phase:'in'|'hold'|'out'} -- the big readable ballot
+function nastyHatFinisherBallot(t){
+  const n = L7S.nasty;
+
+  // Timeline (60fps):
+  //  t=1:        ? box spawns
+  //  t=1-60:     box falls to coin-box height
+  //  t=60-83:    Dan walks to box
+  //  t=83:       jump launch
+  //  t=95:       bonk + coinBonk sound, hat pops out
+  //  t=95-175:   hat drifts down Mario-feather style, Dan tracks it
+  //  t=175:      hat caught -- breadPowerup jingle, redHat=true
+  //  t=175-196:  hold beat (0.35s), Dan stands with hat on
+  //  t=196-216:  ZELDA POSE -- Dan raises the ballot overhead, arms rising (0.33s)
+  //  t=216-286:  pose HOLDS at full extension, clearly on screen (1.17s)
+  //  t=286-304:  pause (0.3s)
+  //  t=304-322:  ballot card slides/fades in (0.3s)
+  //  t=322-364:  checkmark draws in next to TRUMP (0.7s)
+  //  t=364-460:  ballot holds, fully readable (1.6s)
+  //  t=460-478:  ballot slides/fades out (0.3s)
+  //  t=478-490:  beat back on gameplay (0.2s)
+  //  t=490-550:  she YELLS -- building screen shake, obvious wind-up (1.0s)
+  //  t=550-625:  explosion -- gore chunks fly, MK energy (1.25s)
+  //  t=625:      done -- sign remains on ground
+  const t_land=60, t_bonk=95, t_hatCatch=175,
+        t_holdHat=196,
+        t_popup=196, t_popupRiseEnd=216, t_popupEnd=286,
+        t_pauseEnd=304,
+        t_ballotIn=304, t_ballotInEnd=322,
+        t_checkEnd=364,
+        t_holdEnd=460,
+        t_ballotOutEnd=478,
+        t_beatEnd=490,
+        t_screamEnd=550,
+        t_explodeEnd=625,
+        t_done=625;
+
+  // ---- BOX: drops from sky ----
+  if(t === 1){
+    NASTY_BOX = { wx: dan.x + 13, y: -40, vy: 0, landed: false, blink: 0 };
+  }
+  if(NASTY_BOX && !NASTY_BOX.landed){
+    NASTY_BOX.vy = Math.min(6, NASTY_BOX.vy + 0.35);
+    NASTY_BOX.y += NASTY_BOX.vy;
+    const boxRestY = 208;
+    if(NASTY_BOX.y >= boxRestY){
+      NASTY_BOX.y = boxRestY; NASTY_BOX.landed = true;
+      Audio8.S.clank();
+    }
+  }
+  if(NASTY_BOX) NASTY_BOX.blink++;
+
+  // draw ? box
+  if(NASTY_BOX){
+    const bsx = px(NASTY_BOX.wx) - 16;
+    const by  = NASTY_BOX.y;
+    const used = !!NASTY_BOX.bonked;
+    const blinkOn = (NASTY_BOX.blink>>2)%2===0;
+    if(used){
+      const flashOn = NASTY_BOX.flashT !== undefined && (NASTY_BOX.flashT>>1)%2===0;
+      ctx.fillStyle = flashOn ? '#ffffff' : '#8d7a5a';
+      ctx.fillRect(bsx, by, T, T);
+      ctx.strokeStyle='#1b1b22'; ctx.lineWidth=2.5; ctx.strokeRect(bsx+1.25,by+1.25,T-2.5,T-2.5);
+    } else {
+      ctx.fillStyle='#e0a13a'; ctx.fillRect(bsx, by, T, T);
+      ctx.strokeStyle='#1b1b22'; ctx.lineWidth=2.5; ctx.strokeRect(bsx+1.25,by+1.25,T-2.5,T-2.5);
+      ctx.strokeStyle='#9c6a1c'; ctx.lineWidth=1.4; ctx.strokeRect(bsx+3,by+3,T-6,T-6);
+      ctx.fillStyle='#9c6a1c';
+      ctx.fillRect(bsx+3,by+3,3,3); ctx.fillRect(bsx+T-6,by+3,3,3);
+      ctx.fillRect(bsx+3,by+T-6,3,3); ctx.fillRect(bsx+T-6,by+T-6,3,3);
+      if(blinkOn){
+        ctx.fillStyle='#9c6a1c'; ctx.font='bold 20px Courier New'; ctx.textAlign='center';
+        ctx.fillText('?', bsx+T/2, by+T-9);
+      }
+    }
+  }
+
+  // ---- DAN WALKS TO BOX ----
+  if(t >= t_land && t < t_bonk - 12 && NASTY_BOX){
+    const targetX = NASTY_BOX.wx - 13;
+    if(Math.abs(dan.x - targetX) > 2){
+      dan.x += (targetX - dan.x) * 0.07;
+      dan.walkT++;
+    }
+    dan.face = 1;
+  }
+  // wind-up jump: Dan launches 12 frames before bonk
+  if(t === t_bonk - 12){
+    dan.vy = -6.4;    // tuned: rises ~40px so head just touches box bottom (y=240) without clipping
+    dan.onGround = false;
+  }
+  // jump arc: gravity applied, ground check, NO forced grounding here
+  if(t > t_bonk - 12 && t <= t_bonk + 6){
+    dan.vy = Math.min(dan.vy + G, 10);
+    dan.y += dan.vy;
+    if(dan.y >= GROUND_Y - dan.h){ dan.y = GROUND_Y - dan.h; dan.onGround = true; dan.vy = 0; }
+    dan.walkT++;
+  }
+  // after bonk window, coast back down
+  if(t > t_bonk + 6){
+    if(!dan.onGround){
+      dan.vy = Math.min(dan.vy + G, 10);
+      dan.y += dan.vy;
+      if(dan.y >= GROUND_Y - dan.h){ dan.y = GROUND_Y - dan.h; dan.onGround = true; dan.vy = 0; }
+    }
+  }
+
+  // ---- BONK (timer-based, fires at t_bonk regardless of exact position) ----
+  if(t === t_bonk){
+    Audio8.S.coinBonk();
+    dan.vy = 3;   // bounce back down
+    NASTY_BOX.bonked = true;
+    NASTY_BOX.flashT = 0;
+    NASTY_HAT_PROP = {
+      wx: NASTY_BOX.wx,
+      y:  NASTY_BOX.y - 8,
+      vy: -3.5, ht: 0, caught: false
+    };
+  }
+
+  // box flash and vanish after bonk
+  if(NASTY_BOX && NASTY_BOX.bonked){
+    NASTY_BOX.flashT++;
+    if(NASTY_BOX.flashT > 18) NASTY_BOX = null;
+  }
+
+  // ---- HAT: floats down ----
+  if(NASTY_HAT_PROP && !NASTY_HAT_PROP.caught){
+    NASTY_HAT_PROP.ht++;
+    NASTY_HAT_PROP.vy = Math.min(0.55, NASTY_HAT_PROP.vy + 0.06);
+    NASTY_HAT_PROP.y += NASTY_HAT_PROP.vy;
+    NASTY_HAT_PROP.wx += Math.sin(NASTY_HAT_PROP.ht * 0.09) * 1.4;
+    if(t > t_bonk + 20){
+      const targetX = NASTY_HAT_PROP.wx - 13;
+      dan.x += (targetX - dan.x) * 0.04;
+      dan.walkT += 0.5;
+      dan.face = dan.x < NASTY_HAT_PROP.wx ? 1 : -1;
+    }
+    const hatBaseY = NASTY_HAT_PROP.y + 8;
+    if(hatBaseY >= dan.y || t >= t_hatCatch){
+      dan.redHat = true;   // instant flip, no flash
+      NASTY_HAT_PROP = null;
+    }
+  }
+
+  // draw floating hat (only while airborne)
+  if(NASTY_HAT_PROP){
+    const hsx = px(NASTY_HAT_PROP.wx), hy = NASTY_HAT_PROP.y;
+    ctx.save(); ctx.translate(hsx, hy);
+    ctx.fillStyle='#c0392b'; ctx.fillRect(-18, 6, 36, 4);
+    ctx.beginPath(); ctx.arc(0, 0, 14, Math.PI, 0); ctx.fill();
+    ctx.fillRect(-14, 0, 28, 8);
+    ctx.fillStyle='#fff'; ctx.font='bold 5px Arial'; ctx.textAlign='center';
+    ctx.fillText('MAGA', 0, 7);
+    const gp = NASTY_HAT_PROP.ht;
+    ctx.fillStyle='#ffd94a';
+    for(let i=0;i<4;i++){
+      const ang = gp*0.18 + i*1.57, r=22;
+      ctx.beginPath(); ctx.arc(Math.cos(ang)*r, Math.sin(ang)*r-4, 2.5, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // jingle fires once the frame redHat flips on
+  if(!dan._hatJinglePlayed && dan.redHat){
+    dan._hatJinglePlayed = true;
+    Audio8.S.breadPowerup();
+    dan.face = 1; dan.walkT = 0;
+  }
+  // hold still with hat on
+  if(t >= t_hatCatch && t < t_holdHat){
+    dan.face = 1; dan.walkT = 0;
+    dan.onGround = true; dan.y = GROUND_Y - dan.h; dan.vy = 0;
+  }
+
+  // keep Dan grounded and idle for the rest of the sequence -- he doesn't move again
+  if(t >= t_holdHat){
+    dan.face = 1; dan.walkT = 0;
+    dan.onGround = true; dan.y = GROUND_Y - dan.h; dan.vy = 0;
+  }
+
+  // ---- ZELDA-STYLE ITEM POSE: Dan raises the ballot overhead, holds it ----
+  // actual drawing happens in drawDanBallotPose(), called from the main render
+  // dispatch (renderScene runs every frame regardless of fatality freeze) --
+  // this block just manages the BALLOT_POSE state and timing.
+  if(t === t_popup){
+    BALLOT_POSE = { t: 0, riseStart: t_popup, riseEnd: t_popupRiseEnd };
+    Audio8.S.checkpoint();   // bright two-note chime, reads as an item-get
+  }
+  if(BALLOT_POSE){
+    BALLOT_POSE.t = t;
+    if(t >= t_popupEnd) BALLOT_POSE = null;
+  }
+
+  // ---- BALLOT CARD: full readable card ----
+  if(t === t_ballotIn){
+    BALLOT_CARD = { t: 0 };
+  }
+  if(BALLOT_CARD){
+    BALLOT_CARD.t++;
+    drawBallotCard(t, t_ballotIn, t_ballotInEnd, t_checkEnd, t_holdEnd, t_ballotOutEnd);
+    if(t >= t_ballotOutEnd) BALLOT_CARD = null;
+  }
+
+  // ---- SHE YELLS -- obvious buildup before the explosion ----
+  if(t === t_beatEnd){
+    n.scared = true;
+    n.yellingT = 1;
+    Audio8.S.hurt();
+    Audio8.S.riser();   // rising tension sting under the yell, resolves right into the explosion
+  }
+  if(t > t_beatEnd && t < t_screamEnd){
+    n.yellingT++;
+    // screen shake ramps up through the whole yell so it's obviously building to something --
+    // starts as a light tremor, grows into a hard shake right before she pops
+    const prog = (t - t_beatEnd) / (t_screamEnd - t_beatEnd);
+    shake = 2 + Math.floor(prog * 12);
+  }
+
+  // ---- SHE EXPLODES, MK-STYLE ----
+  if(t === t_screamEnd){
+    n.exploded = true;
+    L7S.signOnGround = true;
+    L7S.signDropX = n.x;   // snapshot before the sign hits the ground
+    Audio8.S.headPop();
+    Audio8.S.bossHit();
+    // NOTE: no hitStop here -- hitStop freezes stepFatality() itself (see step()),
+    // which would leave F.animT stuck on this exact frame and re-fire this whole
+    // block on every draw call until hitStop expires, endlessly repopulating
+    // NASTY_GORE. shake alone is safe since it's just a render offset.
+    shake = 10;
+    // populate the gore burst
+    const gx = px(n.x) , gy = n.y + 20;
+    NASTY_GORE = [];
+    const colors = ['#f0c8a8', '#e86ab0', '#17171f', '#3a4d85', '#c94a8a', '#5a3a1e'];
+    for(let i=0;i<18;i++){
+      const ang = Math.random()*Math.PI*2;
+      const spd = 3 + Math.random()*6;
+      NASTY_GORE.push({
+        x: gx, y: gy,
+        vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd - 4,
+        rot: Math.random()*Math.PI*2, spin: (Math.random()-0.5)*0.5,
+        size: 4 + Math.random()*6,
+        color: colors[(Math.random()*colors.length)|0]
+      });
+    }
+  }
+  if(NASTY_GORE){
+    for(const g of NASTY_GORE){
+      g.vy += 0.45; g.x += g.vx; g.y += g.vy; g.rot += g.spin;
+      ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.rot);
+      ctx.fillStyle = g.color;
+      ctx.fillRect(-g.size/2, -g.size/2, g.size, g.size);
+      ctx.restore();
+    }
+    if(t >= t_explodeEnd) NASTY_GORE = null;
+  }
+
+  if(t >= t_done) return true;
+  return false;
+}
+
+// Dan raises the ballot straight overhead with both arms, Zelda item-get style
+// (reference: Link holding the Triforce/item aloft, front-and-center, held long
+// enough to actually register). Since the game only ever draws Dan in side
+// profile, this keeps that same profile silhouette rather than a full front-on
+// redraw -- both arms sweep up together so the read is unmistakably "look what
+// I'm holding up," matching the spirit of the reference without a new sprite style.
+function drawDanBallotPose(t, riseStart, riseEnd){
+  const dsx = px(dan.x), dsy = Math.round(dan.y);
+  const liftFrac = Math.max(0, Math.min(1, (t - riseStart) / (riseEnd - riseStart)));
+  const lift = 1 - Math.pow(1 - liftFrac, 3);   // ease-out, a little snap at the top
+
+  ctx.save();
+  ctx.translate(dsx + dan.w/2, dsy + dan.h);
+  ctx.scale(dan.face, 1);
+  ctx.translate(-13, -40);
+
+  // legs -- planted straight, no walk cycle, this is a held pose
+  ctx.fillStyle='#b99a5f';
+  ctx.fillRect(4, 28, 8, 12); ctx.fillRect(14, 28, 8, 12);
+  ctx.fillStyle='#6b4423';
+  ctx.fillRect(3, 38, 10, 4); ctx.fillRect(13, 38, 10, 4);
+
+  // torso -- hoodie + overalls, matches normal Dan exactly
+  ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14, 22, 16);
+  ctx.fillStyle='#b99a5f'; ctx.fillRect(6, 20, 14, 10);
+  ctx.fillRect(6, 15, 4, 7); ctx.fillRect(16, 15, 4, 7);
+  ctx.fillStyle='#8a6f3c'; ctx.fillRect(7, 16, 2, 2); ctx.fillRect(17, 16, 2, 2);
+  ctx.fillStyle='#a58850'; ctx.fillRect(9, 24, 8, 5);
+
+  // both arms sweep up together from resting (hanging at sides) to fully raised
+  // overhead as `lift` goes 0->1 -- hands end up together above the head
+  for(const shoulderX of [6, 20]){
+    ctx.save();
+    ctx.translate(shoulderX, 16);
+    ctx.rotate(-Math.PI * lift);
+    ctx.fillStyle='#2e3d6b'; ctx.fillRect(-2.5, 0, 5, 11);
+    ctx.fillStyle='#e8b68a'; ctx.fillRect(-2.5, 11, 5, 4);
+    ctx.restore();
+  }
+
+  // head + MAGA hat (danHead already reads dan.redHat)
+  danHead();
+
+  ctx.restore();
+
+  // the ballot itself, rising into place above the raised hands
+  if(lift > 0.04){
+    const bx = dsx + dan.w/2;
+    const holdY = dsy + dan.h - 40 - 4 - lift*24;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, lift*1.8);
+    ctx.translate(bx, holdY);
+    ctx.fillStyle='#f2eee6';
+    ctx.fillRect(-9, -12, 18, 22);
+    ctx.strokeStyle='#8a8078'; ctx.lineWidth=1.3;
+    ctx.strokeRect(-9, -12, 18, 22);
+    ctx.strokeStyle='#c9a876'; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(-6,-6); ctx.lineTo(6,-6);
+    ctx.moveTo(-6,-1); ctx.lineTo(6,-1);
+    ctx.moveTo(-6,4);  ctx.lineTo(6,4);
+    ctx.stroke();
+    ctx.restore();
+
+    // sparkle glow once fully raised, Zelda item-get flourish
+    if(liftFrac >= 1){
+      ctx.fillStyle='#ffd94a';
+      for(let i=0;i<4;i++){
+        const ang = t*0.15 + i*1.57;
+        ctx.beginPath();
+        ctx.arc(bx + Math.cos(ang)*20, holdY + Math.sin(ang)*14, 2, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+
+function drawBallotCard(t, tIn, tInEnd, tCheckEnd, tHoldEnd, tOutEnd){
+  let k = 1;   // scale/alpha factor
+  if(t < tInEnd){
+    k = Math.min(1, (t - tIn) / (tInEnd - tIn));
+  } else if(t > tHoldEnd){
+    k = Math.max(0, 1 - (t - tHoldEnd) / (tOutEnd - tHoldEnd));
+  }
+  const cw = 280, ch = 200;
+  const cx = VIEW_W/2, cy = VIEW_H/2;
+  ctx.save();
+  ctx.globalAlpha = k;
+  ctx.translate(cx, cy);
+  ctx.scale(0.85 + k*0.15, 0.85 + k*0.15);
+  ctx.translate(-cw/2, -ch/2);
+
+  // paper card
+  ctx.fillStyle = '#f5f0e4';
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.strokeStyle = '#1b1b22'; ctx.lineWidth = 3;
+  ctx.strokeRect(1.5, 1.5, cw-3, ch-3);
+  ctx.strokeStyle = '#8a8078'; ctx.lineWidth = 1;
+  ctx.strokeRect(8, 8, cw-16, ch-16);
+
+  // header
+  ctx.fillStyle = '#1b1b22';
+  ctx.font = 'bold 20px Georgia, "Times New Roman", serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('OFFICIAL BALLOT', cw/2, 42);
+  ctx.strokeStyle = '#1b1b22'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(30, 54); ctx.lineTo(cw-30, 54); ctx.stroke();
+
+  // race line
+  ctx.font = 'bold 13px Georgia, "Times New Roman", serif';
+  ctx.fillText('PRESIDENT OF THE UNITED STATES', cw/2, 84);
+
+  // checkbox + name
+  const boxX = cw/2 - 78, boxY = 104, boxS = 18;
+  ctx.strokeStyle = '#1b1b22'; ctx.lineWidth = 2;
+  ctx.strokeRect(boxX, boxY, boxS, boxS);
+
+  ctx.font = 'bold 16px Georgia, "Times New Roman", serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('DONALD J. TRUMP', boxX + boxS + 12, boxY + boxS - 3);
+
+  // checkmark draws in over the check window, two strokes
+  const checkStart = tInEnd;   // starts right as card finishes entering
+  const checkProg = Math.max(0, Math.min(1, (t - checkStart) / (tCheckEnd - checkStart)));
+  if(t === checkStart) Audio8.S.coin();   // crisp tick as the check begins drawing
+  if(checkProg > 0){
+    ctx.strokeStyle = '#1a6b2e'; ctx.lineWidth = 3.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const p1 = Math.min(1, checkProg / 0.4);
+    const p2 = Math.max(0, Math.min(1, (checkProg - 0.4) / 0.6));
+    ctx.beginPath();
+    ctx.moveTo(boxX + 3, boxY + 9);
+    ctx.lineTo(boxX + 3 + (boxS*0.35 - 3)*p1, boxY + 9 + (boxS*0.7 - 9)*p1);
+    if(p2 > 0){
+      const sx0 = boxX + boxS*0.35, sy0 = boxY + boxS*0.7;
+      ctx.lineTo(sx0 + (boxX+boxS-2 - sx0)*p2, sy0 + (boxY+2 - sy0)*p2);
+    }
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
 
 function czarPositioner(t){
   const j = L4S.johnson;
@@ -9523,7 +9974,7 @@ function renderScene(){
     }
   }
   drawCapitolPolice();
-  if(dan.heroPoseT > 0){ drawDanThumbsUp(); } else { drawDan(); }
+  if(dan.heroPoseT > 0){ drawDanThumbsUp(); } else if(BALLOT_POSE){ drawDanBallotPose(BALLOT_POSE.t, BALLOT_POSE.riseStart, BALLOT_POSE.riseEnd); } else if(BREAD_POSE){ drawDanBaguettePose(BREAD_POSE.t, BREAD_POSE.riseStart, BREAD_POSE.riseEnd); } else { drawDan(); }
   drawStinkAndWind();
   drawFloatTexts();
   drawSmashFX();
@@ -9863,7 +10314,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '12.8';
+const BUILD = '12.13';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
