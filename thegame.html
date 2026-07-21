@@ -10684,7 +10684,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '17.10';
+const BUILD = '17.13';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
@@ -10893,6 +10893,40 @@ addEventListener('pageshow', ()=> setTimeout(()=>Audio8.revive(), 120));
 //   POST <LB_ENDPOINT> {name, score}
 const LB_ENDPOINT = 'https://dan-leaderboard.djacne.workers.dev';
 const LB_KEY = 'dansretirement_board_v1';
+const LB_PENDING_KEY = 'dansretirement_pending_v1';
+
+// small persistent retry queue -- if a submission fails both immediate attempts,
+// it's kept here and retried silently on the next page load (and once more a
+// little later in the same session) until it succeeds. Fully background: no
+// repeated toasts, no blocking anything, just quietly keeps trying. Each entry
+// carries the same {name, score, at} shape the Worker expects, and `at` is the
+// idempotency key the Worker uses to skip a duplicate if this ever double-sends.
+function loadPendingQueue(){
+  try{
+    const raw = localStorage.getItem(LB_PENDING_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function savePendingQueue(q){
+  try{ localStorage.setItem(LB_PENDING_KEY, JSON.stringify(q)); }catch(e){}
+}
+async function tryFlushPendingQueue(){
+  let q = loadPendingQueue();
+  if(!q.length) return;
+  const stillPending = [];
+  for(const entry of q){
+    try{
+      const r = await fetch(LB_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json'},
+                                body: JSON.stringify(entry)});
+      if(!r.ok) stillPending.push(entry);
+    }catch(e){ stillPending.push(entry); }
+  }
+  savePendingQueue(stillPending);
+}
+// one attempt shortly after load, one more a bit later in case the first
+// retry catches the same transient outage -- both silent either way
+setTimeout(tryFlushPendingQueue, 4000);
+setTimeout(tryFlushPendingQueue, 45000);
 
 async function qualifiesForBoard(score){
   const list = (await Board.load()).slice().sort((a,b)=> b.score - a.score);
@@ -10923,12 +10957,24 @@ const Board = (() => {
   }
   async function submit(name, score){
     const entry = {name: String(name).slice(0,14).toUpperCase(), score: Math.round(score), at: Date.now()};
+    let posted = false;
     if(LB_ENDPOINT){
-      try{
-        await fetch(LB_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json'},
-                                  body: JSON.stringify(entry)});
-        return await load();
-      }catch(e){}
+      // try twice -- mobile connections (especially backgrounded/throttled tabs)
+      // can drop a request in flight. fetch() only THROWS on network-level
+      // failures; a server error (500, rate limit, worker cold-start timeout,
+      // etc.) resolves normally with a non-ok status, so that has to be checked
+      // explicitly or a failed submission looks identical to a successful one.
+      for(let attempt=0; attempt<2 && !posted; attempt++){
+        try{
+          const r = await fetch(LB_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json'},
+                                    body: JSON.stringify(entry)});
+          if(r.ok) posted = true;
+        }catch(e){}
+        if(!posted && attempt===0) await new Promise(res=>setTimeout(res, 400));
+      }
+      if(posted) return await load();
+      // POST failed both attempts -- fall through to the local save below so the
+      // score is at minimum recoverable on this device, never just silently lost
     }
     const list = await load();
     list.push(entry);
@@ -10939,6 +10985,15 @@ const Board = (() => {
     }catch(e){}
     try{ localStorage.setItem(LB_KEY, JSON.stringify(top)); }catch(e){ mem = top; }
     mem = top;
+    if(LB_ENDPOINT && !posted){
+      // both immediate attempts failed -- queue it for silent retry on this
+      // and future page loads. Zero feedback by design: no toast, no error
+      // state, nothing visible. The player's local copy already has their
+      // score, and the queue quietly keeps trying to sync it globally.
+      const q = loadPendingQueue();
+      q.push(entry);
+      savePendingQueue(q);
+    }
     return top;
   }
   return {load, submit};
