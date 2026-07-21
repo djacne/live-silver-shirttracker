@@ -636,6 +636,48 @@ const Audio8 = (() => {
     // while the reticle searches, then a sharp, definitive lock-on chime
     trackBeep(){ tone(1400,t(),0.045,'square',0.13); },
     lockOn(){ tone(1760,t(),0.05,'square',0.20); tone(2350,t()+0.05,0.09,'square',0.16); nz(t()+0.05,0.03,0.14); },
+    // ---- kill-streak tier stings: 8 named tiers + the Untuneable repeat sting.
+    // Deliberately NOT reused anywhere else in the game. Escalates in density,
+    // pitch, and aggression as the ladder climbs -- tier 0 is a clean little
+    // chime, tier 7 (Untuneable's first fire) is a dense layered chord, the
+    // repeat sting past that is the most chaotic of all.
+    streakTier0(){   // Double Tune (2) -- single bright note
+      tone(1046,t(),0.09,'square',0.18);
+    },
+    streakTier1(){   // Triple Tune (3) -- two quick ascending notes
+      tone(1046,t(),0.06,'square',0.16); tone(1318,t()+0.06,0.09,'square',0.18);
+    },
+    streakTier2(){   // Overtune (6) -- three-note ascending run
+      [880,1108,1318].forEach((f,i)=>tone(f,t()+i*0.055,0.07,'square',0.16));
+    },
+    streakTier3(){   // Tunedown (9) -- descending doom stab, first tier with real weight
+      [1568,1245,988,784].forEach((f,i)=>tone(f,t()+i*0.06,0.14,'sawtooth',0.20));
+      tone(55,t(),0.40,'sine',0.42,null,20); nz(t(),0.12,0.30);
+    },
+    streakTier4(){   // Tuneionaire (12) -- coin-cluster shimmer, rich and bright
+      [1318,1568,1975,2349].forEach((f,i)=>tone(f,t()+i*0.035,0.11,'triangle',0.14));
+      nz(t(),0.04,0.16);
+    },
+    streakTier5(){   // Tunetacular (15) -- ascending run + a bright top note held
+      [784,988,1245,1568].forEach((f,i)=>tone(f,t()+i*0.05,0.06,'square',0.15));
+      tone(1975,t()+0.22,0.14,'triangle',0.16);
+      tone(233,t()+0.02,0.16,'square',0.16);   // extra low body under the run -- bigger than tier 2's version
+    },
+    streakTier6(){   // Tunepocalypse (20) -- big layered chord, low + high together
+      tone(65,t(),0.30,'sine',0.40,null,24); tone(98,t(),0.26,'square',0.22,null,32);
+      [880,1108,1318,1760].forEach((f,i)=>tone(f,t()+0.03+i*0.03,0.12,'triangle',0.14));
+      nz(t(),0.10,0.34);
+    },
+    streakTier7(){   // Untuneable (30, first fire) -- the biggest single sting
+      tone(45,t(),0.45,'sine',0.50,null,18); tone(90,t(),0.35,'square',0.26,null,34);
+      [660,880,1108,1480,1975].forEach((f,i)=>tone(f,t()+0.03+i*0.028,0.14,'triangle',0.13));
+      nz(t(),0.16,0.42);
+    },
+    streakTierMax(){   // Untuneable repeat (40, 50, 60...) -- chaotic, glitchy, relentless
+      tone(40,t(),0.35,'sine',0.48,null,16);
+      for(let i=0;i<10;i++) tone(500+Math.random()*1400, t()+i*0.025, 0.045, 'sawtooth', 0.11);
+      nz(t(),0.05,0.30); nz(t()+0.18,0.08,0.30);
+    },
     shutter(){                                   // a camera catching Dan in the act
       nz(t(), 0.035, 0.16);
       tone(2400, t(), 0.02, 'square', 0.07);
@@ -942,7 +984,7 @@ function buildLevel(n){
   camX = 0;
   dan.x = 60; dan.y = GROUND_Y - dan.h; dan.vx = 0; dan.vy = 0;
   dan.inv = 0; dan.boost = 0; dan.star = 0; dan.swing = 0; dan.swingCd = 0; dan.face = 1;
-  bursts = []; quipMsg = null; bannerMsg = null; streak = 0; streakShow = 0;
+  bursts = []; quipMsg = null; bannerMsg = null; streak = 0; streakShow = 0; streakShowName = '';
   if(kind === 'silver'){
     LEVEL_W = 4600; FLAG_X = 4430;
     plats = [
@@ -1543,7 +1585,13 @@ let panel = null;   // {text, sub, t} -- the killing blow
 let quipMsg = null;      // {text, t, color}
 let combatMsg = null;    // {text, t, color}
 let bannerMsg = null;    // {text, t, color}
-let streak = 0, streakT = 0, streakShow = 0;
+let streak = 0, streakT = 0, streakShow = 0, streakShowName = '';
+// offscreen canvas for the streak-announcer sheen effect -- source-atop compositing
+// has to happen isolated from the main game canvas, or it'd blend with whatever
+// gameplay is drawn behind it instead of just the text glyphs
+const streakSheenCvs = document.createElement('canvas');
+streakSheenCvs.width = 260; streakSheenCvs.height = 80;
+const streakSheenCtx = streakSheenCvs.getContext('2d');
 
 // Impact/Arial Black don't exist on iOS or Android, so the stack silently fell back to a
 // thin sans. We use a normal heavy stack and fatten the glyphs ourselves instead, which
@@ -1968,27 +2016,50 @@ function drawKillPanel(){
   }
   ctx.restore();
 }
+// Kill-streak tier ladder -- named tiers fire once each on the exact kill that
+// crosses their threshold. Past 18, "Untuneable" re-fires every +5 kills (20, 25, 30...).
+// Kill-streak tier ladder -- named tiers fire once each on the exact kill that
+// crosses their threshold. Gaps widen as the ladder climbs (1,3,3,3,3,5,10,10...)
+// so early tiers teach the mechanic quickly, then it gets rarer/more special.
+// Past 30, "Untuneable" re-fires every +10 kills.
+const STREAK_TIERS = [
+  {n:2,  name:'Double Tune'},
+  {n:3,  name:'Triple Tune'},
+  {n:6,  name:'Overtune'},
+  {n:9,  name:'Tunedown'},
+  {n:12, name:'Tuneionaire'},
+  {n:15, name:'Tunetacular'},
+  {n:20, name:'Tunepocalypse'},
+  {n:30, name:'Untuneable'},
+];
+function streakTierFiresAt(n){
+  const exact = STREAK_TIERS.find(t => t.n === n);
+  if(exact) return exact.name;
+  if(n >= 40 && (n-40)%10===0) return 'Untuneable';   // repeating ceiling: 40, 50, 60...
+  return null;
+}
 function bumpStreak(wx, wy){
   streak++; streakT = 170;   // more generous window between kills to keep a chain alive
-  // chaining pays: +1 oz for the 2nd, +2 for the 3rd... capped so it can't run away
+  // chaining still pays quietly in the background -- +1 oz for the 2nd, +2 for the 3rd...
+  // capped so it can't run away. no on-screen callout for this anymore; the HUD box
+  // and tier announcements are the only visible feedback for a streak now.
   if(streak >= 2){
     const bonus = Math.min(12, streak - 1);
     oz += bonus;
-    if(wx !== undefined) riseText(wx, (wy || 120) - 22, '+' + bonus + ' oz');
     checkMilestone();
   }
-  if(streak >= 3){
-    streakShow = 78;
-    Audio8.S.ding();
+  const tierName = streakTierFiresAt(streak);
+  if(tierName){
+    streakShow = 90;          // a bit longer than before so the glow has room to read
+    streakShowName = tierName;
+    streakSoundFor(streak);
   }
 }
-function streakLabel(){
-  if(streak >= 8) return 'x' + streak + ' \u2014 SEIZE THIS!';
-  if(streak >= 5) return 'x' + streak + ' \u2014 RAMPAGE!';
-  return 'x' + streak + ' STREAK!';
-}
-function streakSub(){
-  return '+' + Math.min(12, streak - 1) + ' oz PER TUNE-UP';
+function streakSoundFor(n){
+  // distinct sting per named tier -- picks the sound matching the tier that just fired
+  const idx = STREAK_TIERS.findIndex(t => t.n === n);
+  if(idx >= 0 && Audio8.S['streakTier'+idx]) Audio8.S['streakTier'+idx]();
+  else Audio8.S.streakTierMax();   // Untuneable re-firing past 30 (n=40,50,60...)
 }
 // ================= boss fatalities =================
 // shared pipeline used by every boss except the skunk (already unique) and
@@ -2269,7 +2340,7 @@ function drawFatalityOverlay(){
       // clean tracked bold -- Impact-style but with outline and shadow so it's
       // actually readable against the dark veil rather than a smeared blob
       const sz = 54;
-      ctx.font = 'bold ' + sz + 'px Impact,"Arial Narrow",Arial,sans-serif';
+      ctx.font = '800 ' + sz + 'px "Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       // hard drop shadow
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
@@ -2505,21 +2576,94 @@ function drawChannels(){
   drawImpacts();
   drawBursts();
 
-  // --- streak announcer ---
-  if(streakT > 0 && --streakT <= 0) streak = 0;
+  // --- streak tier announcer: small, clean, glow-outline text only. No background
+  // shapes (starburst/core flash/sparks/vignette all removed -- they kept creating
+  // an unpredictable footprint that had to be fenced away from the combat quips).
+  // Sits close above the KILL STREAK box with a deliberate small gap, out of the
+  // way of everything else on screen.
+  if(streakT > 0 && --streakT <= 0){ streak = 0; }
   if(streakShow > 0){
     streakShow--;
-    const k = 70 - streakShow;
-    const pop = k < 7 ? 2.1 - k*0.16 : 1;
-    const a = streakShow < 12 ? streakShow/12 : 1;
-    const tier = streak >= 8 ? 24 : streak >= 5 ? 21 : 18;
+    const life = 90 - streakShow;             // frames since this popup fired
+    const popK = life < 8 ? life/8 : 1;
+    const snapPop = 1.5 - popK*0.5;            // snap-in: starts a bit big, settles to 1.0
+    const pulse = life >= 8 ? 1 + Math.sin((life-8)*0.25)*0.03 : 1;   // gentle ongoing breathe, not static
+    const pop = snapPop * pulse;
+    const a = streakShow < 18 ? streakShow/18 : 1;   // fade out over the last 18 frames
+
+    // color AND glow intensity escalate with tier -- gold at the bottom of the
+    // ladder, hot red at the top. This is now the ONLY thing carrying "dramatic"
+    // for the higher tiers, so it needs to do real work.
+    const tierIdx = STREAK_TIERS.findIndex(t => t.name === streakShowName);
+    const heat = tierIdx < 0 ? 1 : Math.min(1, tierIdx / (STREAK_TIERS.length-1));
+    const c0 = [255,217,74], c1 = [255,58,28];
+    const rC = Math.round(c0[0]+(c1[0]-c0[0])*heat);
+    const gC = Math.round(c0[1]+(c1[1]-c0[1])*heat);
+    const bC = Math.round(c0[2]+(c1[2]-c0[2])*heat);
+    const fillColor = `rgb(${rC},${gC},${bC})`;
+    const glowColor = `rgb(${rC},${gC},${bC})`;
+
+    // pushed up, close above the KILL STREAK box (box bottom=44), but with a real
+    // deliberate gap -- not just barely clearing it -- so the two read as related
+    // but distinct, and the glow has room to fall off before touching the box
+    const cx = VIEW_W/2, cy = 70;
+
     ctx.save();
     ctx.globalAlpha = a;
-    ctx.translate(VIEW_W/2, 74);
+    ctx.translate(cx, cy);
     ctx.scale(pop, pop);
-    ctx.transform(1, 0, -0.16, 1, 0, 0);
-    comicText(streakLabel(), 0, 0, tier + 6, (k>>2)%2===0 ? '#fff' : '#ffd94a', '#12121c');
-    comicText(streakSub(), 0, 17, 11, '#7CFC00', '#12121c');
+
+    // small, fixed-ish size (no more ballooning to 39px) -- still measured and
+    // capped so even the longest name can't reach into the quip stack, but the
+    // cap almost never has to do anything now since the base size is already small
+    let size = Math.round(15 * (1 + heat*0.25));   // 15px at tier 0, up to ~19px at the top
+    const label = streakShowName.toUpperCase();
+    const maxTextWidth = 170;
+    ctx.font = '800 ' + size + 'px "Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif';
+    let measuredW = ctx.measureText(label).width;
+    if(measuredW > maxTextWidth){
+      size = Math.max(11, Math.floor(size * (maxTextWidth / measuredW)));
+      ctx.font = '800 ' + size + 'px "Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif';
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+    // draw the glow + outline + fill onto the ISOLATED offscreen canvas (transparent
+    // background), so the sheen's source-atop pass only ever composites against the
+    // text glyphs themselves -- never against gameplay drawn behind it on the main canvas
+    const sc = streakSheenCtx, scCvs = streakSheenCvs;
+    scCvs.width = scCvs.width;   // clears to transparent
+    sc.font = ctx.font;
+    sc.textAlign = 'center'; sc.textBaseline = 'middle';
+    const ox = scCvs.width/2, oy = scCvs.height/2;
+    sc.shadowColor = glowColor;
+    sc.shadowBlur = 6 + heat*10;
+    sc.strokeStyle = '#1a0a02'; sc.lineWidth = 3; sc.lineJoin = 'round';
+    sc.strokeText(label, ox, oy);
+    sc.shadowBlur = 10 + heat*14;
+    sc.fillStyle = fillColor;
+    sc.fillText(label, ox, oy);
+    sc.shadowBlur = 0;
+
+    // animated sheen: a bright diagonal band sweeps across the letters, masked to
+    // the glyph shapes via source-atop -- safe here since this offscreen canvas
+    // only ever contains the text itself, nothing else to accidentally blend with
+    const textW = ctx.measureText(label).width;
+    const sweepSpan = textW * 1.6 + 40;
+    const sweepX = ox - sweepSpan/2 + ((life*4) % sweepSpan);
+    sc.save();
+    sc.globalCompositeOperation = 'source-atop';
+    const sheenGrad = sc.createLinearGradient(sweepX-14, 0, sweepX+14, 0);
+    sheenGrad.addColorStop(0, 'rgba(255,255,255,0)');
+    sheenGrad.addColorStop(0.5, 'rgba(255,255,255,0.9)');
+    sheenGrad.addColorStop(1, 'rgba(255,255,255,0)');
+    sc.fillStyle = sheenGrad;
+    sc.fillRect(0, 0, scCvs.width, scCvs.height);
+    sc.restore();
+
+    // composite the finished (glow+outline+fill+sheen) text onto the main canvas
+    ctx.drawImage(scCvs, -ox, -oy);
+
+    ctx.textBaseline = 'alphabetic';
     ctx.restore();
   }
 
@@ -2821,17 +2965,17 @@ function step(){
         riseText(e.x+e.w/2, e.y-6, '+2 oz');
         if(stomp) dan.vy = -7;
         Audio8.S.stomp();
-        if(stomp){
-          const line = (e.type==='karen' || e.type==='bullhorn' || e.type==='husband') ? pick(MARCH_QUIPS) :
-                e.type==='twitch' ? pick(PETE_STOMPS) :
-                e.type==='ice' ? pick(ICE_STOMPS) :
-                e.type==='bp' ? pick(BP_STOMPS) :
-                e.type==='dog' ? pick(DOG_STOMPS) :
-                kind==='city' ? pick(TUNEUPS) :
-                pick(RED_STOMPS);
-          burst(line, e.x + e.w/2, e.y - 6, '#4a90d9');
-          bumpStreak(e.x + e.w/2, e.y);
-        }
+        // both stomp AND star-touch kills count as a real takedown -- quip + streak
+        // fire either way, not just on a jump-stomp
+        const line = (e.type==='karen' || e.type==='bullhorn' || e.type==='husband') ? pick(MARCH_QUIPS) :
+              e.type==='twitch' ? pick(PETE_STOMPS) :
+              e.type==='ice' ? pick(ICE_STOMPS) :
+              e.type==='bp' ? pick(BP_STOMPS) :
+              e.type==='dog' ? pick(DOG_STOMPS) :
+              kind==='city' ? pick(TUNEUPS) :
+              pick(RED_STOMPS);
+        burst(line, e.x + e.w/2, e.y - 6, '#4a90d9');
+        bumpStreak(e.x + e.w/2, e.y);
       } else if(dan.inv<=0){
         return hurt(e.type==='karen' ? pick(KAREN_HITS) :
                     e.type==='husband' ? pick(HUSBAND_HITS) :
@@ -4654,7 +4798,7 @@ function stepLevel4(){
             j.stamps = [];
             startFatality({
               bx: j.x, by: j.y, pronoun: 'HIM',
-              quip1: 'DEPORTATION DENIED', quip2: '"LEGAL" IMMIGRATION STATUS: GRANTED',
+              quip1: 'DEPORTATION DENIED', quip2: 'ASYLUM GRANTED',
               clearFlicker: () => { j.hurtT = 0; j.flashT = 0; j.stamps = []; dan.swing = 0; dan.swingHeld = false; },
               resumeSong: 'canada',
               positioner: czarPositioner, finisher: czarZamboniFinisher, vanish: czarVanish,
@@ -4675,7 +4819,7 @@ function stepLevel4(){
             j.stamps = [];
             startFatality({
               bx: j.x, by: j.y, pronoun: 'HIM',
-              quip1: 'DEPORTATION DENIED', quip2: '"LEGAL" IMMIGRATION STATUS: GRANTED',
+              quip1: 'DEPORTATION DENIED', quip2: 'ASYLUM GRANTED',
               clearFlicker: () => { j.hurtT = 0; j.flashT = 0; j.stamps = []; },
               resumeSong: 'canada',
               positioner: czarPositioner, finisher: czarZamboniFinisher, vanish: czarVanish,
@@ -5861,7 +6005,7 @@ function drawTumbleweed(){
 }
 
 function hurt(msg, forceLife, asBurst){
-  streak = 0; streakShow = 0;
+  streak = 0; streakShow = 0; streakShowName = '';
   if(dan.star>0 && !forceLife) return;
   Audio8.S.hurt();
   dan.flashT = 16;   // a short flash so it's clear DAN is the one who got hit
@@ -9550,7 +9694,9 @@ function drawDan(){
     ctx.beginPath(); ctx.ellipse(sx+dan.w/2, sy+dan.h/2, dan.w+4, dan.h*0.75, 0, 0, 7); ctx.fill();
   } else if(dan.flashT>0 && (time>>1)%2===0) return;   // a quick flash ONLY when Dan is the one who got hit
   const s = dan.small ? 0.75 : 1;
-  if(DAN_SPIN){ drawWindSwirl(sx+dan.w/2, sy+dan.h*0.55, DAN_SPIN); }
+  // (drawWindSwirl removed here -- it was a static ring standing in for a club
+  // that didn't actually sweep. Now the real club sweeps for real below, with its
+  // own motion trail, so a second disconnected circle would just be confusing.)
   ctx.save();
   ctx.translate(sx+dan.w/2, sy+dan.h);
   // a spin viewed from the side is a squash, not a rotation -- rotating the sprite
@@ -9573,19 +9719,23 @@ function drawDan(){
     ctx.fillStyle='#ffd94a'; ctx.beginPath(); ctx.arc(7, 17, 2, 0, 7); ctx.fill();  // badge
     ctx.fillStyle='#3a2a14'; ctx.fillRect(2, 26, 22, 3.5);                // duty belt
     ctx.fillStyle='#ffd94a'; ctx.fillRect(11.5, 26, 3, 3.5);
-    // swinging arm + nightstick -- also held straight out during a fatality spin,
-    // extended much further and thicker than a normal swing so it reads clearly
-    // as a club-out whirlwind even during the squash phases of the spin
+    // swinging arm + nightstick -- normal swing/idle poses only. During a fatality
+    // spin, the club is NOT drawn here (it'd get mirrored by the body's squash
+    // transform below and appear to reverse direction every half-turn) -- instead
+    // it's drawn as a separate un-mirrored overlay after this function returns,
+    // same technique as drawWindSwirl, so it sweeps smoothly in one direction.
     const sw = dan.swing>0 ? (1 - dan.swing/14) : 0;
     const spinning = !!DAN_SPIN;
-    ctx.save();
-    ctx.translate(20, 17);
-    ctx.rotate(dan.swing>0 ? (-1.9 + sw*2.6) : (spinning ? -0.1 : 0.55));
-    ctx.fillStyle='#4a7ab8'; ctx.fillRect(-2, 0, 4, spinning ? 11 : 9);
-    ctx.fillStyle='#e8b68a'; ctx.fillRect(-2, spinning ? 11 : 9, 4, 4);
-    ctx.fillStyle='#2b1a10'; ctx.fillRect(spinning ? -2.6 : -1.6, spinning ? 15 : 13, spinning ? 5.2 : 3.2, spinning ? 24 : 15); // the tune-up applicator -- extended way out during the spin
-    ctx.fillStyle='#4a3018'; ctx.fillRect(spinning ? -2.6 : -1.6, spinning ? 15 : 13, spinning ? 5.2 : 3.2, 3);
-    ctx.restore();
+    if(!spinning){
+      ctx.save();
+      ctx.translate(20, 17);
+      ctx.rotate(dan.swing>0 ? (-1.9 + sw*2.6) : 0.55);
+      ctx.fillStyle='#4a7ab8'; ctx.fillRect(-2, 0, 4, 9);
+      ctx.fillStyle='#e8b68a'; ctx.fillRect(-2, 9, 4, 4);
+      ctx.fillStyle='#2b1a10'; ctx.fillRect(-1.6, 13, 3.2, 15);
+      ctx.fillStyle='#4a3018'; ctx.fillRect(-1.6, 13, 3.2, 3);
+      ctx.restore();
+    }
     danHead(true);
   } else {
     ctx.fillStyle='#b99a5f';
@@ -9658,6 +9808,38 @@ function drawDan(){
     danHead();
   }
   ctx.restore();
+
+  // the whirlwind nightstick during a Von Quinn fatality spin -- drawn as its own
+  // un-mirrored overlay in true screen space (bypassing the body's squash/mirror
+  // transform above), so it sweeps smoothly in one continuous direction instead
+  // of appearing to reverse every half-turn when the body's mirror flips.
+  if(kind==='city' && DAN_SPIN){
+    // shoulder pivot in true screen space: same math as the body transform chain
+    // (translate to Dan's base, scale by face*s -- deliberately WITHOUT spinSquash --
+    // then translate to sprite-local shoulder position 20,17 offset by the -13,-40 recenter)
+    const shoulderX = sx + dan.w/2 + (20-13)*dan.face*s;
+    const shoulderY = sy + dan.h + (17-40)*s;
+    // motion trail: a few fading ghost copies of the club at slightly earlier
+    // angles, so the sweep reads as a real whirlwind blur -- anchored to the
+    // SAME pivot and rotation the real club uses, not a separate arbitrary shape
+    for(let g=3; g>=1; g--){
+      ctx.save();
+      ctx.globalAlpha = 0.16 * (4-g);
+      ctx.translate(shoulderX, shoulderY);
+      ctx.rotate(DAN_SPIN - g*0.32);
+      ctx.fillStyle = '#2b1a10';
+      ctx.fillRect(-2.6*s, 15*s, 5.2*s, 24*s);
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.translate(shoulderX, shoulderY);
+    ctx.rotate(DAN_SPIN);
+    ctx.fillStyle='#4a7ab8'; ctx.fillRect(-2*s, 0, 4*s, 11*s);
+    ctx.fillStyle='#e8b68a'; ctx.fillRect(-2*s, 11*s, 4*s, 4*s);
+    ctx.fillStyle='#2b1a10'; ctx.fillRect(-2.6*s, 15*s, 5.2*s, 24*s);   // the tune-up applicator -- extended way out during the spin
+    ctx.fillStyle='#4a3018'; ctx.fillRect(-2.6*s, 15*s, 5.2*s, 3*s);
+    ctx.restore();
+  }
 }
 
 // Giant 3x Dan -- normal Dan sprite exactly, scaled up 3x, MAGA hat, slap arm animated
@@ -10025,6 +10207,25 @@ function drawHUD(){
   ctx.textAlign='left';
   ctx.fillStyle='rgba(255,255,255,.3)'; ctx.fillRect(0, 26, VIEW_W, 3);
   ctx.fillStyle='#ffd94a'; ctx.fillRect(0, 26, VIEW_W*Math.min(1,dan.x/FLAG_X), 3);
+
+  // KILL STREAK box -- centered, sitting directly above the halo tier-name
+  // announcement (which centers at y=78), NOT left-aligned under the main bar
+  // anymore (that's where other quip text pops up and collided with it).
+  if(streak >= 2){
+    const label = 'KILL STREAK: x' + streak;
+    ctx.font='bold 12px Courier New';
+    const textW = ctx.measureText(label).width;
+    const boxW = textW + 20;   // padding: 10px each side
+    const boxH = 15;
+    const boxX = VIEW_W/2 - boxW/2;
+    const boxY = 29;   // flush under the main bar+strip (which ends at y=29)
+    ctx.fillStyle='rgba(20,20,40,.85)';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.fillStyle='#ffd94a';
+    ctx.textAlign='center';
+    ctx.fillText(label, VIEW_W/2, boxY + 11);
+    ctx.textAlign='left';
+  }
 }
 
 function render(){
@@ -10424,7 +10625,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '16.9';
+const BUILD = '17.0';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
