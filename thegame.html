@@ -9863,17 +9863,27 @@ function drawDan(){
       ctx.globalAlpha = 0.16 * (4-g);
       ctx.translate(shoulderX, shoulderY);
       ctx.rotate(DAN_SPIN - g*0.32);
-      ctx.fillStyle = '#2b1a10';
+      ctx.fillStyle = '#e8e8ec';
       ctx.fillRect(-2.6*s, 15*s, 5.2*s, 24*s);
       ctx.restore();
     }
     ctx.save();
+    ctx.globalAlpha = 1;   // explicit, not inherited -- this overlay must never
+                           // silently pick up a low alpha left over from some
+                           // upstream fade effect (fatality darken, hit-flash, etc.)
     ctx.translate(shoulderX, shoulderY);
     ctx.rotate(DAN_SPIN);
+    // recolored for real contrast against Von Quinn's own warm-brown/tan palette
+    // (#3a2517, #3a3028, #8a6f3c) -- the old dark-brown baton (#2b1a10) sat right
+    // in the same tonal family as his body and visually disappeared against him,
+    // even though it read fine against the dark background alone. Bright metallic
+    // silver + a dark outline reads clearly against both.
     ctx.fillStyle='#4a7ab8'; ctx.fillRect(-2*s, 0, 4*s, 11*s);
     ctx.fillStyle='#e8b68a'; ctx.fillRect(-2*s, 11*s, 4*s, 4*s);
-    ctx.fillStyle='#2b1a10'; ctx.fillRect(-2.6*s, 15*s, 5.2*s, 24*s);   // the tune-up applicator -- extended way out during the spin
-    ctx.fillStyle='#4a3018'; ctx.fillRect(-2.6*s, 15*s, 5.2*s, 3*s);
+    const batonX = -2.6*s, batonY = 15*s, batonW = 5.2*s, batonH = 24*s;
+    ctx.fillStyle='#e8e8ec'; ctx.fillRect(batonX, batonY, batonW, batonH);   // the tune-up applicator -- extended way out during the spin
+    ctx.strokeStyle='#1a1a1e'; ctx.lineWidth=1.2; ctx.strokeRect(batonX, batonY, batonW, batonH);
+    ctx.fillStyle='#9aa0a6'; ctx.fillRect(batonX, batonY, batonW, batonH*0.14);   // dark metallic cap at the grip end
     ctx.restore();
   }
 }
@@ -10684,7 +10694,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '17.13';
+const BUILD = '18.0';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
