@@ -1498,14 +1498,14 @@ function resetDan(){
 const INSULTS = ['YOU SUCK!', "YOU'RE REALLY BAD AT THIS!", 'PATHETIC, DAN!', 'EMBARRASSING!',
   'SELL YOUR SILVER, QUIT NOW!', 'DAN. SERIOUSLY?'];
 const KAREN_HITS = ['CHECK YOUR PRIVILEGE, DAN!', 'THIS IS PROBLEMATIC, DAN!', 'DAN HAS BEEN CANCELED!'];
-const HUSBAND_HITS = ['SHE HAS MY WALLET!', "I'M JUST HOLDING THIS!", 'HAPPY WIFE, HAPPY... OW!', 'CAN WE GO HOME NOW?', 'YES, DEAR!'];
+const HUSBAND_HITS = ['SHE HAS MY WALLET...AND MY BALLS!'];
 const BULLHORN_HITS = ['THIS. IS. WHAT. DEMOCRACY. SOUNDS LIKE!', 'CAN YOU HEAR ME NOW?!', 'REEEEEEEEE!'];
-const DAN_VS_NASTY = ['KNOCKED OFF HER PEDESTAL!', "THAT'S NOT VERY EMPOWERING!"];
+const DAN_VS_NASTY = ['KNOCKED OFF HER PEDESTAL!', "THAT'S NOT VERY EMPOWERING!", 'EQUAL RIGHTS, EQUAL FIGHTS!'];
 const NASTY_HITS = ["I DON'T NEED A MAN!", 'TOXIC MASCULINITY DETECTED!', 'CHECK YOUR ENERGY!', 'LOW VIBRATION, DAN!'];
-const MARCH_QUIPS = ['TRIGGERED!', 'GET A JOB!', "SILVER DON'T CARE!", 'SILVER > FEELINGS!', 'REEEE-TIRED!',
+const MARCH_QUIPS = ['TRIGGERED!', 'GET A JOB!', "SILVER DON'T CARE!", 'REEEE-TIRED!',
                      'COPE HARDER!', 'STAY MAD!', 'SEETHE!', 'MOSTLY PEACEFUL!', 'SEIZE THE PAVEMENT!',
                      "RENT'S STILL DUE!", 'NARRATIVE COLLAPSED!'];
-const NASTY_LINES = ['THE FUTURE IS FEMALE, DAN!', 'READ THE ROOM, BOOMER!', 'THIS IS LITERALLY VIOLENCE!',
+const NASTY_LINES = ['THE FUTURE IS FEMALE, DAN!', 'THIS IS LITERALLY VIOLENCE!',
                      "I'M NOT YELLING, I'M PASSIONATE!", 'SILVER IS A PATRIARCHAL METAL!', 'DO BETTER!',
                      "YOU'RE ON THE WRONG SIDE OF HISTORY!", 'MANSPLAIN THAT, DAN!'];
 const PETE_HITS = ['YOUR TAX DOLLARS AT WORK!', 'WEALTH REDISTRIBUTION!',
@@ -1517,7 +1517,7 @@ const ICE_STOMPS = ['NOT TODAY, FEDS!', 'NO QUOTA FOR YOU!'];
 const BP_HITS = ['CHECKPOINT VIOLATION!', 'TURNED AROUND AT THE BORDER!'];
 const BP_STOMPS = ['BORDER HOPPED!', 'CATCH AND RELEASE!'];
 const JOHNSON_HITS = ['NOBODY CROSSES ON MY WATCH!', 'DETAINED PENDING REVIEW!', 'FEDERAL CUSTODY!'];
-const JOHNSON_LINES = ['NOBODY CROSSES ON MY WATCH!', 'STEP AWAY FROM THAT ILLEGAL!',
+const JOHNSON_LINES = ['STEP AWAY FROM THAT ILLEGAL!',
   'I HAVE JURISDICTION HERE!', 'THIS IS A FEDERAL MATTER!'];
 const TUNEUPS = ['TUNE-UP DELIVERED!', 'FREE ATTITUDE ADJUSTMENT!', 'COMPLIANCE ACHIEVED!', 'COURTESY OF THE KHP!'];
 const DOG_STOMPS = ['BAD DOG!', 'NO TREATS TODAY!'];
@@ -1541,11 +1541,11 @@ const STRETCHES = [
 ];
 const SAFETY_SLOGANS = ['SAFETY IS A CHOICE!', 'STRETCH TO SUCCESS!', 'REPORT ALL NEAR-MISSES!',
   'A LIMBER CREW IS A SAFE CREW!', 'ZERO IS ATTAINABLE!', 'THINK. PLAN. STRETCH.'];
-const KING_HITS = ['ROBBED IN BROAD DAYLIGHT!', 'STREET TAX!'];
+const KING_HITS = ['ROBBED IN BROAD DAYLIGHT!', 'YOU GOT ME FUCKED UP!'];
 const BOSS1_HITS = ['SEIZED BY THE PROLETARIAT!', 'YOUR LABOR IS ALIENATED!', 'EXPROPRIATED!'];
 // the only pool you asked for: Dan, against Lauer
 const DAN_VS_LAUER = ['NO MORE LIES!', 'SAFETY FIRST!', 'GOOD FAITH CHALLENGE!'];
-const LAUER_HITS  = ["YOU'RE PULLED FROM SERVICE!", 'HAND OVER YOUR SWITCH KEYS!', 'THAT IS A FAILURE!'];
+const LAUER_HITS  = ["YOU'RE PULLED FROM SERVICE!", "YOU'RE NOT GOOD AT RAILROADING!", 'THAT IS A FAILURE!'];
 const BOSS_SPEECHES = [
   'ABOLISH ALL PRIVATE PROPERTY!',
   'WORKERS OF THE WORLD, UNITE!',
@@ -2170,24 +2170,30 @@ function stepFatality(){
   }
   if(F.phase==='tracking'){
     F.trackT++;
-    const bounceEnd = 90, lockEnd = 115, holdEnd = 155;
+    // spaced out deliberately: search (100f/~1.7s) -> closing in with escalating
+    // beeps (40f/~0.7s) -> a real held beat in the locked tactical-crosshair
+    // state (70f/~1.2s) before the kick begins. ~3.5s total, not a rushed blur.
+    const bounceEnd = 100, lockEnd = 140, holdEnd = 210;
     if(F.trackT <= bounceEnd){
-      // dart between fixed points, snapping (not gliding) every ~18 frames -- slower
-      // dwell so the player actually registers each stop before it moves again
-      const idx = Math.min(F.trackPts.length-1, Math.floor(F.trackT/18));
+      // dart between fixed points, snapping (not gliding) every ~20 frames --
+      // slow dwell so the player actually registers each stop before it moves again
+      const idx = Math.min(F.trackPts.length-1, Math.floor(F.trackT/20));
       F.trackX = F.trackPts[idx].x; F.trackY = F.trackPts[idx].y;
-      if(F.trackT % 12 === 0) Audio8.S.trackBeep();
+      if(F.trackT % 14 === 0) Audio8.S.trackBeep();
     } else if(F.trackT <= lockEnd){
-      // ease from the last bounce point onto the real target -- slower, more deliberate
+      // closing in on the real target -- beep interval SHRINKS as it gets closer,
+      // a genuine accelerating "locking on" cue instead of a flat beep rate
       const target = F.trackTarget();
       const k = (F.trackT - bounceEnd) / (lockEnd - bounceEnd);
       const ek = 1 - Math.pow(1-k, 2);   // ease-out
       const from = F.trackPts[F.trackPts.length-1];
       F.trackX = from.x + (target.x - from.x) * ek;
       F.trackY = from.y + (target.y - from.y) * ek;
-      if(F.trackT % 6 === 0) Audio8.S.trackBeep();
+      const beepInterval = Math.max(2, Math.round(11 - 9*k));   // 11 frames apart -> 2 frames apart
+      if((F.trackT - bounceEnd) % beepInterval === 0) Audio8.S.trackBeep();
     } else if(!F.trackLocked){
-      // LOCK -- this is the trigger: legs spread the instant the reticle locks on
+      // LOCK -- the exact moment it settles on the target. Legs spread here too,
+      // same trigger as before.
       F.trackLocked = true;
       const target = F.trackTarget();
       F.trackX = target.x; F.trackY = target.y;
@@ -2271,6 +2277,29 @@ function fatalitySucceed(){
   Audio8.stop(); Audio8.S.fatality();   // the announcer-sting: no breathing room
 }
 
+// shared tactical crosshair -- used both by the tracking-phase lock (once it
+// settles on Liar) AND the kick-phase target itself, so there's no visual seam
+// between "locking" and "locked and about to kick" -- same reticle throughout.
+function drawTacticalCrosshair(tx, ty, pulse){
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  ctx.strokeStyle='#ff1a1a'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(tx, ty, 13, 0, Math.PI*2); ctx.stroke();
+  ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(tx, ty, 5, 0, Math.PI*2); ctx.stroke();
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(tx, ty-22); ctx.lineTo(tx, ty-15);
+  ctx.moveTo(tx, ty+15); ctx.lineTo(tx, ty+22);
+  ctx.moveTo(tx-22, ty); ctx.lineTo(tx-15, ty);
+  ctx.moveTo(tx+15, ty); ctx.lineTo(tx+22, ty);
+  ctx.stroke();
+  ctx.fillStyle='#ff1a1a';
+  ctx.beginPath(); ctx.arc(tx, ty, 2.5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,0,0,0.12)';
+  ctx.beginPath(); ctx.arc(tx, ty, 13, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
 function drawFatalityOverlay(){
   if(!FATALITY) return;
   const F = FATALITY;
@@ -2307,26 +2336,32 @@ function drawFatalityOverlay(){
     return;
   }
   if(F.phase==='tracking'){
-    // the searching/locking reticle -- moves per F.trackX/trackY, computed in stepFatality
-    const pulse = F.trackLocked ? (0.7 + 0.3*Math.abs(Math.sin(F.trackT*0.4))) : 1;
+    if(F.trackLocked){
+      // locked -- switches to the exact same tactical crosshair the kick phase
+      // uses, so there's no visual seam between "just locked" and "about to kick"
+      const pulse = 0.7 + 0.3*Math.abs(Math.sin(F.trackT*0.4));
+      drawTacticalCrosshair(F.trackX, F.trackY, pulse);
+      ctx.save();
+      ctx.fillStyle = '#ff1a1a'; ctx.font = 'bold 13px Courier New'; ctx.textAlign='center';
+      ctx.fillText('LOCKED', F.trackX, F.trackY - 34);
+      ctx.restore();
+      return;
+    }
+    // still searching/closing in -- the moving yellow reticle
+    const pulse = 1;
     ctx.save();
     ctx.globalAlpha = pulse;
-    ctx.strokeStyle = F.trackLocked ? '#ff1a1a' : '#ffd94a';
+    ctx.strokeStyle = '#ffd94a';
     ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(F.trackX, F.trackY, F.trackLocked ? 22 : 16, 0, Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(F.trackX, F.trackY, F.trackLocked ? 10 : 8, 0, Math.PI*2); ctx.stroke();
-    // crosshair ticks
-    const r1 = F.trackLocked ? 22 : 16, r2 = r1 + 8;
+    ctx.beginPath(); ctx.arc(F.trackX, F.trackY, 16, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(F.trackX, F.trackY, 8, 0, Math.PI*2); ctx.stroke();
+    const r1 = 16, r2 = r1 + 8;
     ctx.beginPath();
     ctx.moveTo(F.trackX, F.trackY-r1); ctx.lineTo(F.trackX, F.trackY-r2);
     ctx.moveTo(F.trackX, F.trackY+r1); ctx.lineTo(F.trackX, F.trackY+r2);
     ctx.moveTo(F.trackX-r1, F.trackY); ctx.lineTo(F.trackX-r2, F.trackY);
     ctx.moveTo(F.trackX+r1, F.trackY); ctx.lineTo(F.trackX+r2, F.trackY);
     ctx.stroke();
-    if(F.trackLocked){
-      ctx.fillStyle = '#ff1a1a'; ctx.font = 'bold 12px Courier New'; ctx.textAlign='center';
-      ctx.fillText('LOCKED', F.trackX, F.trackY - 32);
-    }
     ctx.restore();
     return;
   }
@@ -3345,7 +3380,7 @@ function stepTrain(){
 
 // ---- LEVEL 5 BOSS: Trainmaster Jeremy Lauer (ground brawl beside the stopped train) ----
 const JL_LINES = ['OPS TEST FAILURE!', "YOU CAN'T RIDE A CAR LIKE THAT!",
-                  'YOU WERE IMPROPERLY RIDING THAT CAR!', 'INCORRECT CAR COUNTS!'];
+                  'HAND OVER YOUR SWITCH KEYS!'];
 function stepBrawl(){
   const S = L3S, j = S.jl;
   S.t++;
@@ -3857,36 +3892,15 @@ function renderTrain(){
           }
         }
         ctx.restore();
-        // tactical crosshair on the target -- world-space, always in front
+        // tactical crosshair on the target -- world-space, always in front,
+        // same shared design the tracking-lock sequence transitions into
         if(j.spread){
           // the crotch sits right at the top of the thighs: local y=30 on Liar's sprite,
           // offset 15px from his left edge (his center). mirror-scaling means the world
           // x is always j.x+15 regardless of facing direction.
           const tx = j.x + 15, ty = j.y + 30;
           const pulse = 0.7 + 0.3*Math.abs(Math.sin(FATALITY ? FATALITY.t*0.14 : time*0.14));
-          ctx.save();
-          ctx.globalAlpha = pulse;
-          // outer ring
-          ctx.strokeStyle='#ff1a1a'; ctx.lineWidth=2;
-          ctx.beginPath(); ctx.arc(tx, ty, 13, 0, Math.PI*2); ctx.stroke();
-          // inner ring
-          ctx.lineWidth=1;
-          ctx.beginPath(); ctx.arc(tx, ty, 5, 0, Math.PI*2); ctx.stroke();
-          // four gaps: lines go from ring edge outward, with a gap inside the outer ring
-          ctx.lineWidth=2;
-          ctx.beginPath();
-          ctx.moveTo(tx, ty-22); ctx.lineTo(tx, ty-15);   // top
-          ctx.moveTo(tx, ty+15); ctx.lineTo(tx, ty+22);   // bottom
-          ctx.moveTo(tx-22, ty); ctx.lineTo(tx-15, ty);   // left
-          ctx.moveTo(tx+15, ty); ctx.lineTo(tx+22, ty);   // right
-          ctx.stroke();
-          // center dot -- the actual point of impact
-          ctx.fillStyle='#ff1a1a';
-          ctx.beginPath(); ctx.arc(tx, ty, 2.5, 0, Math.PI*2); ctx.fill();
-          // subtle red fill inside outer ring
-          ctx.fillStyle='rgba(255,0,0,0.12)';
-          ctx.beginPath(); ctx.arc(tx, ty, 13, 0, Math.PI*2); ctx.fill();
-          ctx.restore();
+          drawTacticalCrosshair(tx, ty, pulse);
         }
       }
     }
@@ -5687,11 +5701,13 @@ function drawCaddy(){
   ctx.fillStyle='#c8cdd6'; ctx.fillRect(L, gy-54, W, 2);
   ctx.fillStyle='#8a93a8'; ctx.fillRect(L+22, gy-10, 11, 4); ctx.fillRect(L+W-33, gy-10, 11, 4);
 
-  // wreath-and-crest badge on the trunk -- centred on the trunk lid, just above the plate
+  // wreath-and-crest badge on the trunk -- shifted down 6px from its original spot
+  // so it clears the gray chrome molding strip above it, sitting cleanly between
+  // that line and the top of the license plate
   ctx.fillStyle='#c8a03a';
-  ctx.beginPath(); ctx.moveTo(sx, gy-55); ctx.lineTo(sx+4, gy-51); ctx.lineTo(sx, gy-47); ctx.lineTo(sx-4, gy-51); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(sx, gy-49); ctx.lineTo(sx+4, gy-45); ctx.lineTo(sx, gy-41); ctx.lineTo(sx-4, gy-45); ctx.closePath(); ctx.fill();
   ctx.strokeStyle='#c8a03a'; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.arc(sx, gy-51, 7, 0.5, Math.PI-0.5); ctx.stroke();
+  ctx.beginPath(); ctx.arc(sx, gy-45, 7, 0.5, Math.PI-0.5); ctx.stroke();
 
   // === Kansas vanity plate, mid-2000s: white field, blue "Kansas" script, wheat sheaf ===
   const pw = 54, ph = 20;
@@ -8355,6 +8371,20 @@ function drawDuragProp(nowT){
   const sx = px(x);
   if(y > VIEW_H+10 || sx < -20 || sx > VIEW_W+20){ DURAG_PROP = null; return; }   // actually left the screen
   ctx.save(); ctx.translate(sx, y); ctx.rotate(d.spin*dt);
+  // streaming tails -- same silhouette as the head-worn version (scaled down ~0.75x
+  // to match the smaller dome/band here), so it reads as the same durag, not a
+  // stripped-down placeholder, as it tumbles through the air
+  const tw3 = Math.sin(dt*0.4)*3;
+  ctx.fillStyle='#c0392b';
+  ctx.beginPath();
+  ctx.moveTo(8, 0); ctx.quadraticCurveTo(-2, 2+tw3, -9, 10+tw3);
+  ctx.lineTo(-6, 12+tw3); ctx.quadraticCurveTo(0, 6+tw3, 9, 3);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(8, 2); ctx.quadraticCurveTo(-1, 7-tw3, -7, 15-tw3);
+  ctx.lineTo(-4, 16-tw3); ctx.quadraticCurveTo(1, 10-tw3, 9, 5);
+  ctx.closePath(); ctx.fill();
+  // dome + band + knot, same colors as the head-worn version
   ctx.fillStyle='#c0392b';
   ctx.beginPath(); ctx.arc(0, 0, 9, Math.PI, 0); ctx.fill();
   ctx.fillRect(-9, -1, 18, 4);
@@ -8702,9 +8732,8 @@ function drawZamboni(sx){
   ctx.strokeRect(-0.8,5,1.6,5);
   ctx.restore();
 
-  // "ZAMBONI" in small text on white stripe
-  ctx.fillStyle='#1a1a22'; ctx.font='bold 6px Courier New'; ctx.textAlign='center';
-  ctx.fillText('ZAMBONI', 97, -33);
+  // (ZAMBONI text removed -- it sat directly through the maple leaf's silhouette,
+  // fighting it for visual space. The leaf alone reads more clearly now.)
 
   // front nose (right end)
   ctx.fillStyle='#8a0a0a';
@@ -9412,20 +9441,23 @@ function drawBallotCard(t, tIn, tInEnd, tCheckEnd, tHoldEnd, tOutEnd){
   ctx.strokeStyle = '#8a8078'; ctx.lineWidth = 1;
   ctx.strokeRect(8, 8, cw-16, ch-16);
 
-  // header
+  // header -- shifted down 28px along with the rest of the content block below,
+  // so the whole thing sits genuinely centered in the card instead of crammed
+  // into the top half with 78px of dead space underneath (verified: was a 22px
+  // top margin vs 78px bottom margin; now both sides are an even 50px)
   ctx.fillStyle = '#1b1b22';
   ctx.font = 'bold 20px Georgia, "Times New Roman", serif';
   ctx.textAlign = 'center';
-  ctx.fillText('OFFICIAL RESULTS', cw/2, 42);
+  ctx.fillText('OFFICIAL RESULTS', cw/2, 70);
   ctx.strokeStyle = '#1b1b22'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(30, 54); ctx.lineTo(cw-30, 54); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(30, 82); ctx.lineTo(cw-30, 82); ctx.stroke();
 
   // race line
   ctx.font = 'bold 13px Georgia, "Times New Roman", serif';
-  ctx.fillText('PRESIDENT OF THE UNITED STATES', cw/2, 84);
+  ctx.fillText('PRESIDENT OF THE UNITED STATES', cw/2, 112);
 
   // checkbox + name
-  const boxX = cw/2 - 78, boxY = 104, boxS = 18;
+  const boxX = cw/2 - 78, boxY = 132, boxS = 18;
   ctx.strokeStyle = '#1b1b22'; ctx.lineWidth = 2;
   ctx.strokeRect(boxX, boxY, boxS, boxS);
 
@@ -9441,12 +9473,16 @@ function drawBallotCard(t, tIn, tInEnd, tCheckEnd, tHoldEnd, tOutEnd){
     ctx.strokeStyle = '#1a6b2e'; ctx.lineWidth = 3.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     const p1 = Math.min(1, checkProg / 0.4);
     const p2 = Math.max(0, Math.min(1, (checkProg - 0.4) / 0.6));
+    // rebalanced checkmark: starts slightly above center-left, dips into a real
+    // V well below center, rises to the upper-right with actual margin from the
+    // corner (was 2px, now a genuine ~4px on both sides) so it reads as centered
+    // inside the box instead of skewed toward one corner
     ctx.beginPath();
-    ctx.moveTo(boxX + 3, boxY + 9);
-    ctx.lineTo(boxX + 3 + (boxS*0.35 - 3)*p1, boxY + 9 + (boxS*0.7 - 9)*p1);
+    ctx.moveTo(boxX + boxS*0.16, boxY + boxS*0.44);
+    ctx.lineTo(boxX + boxS*0.16 + (boxS*0.39 - boxS*0.16)*p1, boxY + boxS*0.44 + (boxS*0.80 - boxS*0.44)*p1);
     if(p2 > 0){
-      const sx0 = boxX + boxS*0.35, sy0 = boxY + boxS*0.7;
-      ctx.lineTo(sx0 + (boxX+boxS-2 - sx0)*p2, sy0 + (boxY+2 - sy0)*p2);
+      const sx0 = boxX + boxS*0.39, sy0 = boxY + boxS*0.80;
+      ctx.lineTo(sx0 + (boxX+boxS*0.82 - sx0)*p2, sy0 + (boxY+boxS*0.17 - sy0)*p2);
     }
     ctx.stroke();
   }
@@ -10225,6 +10261,21 @@ function drawHUD(){
     ctx.textAlign='center';
     ctx.fillText(label, VIEW_W/2, boxY + 11);
     ctx.textAlign='left';
+
+    // decay bar -- attached to the bottom of the box, same track/fill pattern
+    // as the top bar's own level-progress strip. Counts down streakT (resets to
+    // 170 on every kill) so the player can see exactly how much time is left
+    // before the streak expires. Shifts green->red as it depletes for urgency.
+    const decayFrac = Math.max(0, Math.min(1, streakT / 170));
+    const barY = boxY + boxH, barH = 3;
+    ctx.fillStyle = 'rgba(255,255,255,.3)';
+    ctx.fillRect(boxX, barY, boxW, barH);
+    const c0 = [192,57,43], c1 = [63,174,42];   // --red -> --green, matching the game's own palette
+    const rC = Math.round(c0[0] + (c1[0]-c0[0])*decayFrac);
+    const gC = Math.round(c0[1] + (c1[1]-c0[1])*decayFrac);
+    const bC = Math.round(c0[2] + (c1[2]-c0[2])*decayFrac);
+    ctx.fillStyle = `rgb(${rC},${gC},${bC})`;
+    ctx.fillRect(boxX, barY, boxW*decayFrac, barH);
   }
 }
 
@@ -10244,13 +10295,6 @@ function renderScene(){
   if(kind==='bonus') return renderBonus();
   if(kind==='train') return renderTrain();
   drawBg();
-  // fatality darken veil -- drawn right after background, before any sprites,
-  // so background dims but characters keep full brightness on top.
-  // Only draw during active fatality phases -- never bleed into normal gameplay.
-  if(FATALITY && FATALITY.darken > 0 && (FATALITY.phase !== 'done' || panel)){
-    ctx.fillStyle = `rgba(6,6,14,${0.78*FATALITY.darken})`;
-    ctx.fillRect(0,0,VIEW_W,VIEW_H);
-  }
   if(kind==='march'){ drawMarchCrowd(); drawCityScrim(); }   // crowd behind a haze veil
   drawWater();
   drawPlats();
@@ -10265,17 +10309,33 @@ function renderScene(){
   drawCaddy();   // parked scenery: everything walks in FRONT of it
   for(const e of enemies){ if(!e.dead) drawShadow(px(e.x)+e.w/2, e.w*0.5, e.y+e.h); drawEnemy(e); }
   drawSkunkBoss();
-  drawBoss1();
-  drawNastyWoman();
   drawWifeAndChickens();
   drawBus();
-  drawJohnson();
   drawNelson();
   drawCanadian();
   drawSquadCar();
-  drawKing();
   drawResignation();
   drawTumbleweed();
+  drawCapitolPolice();
+  // fatality darken veil -- everything ABOVE this line (background, platforms,
+  // props, Caddy, enemies, scenery/NPCs) is now genuinely behind it and gets
+  // dimmed. Everything BELOW this line (the currently-fighting boss and Dan
+  // himself) is drawn AFTER the veil, so it stays at full brightness on top --
+  // matching the original intent, without needing to call any boss's draw
+  // function twice (some of them, like drawJohnson/drawBoss1, have real
+  // gameplay side effects baked in -- state mutation, sound calls -- that would
+  // double-fire if called a second time just to "redraw on top").
+  if(FATALITY && FATALITY.darken > 0 && (FATALITY.phase !== 'done' || panel)){
+    ctx.fillStyle = `rgba(6,6,14,${0.78*FATALITY.darken})`;
+    ctx.fillRect(0,0,VIEW_W,VIEW_H);
+  }
+  // the boss -- only one of these four actually renders anything for the
+  // current `kind`, the rest no-op via their own internal guards
+  drawBoss1();
+  drawNastyWoman();
+  drawJohnson();
+  drawKing();
+  // Dan himself, plus his attached shadow/boost trail, all after the veil
   if(dan.onGround) drawShadow(px(dan.x)+dan.w/2, 12, dan.y+dan.h);
   if(dan.boost>0 && Math.abs(dan.vx)>2){
     ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2;
@@ -10284,7 +10344,6 @@ function renderScene(){
       ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx - dan.face*8, ly); ctx.stroke();
     }
   }
-  drawCapitolPolice();
   if(dan.heroPoseT > 0){ drawDanThumbsUp(); } else if(BALLOT_POSE){ drawDanBallotPose(BALLOT_POSE.t, BALLOT_POSE.riseStart, BALLOT_POSE.riseEnd); } else if(BREAD_POSE){ drawDanBaguettePose(BREAD_POSE.t, BREAD_POSE.riseStart, BREAD_POSE.riseEnd); } else { drawDan(); }
   drawStinkAndWind();
   drawFloatTexts();
@@ -10625,7 +10684,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '17.0';
+const BUILD = '17.8';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
