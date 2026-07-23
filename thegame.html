@@ -847,7 +847,8 @@ const Audio8 = (() => {
     }catch(e){ check(); }
     setTimeout(check, 400);                   // if resume never settles, force the issue
   }
-  return { init, resume, unlock, play, stop, fadeOut, S, toggleMute, revive };
+  function currentSong(){ return songName; }
+  return { init, resume, unlock, play, stop, fadeOut, S, toggleMute, revive, currentSong };
 })();
 function unlockAudio(){ Audio8.unlock(); }
 
@@ -10985,9 +10986,11 @@ setTimeout(checkForUpdate, 1500);
 
 // ---- pause ----
 let pausedFrom = null;
+let pausedSong = null;
 function pauseGame(){
   if(state !== 'play' && state !== 'intro') return;
   pausedFrom = state;
+  pausedSong = Audio8.currentSong();   // capture whatever's actually playing (boss track, fatality song, etc.)
   state = 'paused';
   releaseAllTouchKeys();
   Audio8.stop();
@@ -11001,7 +11004,9 @@ function resumeGame(){
   pausedFrom = null;
   Audio8.unlock();
   if(state === 'play'){
-    if(kind==='silver') Audio8.play('level');
+    if(pausedSong){
+      Audio8.play(pausedSong);   // resume the exact track that was playing, not a generic default
+    } else if(kind==='silver') Audio8.play('level');
     else if(kind==='skunk') Audio8.play('skunk');
     else if(kind==='city') Audio8.play('rage');
     else if(kind==='border') Audio8.play('canada');
@@ -11009,6 +11014,7 @@ function resumeGame(){
     else if(kind==='train') Audio8.play('boss');
     else if(kind==='march') Audio8.play('march');
   }
+  pausedSong = null;
 }
 function quitToTitle(){
   hide('pauseScreen'); hide('controls'); hide('pauseBtn');
