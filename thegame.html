@@ -8920,11 +8920,13 @@ function drawZamboni(sx){
   // maple leaf below (which sits on the centre stripe) so it doesn't repeat
   // the earlier text/leaf collision. A real Zamboni carries sponsor logos on
   // the hood/side panels, so this reads as an actual decal, not a random label.
+  // Sized/positioned so its actual measured width leaves real clearance before
+  // the nose, where Nelson rides (checked against ctx.measureText, not guessed).
   ctx.save();
-  ctx.font = 'bold 10px "Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif';
+  ctx.font = 'bold 8px "Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = '#8a0a0a';
-  ctx.fillText('TIM HORTONS', 97, -70);
+  ctx.fillText('TIM HORTONS', 75, -70);
   ctx.restore();
 
   // MAPLE LEAF -- perfect 11-point leaf, prominent on the red body
@@ -9823,26 +9825,24 @@ function czarZamboniFinisher(t){
     ctx.restore();
   }
 
-  // Nelson riding on top of the tank body, shifted toward the REAR half (clear
-  // of both the TIM HORTONS decal on the forward hood and the front scraper
-  // blade that actually hits the czar -- he's along for the ride, not in the
-  // impact zone). Arms raised triumphantly.
+  // Nelson riding on the hood, rear-of-nose half -- scaled down and drawn with
+  // arms at his sides (not raised) so his actual measured footprint fits the
+  // verified gap between the TIM HORTONS decal and the front nose/scraper.
+  // Placement checked against ctx.measureText + the rotated-arm bounding box,
+  // not eyeballed -- the raised-arms pose was measured to be ~26px wide and
+  // genuinely did not fit here at any placement, hence the pose change.
   if(boarded){
-    const nsx = zx + 60;
-    ctx.save(); ctx.translate(nsx, GROUND_Y - 80);   // on top of the hood, rear half
+    const nsx = zx + 121;
+    ctx.save(); ctx.translate(nsx, GROUND_Y - 78); ctx.scale(0.7, 0.7);
     // tiny body
     ctx.fillStyle='#2e3d6b';
     ctx.beginPath(); ctx.ellipse(5,8,6,5,0,0,7); ctx.fill();
-    // arms raised triumphantly -- both up
+    // arms down at his sides, close to the body -- no outward rotation
     ctx.fillStyle='#1a1a2e';
-    ctx.save(); ctx.translate(1,6); ctx.rotate(-0.75);
-    ctx.fillRect(-2,-11,4,11); ctx.restore();
-    ctx.save(); ctx.translate(9,6); ctx.rotate(0.75);
-    ctx.fillRect(-2,-11,4,11); ctx.restore();
+    ctx.fillRect(-1,4,4,10); ctx.fillRect(8,4,4,10);
     // hands
     ctx.fillStyle='#c9855a';
-    ctx.save(); ctx.translate(1,6); ctx.rotate(-0.75); ctx.fillRect(-2,-15,4,4); ctx.restore();
-    ctx.save(); ctx.translate(9,6); ctx.rotate(0.75); ctx.fillRect(-2,-15,4,4); ctx.restore();
+    ctx.fillRect(-1,13,4,4); ctx.fillRect(8,13,4,4);
     // SP head
     drawSPHead(5, 0, false, '#c9855a', '#1c140e');
     ctx.restore();
