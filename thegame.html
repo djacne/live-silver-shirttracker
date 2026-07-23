@@ -4863,7 +4863,7 @@ function stepLevel4(){
     // Special Agent Johnson makes a play for Nelson at the line
     const j = S.johnson;
     if(!j.active && !j.done && dan.x > FLAG_X - 420){
-      j.active = true; announceBoss('THE BORDER CZAR', 'czar');
+      j.active = true; announceBoss('BORDER CZAR', 'czar');
     }
     if(j.active && !j.done){
       if(j.hurtT>0) j.hurtT--;
@@ -5385,7 +5385,7 @@ function drawJohnson(){
   // set jaw
   ctx.fillStyle='#8a4a3a'; ctx.fillRect(13, 12.5, 7, 1.6);
   ctx.restore();
-  drawBossBar('THE BORDER CZAR', j.hp, 3, j.hurtT>80?1:0);
+  drawBossBar('BORDER CZAR', j.hp, 3, j.hurtT>80?1:0);
   drawBossLine(JOHNSON_LINES[Math.floor(time/240) % JOHNSON_LINES.length]);
 }
 
@@ -8286,7 +8286,7 @@ function bigFace(name, cx, cy, s){
     ctx.fillStyle='#0e0a08';
     ctx.fillRect(8, 18, 3, 5); ctx.fillRect(12.5, 19, 3, 5.5); ctx.fillRect(17, 18, 3, 5);
     ctx.fillStyle='#5a3a30'; ctx.fillRect(10, 16, 7, 2.4);
-  } else if(name === 'THE BORDER CZAR'){
+  } else if(name === 'BORDER CZAR'){
     ctx.translate(-13, -12);
     ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(13, 9, 11, 0, 7); ctx.fill();
     ctx.beginPath(); ctx.ellipse(13, 16, 10, 6, 0, 0, 7); ctx.fill();
@@ -9823,31 +9823,28 @@ function czarZamboniFinisher(t){
     ctx.restore();
   }
 
-  // Nelson on the FRONT EDGE of the zamboni, facing forward -- perched right at
-  // the nose, legs hanging over the front, riding into it like a hood ornament.
-  // (moved off the hood, which sat directly under the TIM HORTONS decal and
-  // blocked it -- same collision the old ZAMBONI text ran into with the leaf)
+  // Nelson riding on top of the tank body, shifted toward the REAR half (clear
+  // of both the TIM HORTONS decal on the forward hood and the front scraper
+  // blade that actually hits the czar -- he's along for the ride, not in the
+  // impact zone). Arms raised triumphantly.
   if(boarded){
-    const nsx = zx + 158;
-    ctx.save(); ctx.translate(nsx, GROUND_Y - 50);
-    // legs hanging over the front edge, facing right (direction of travel)
-    ctx.fillStyle='#2b4aa8';
-    ctx.fillRect(-2, 8, 5, 12); ctx.fillRect(4, 8, 5, 12);
-    ctx.fillStyle='#e8e8e8';
-    ctx.fillRect(-3, 19, 6, 3); ctx.fillRect(3, 19, 6, 3);
-    // tiny body, leaning forward slightly into the wind
-    ctx.save(); ctx.rotate(-0.12);
+    const nsx = zx + 60;
+    ctx.save(); ctx.translate(nsx, GROUND_Y - 80);   // on top of the hood, rear half
+    // tiny body
     ctx.fillStyle='#2e3d6b';
-    ctx.beginPath(); ctx.ellipse(4,2,6,7,0,0,7); ctx.fill();
-    // one arm gripping the edge, one raised
+    ctx.beginPath(); ctx.ellipse(5,8,6,5,0,0,7); ctx.fill();
+    // arms raised triumphantly -- both up
     ctx.fillStyle='#1a1a2e';
-    ctx.fillRect(-1,4,4,8);
-    ctx.save(); ctx.translate(8,0); ctx.rotate(-0.9); ctx.fillRect(-2,-9,4,9); ctx.restore();
+    ctx.save(); ctx.translate(1,6); ctx.rotate(-0.75);
+    ctx.fillRect(-2,-11,4,11); ctx.restore();
+    ctx.save(); ctx.translate(9,6); ctx.rotate(0.75);
+    ctx.fillRect(-2,-11,4,11); ctx.restore();
+    // hands
     ctx.fillStyle='#c9855a';
-    ctx.save(); ctx.translate(8,0); ctx.rotate(-0.9); ctx.fillRect(-2,-13,4,4); ctx.restore();
-    // SP head, facing forward
-    drawSPHead(4, -6, false, '#c9855a', '#1c140e');
-    ctx.restore();
+    ctx.save(); ctx.translate(1,6); ctx.rotate(-0.75); ctx.fillRect(-2,-15,4,4); ctx.restore();
+    ctx.save(); ctx.translate(9,6); ctx.rotate(0.75); ctx.fillRect(-2,-15,4,4); ctx.restore();
+    // SP head
+    drawSPHead(5, 0, false, '#c9855a', '#1c140e');
     ctx.restore();
   }
 
