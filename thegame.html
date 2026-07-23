@@ -9823,26 +9823,31 @@ function czarZamboniFinisher(t){
     ctx.restore();
   }
 
-  // Nelson on top of the TANK HOOD (center-right of body = zx + 90..110)
-  // He's small and proud, arms raised, riding the hood
+  // Nelson on the FRONT EDGE of the zamboni, facing forward -- perched right at
+  // the nose, legs hanging over the front, riding into it like a hood ornament.
+  // (moved off the hood, which sat directly under the TIM HORTONS decal and
+  // blocked it -- same collision the old ZAMBONI text ran into with the leaf)
   if(boarded){
-    const nsx = zx + 98;
-    ctx.save(); ctx.translate(nsx, GROUND_Y - 80);   // on top of the hood
-    // tiny body
+    const nsx = zx + 158;
+    ctx.save(); ctx.translate(nsx, GROUND_Y - 50);
+    // legs hanging over the front edge, facing right (direction of travel)
+    ctx.fillStyle='#2b4aa8';
+    ctx.fillRect(-2, 8, 5, 12); ctx.fillRect(4, 8, 5, 12);
+    ctx.fillStyle='#e8e8e8';
+    ctx.fillRect(-3, 19, 6, 3); ctx.fillRect(3, 19, 6, 3);
+    // tiny body, leaning forward slightly into the wind
+    ctx.save(); ctx.rotate(-0.12);
     ctx.fillStyle='#2e3d6b';
-    ctx.beginPath(); ctx.ellipse(5,8,6,5,0,0,7); ctx.fill();
-    // arms raised triumphantly -- both up
+    ctx.beginPath(); ctx.ellipse(4,2,6,7,0,0,7); ctx.fill();
+    // one arm gripping the edge, one raised
     ctx.fillStyle='#1a1a2e';
-    ctx.save(); ctx.translate(1,6); ctx.rotate(-0.75);
-    ctx.fillRect(-2,-11,4,11); ctx.restore();
-    ctx.save(); ctx.translate(9,6); ctx.rotate(0.75);
-    ctx.fillRect(-2,-11,4,11); ctx.restore();
-    // hands
+    ctx.fillRect(-1,4,4,8);
+    ctx.save(); ctx.translate(8,0); ctx.rotate(-0.9); ctx.fillRect(-2,-9,4,9); ctx.restore();
     ctx.fillStyle='#c9855a';
-    ctx.save(); ctx.translate(1,6); ctx.rotate(-0.75); ctx.fillRect(-2,-15,4,4); ctx.restore();
-    ctx.save(); ctx.translate(9,6); ctx.rotate(0.75); ctx.fillRect(-2,-15,4,4); ctx.restore();
-    // SP head
-    drawSPHead(5, 0, false, '#c9855a', '#1c140e');
+    ctx.save(); ctx.translate(8,0); ctx.rotate(-0.9); ctx.fillRect(-2,-13,4,4); ctx.restore();
+    // SP head, facing forward
+    drawSPHead(4, -6, false, '#c9855a', '#1c140e');
+    ctx.restore();
     ctx.restore();
   }
 
