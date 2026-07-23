@@ -4731,8 +4731,11 @@ function stepNelson(){
   }
   if(Math.abs(n.vx)>0.4 && n.onGround) n.walkT++;
   if(n.y > VIEW_H + 80){ n.x = dan.x - 30; n.y = dan.y - 40; n.vy = 0; }   // nimble little guy
-  // during the goodbye, wave at Dan
-  if(L4S.phase==='bye'){ n.face = -1; n.wave++; }
+  // during the goodbye (before the walk-off begins), wave at Dan -- face left.
+  // Once the walk-off starts (L4S.t >= 160), the movement-direction n.face set
+  // above (line ~4715) takes over correctly, so this must NOT run for the
+  // whole bye phase or it stomps that back to -1 even while walking right.
+  if(L4S.phase==='bye' && L4S.t < 160){ n.face = -1; n.wave++; }
 }
 
 function stepBoss7(){
@@ -4907,7 +4910,7 @@ function stepLevel4(){
               resumeSong: 'canada',
               positioner: czarPositioner, finisher: czarZamboniFinisher, vanish: czarVanish,
               killReact: { text: 'DEPORTATION DENIED', wx: j.x+16, wy: j.y-14, color: '#4a90d9', reflash: () => { j.flashT = 16; }, unflash: () => { j.flashT = 0; } },
-              onComplete: (success) => { j.done = true; j.boarded = false; L4S._fatCamX = null; if(success){ j.smooshed = true; dan.x = FLAG_X - 180; nelson.x = FLAG_X - 200; } else { j.dead = true; j.deadT = 0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('canada'); }, 800); }
+              onComplete: (success) => { j.done = true; j.boarded = false; L4S._fatCamX = null; dan.x = FLAG_X - 180; if(success){ j.smooshed = true; nelson.x = FLAG_X - 200; } else { j.dead = true; j.deadT = 0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('canada'); }, 800); }
             });
           } else {
             combat(j.hp===2 ? "HE'S WITH ME!" : 'JURISDICTION LOST!', j.x+16, j.y-14, '#4a90d9');
@@ -4929,7 +4932,7 @@ function stepLevel4(){
               resumeSong: 'canada',
               positioner: czarPositioner, finisher: czarZamboniFinisher, vanish: czarVanish,
               killReact: { text: 'DEPORTATION DENIED', wx: j.x+16, wy: j.y-14, color: '#4a90d9', reflash: () => { j.flashT = 16; }, unflash: () => { j.flashT = 0; } },
-              onComplete: (success) => { j.done = true; j.boarded = false; L4S._fatCamX = null; if(success){ j.smooshed = true; dan.x = FLAG_X - 180; nelson.x = FLAG_X - 200; } else { j.dead = true; j.deadT = 0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('canada'); }, 800); }
+              onComplete: (success) => { j.done = true; j.boarded = false; L4S._fatCamX = null; dan.x = FLAG_X - 180; if(success){ j.smooshed = true; nelson.x = FLAG_X - 200; } else { j.dead = true; j.deadT = 0; } oz += 100; toast('+100 oz', '#3fae2a'); setTimeout(()=>{ if(state==='play') Audio8.play('canada'); }, 800); }
             });
           } else {
             combat(j.hp===2 ? "HE'S WITH ME!" : 'JURISDICTION LOST!', j.x+16, j.y-14, '#4a90d9');
@@ -4943,7 +4946,7 @@ function stepLevel4(){
     if(j.dead) j.deadT++;
     if(dan.x + dan.w > FLAG_X){
       S.phase = 'can'; S.t = 0;
-      S.can.x = FLAG_X + 240; S.can.arrived = false;
+      S.can.x = FLAG_X + 337; S.can.arrived = false;
       Audio8.stop(); Audio8.S.fanfare();
     }
     return;
@@ -5031,7 +5034,7 @@ function drawSPHead(cx, cy, talking, skin, hair){
   ctx.fillStyle = hair;
   ctx.beginPath(); ctx.moveTo(-4, -7); ctx.lineTo(-2, -12); ctx.lineTo(-0.5, -7.6); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(-1, -7.6); ctx.lineTo(2, -12.5); ctx.lineTo(3, -7); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(3, -7); ctx.lineTo(5.5, -10.5); ctx.lineTo(5.5, -6.4); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(3, -7.8); ctx.lineTo(5.5, -11); ctx.lineTo(5, -7.8); ctx.closePath(); ctx.fill();
   // the eyes: plain black ovals, nothing else
   ctx.fillStyle='#000';
   ctx.beginPath();
@@ -5118,20 +5121,21 @@ function drawNelsonBody(canadianShirt, waving){
     ctx.fillStyle='#c0392b'; ctx.fillRect(2, 15.5, 14, 3);
   }
   // little backpack
-  ctx.fillStyle='#6b4423'; ctx.fillRect(-2, 9, 4, 8);
-  // waving arm during the goodbye, otherwise pumping arms
-  if(waving){
-    ctx.fillStyle='#c9855a';
-    const wv = Math.sin(nelson.wave*0.3)*4;
-    ctx.fillRect(13, -2+wv*0.3, 3, 8);
-    ctx.fillRect(13, -5+wv*0.3, 4, 4);
-  } else {
-    ctx.fillStyle='#f4d34a'; ctx.fillRect(14, 10, 3, 6);
-    ctx.fillStyle='#c9855a'; ctx.fillRect(14, 16, 3, 3);
-  }
+  ctx.fillStyle='#6b4423'; ctx.fillRect(-2, 11, 4, 8);
+  // arms at his sides -- simple, no reaching/waving gesture. Sleeve color
+  // matches whichever shirt is currently showing (white once transformed,
+  // tricolor yellow before) instead of being stuck on one color regardless.
+  ctx.fillStyle = canadianShirt ? '#f4f6f8' : '#f4d34a';
+  ctx.fillRect(-1, 10, 3, 6); ctx.fillRect(15, 10, 3, 6);
+  ctx.fillStyle='#c9855a'; ctx.fillRect(-1, 16, 3, 3); ctx.fillRect(15, 16, 3, 3);
   // head
   if(canadianShirt || waving){
-    drawSPHead(9, 2, L4S.phase==='bye' && L4S.t < 26, '#c9855a', '#1c140e');
+    const nelsonTalking = L4S.phase==='bye' && (
+      (L4S.t >= 26 && L4S.t < 100) ||      // "BYE GUY!"
+      (L4S.t >= 180 && L4S.t < 240) ||     // "RIGHT BEHIND YA, BUDDY!"
+      (L4S.t >= 250 && L4S.t < 310)        // "WAIT UP, GUY!"
+    );
+    drawSPHead(9, 2, nelsonTalking, '#c9855a', '#1c140e');
   } else {
     ctx.fillStyle='#c9855a';
     ctx.beginPath(); ctx.arc(9, 2, 6.5, 0, 7); ctx.fill();
@@ -5167,7 +5171,7 @@ function drawNelson(){
     else if(n.spinT <= 18) blurK = 1;
     else blurK = Math.max(0, 1 - (n.spinT-18)/8);
   }
-  const waving = L4S.phase==='bye' && !spinning;
+  const waving = L4S.phase==='bye' && !spinning && L4S.t < 100;   // only during the actual "BYE GUY!" wave -- not the whole rest of the scene, or the waving hand overlaps his face during later dialogue
 
   if(spinning && blurK > 0){
     // ghost copies, offset horizontally, decreasing alpha outward -- same
@@ -8908,26 +8912,13 @@ function drawZamboni(sx){
   // white upper hood
   ctx.fillStyle='#e8eaed';
   ctx.beginPath();
-  if(ctx.roundRect){ ctx.roundRect(38,-80,113,20,8); }
-  else { ctx.rect(38,-80,113,20); }
+  if(ctx.roundRect){ ctx.roundRect(38,-83,113,23,8); }
+  else { ctx.rect(38,-83,113,23); }
   ctx.fill();
   // red band at top of lower body
   ctx.fillStyle='#8a0a0a'; ctx.fillRect(38,-67,117,4);
   // white centre stripe
   ctx.fillStyle='#f0f0f0'; ctx.fillRect(38,-44,117,14);
-
-  // TIM HORTONS sponsor decal -- on the white upper hood, well clear of the
-  // maple leaf below (which sits on the centre stripe) so it doesn't repeat
-  // the earlier text/leaf collision. A real Zamboni carries sponsor logos on
-  // the hood/side panels, so this reads as an actual decal, not a random label.
-  // Sized/positioned so its actual measured width leaves real clearance before
-  // the nose, where Nelson rides (checked against ctx.measureText, not guessed).
-  ctx.save();
-  ctx.font = 'bold 8px "Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#8a0a0a';
-  ctx.fillText('TIM HORTONS', 75, -70);
-  ctx.restore();
 
   // MAPLE LEAF -- perfect 11-point leaf, prominent on the red body
   // Using the official Canadian maple leaf proportions
@@ -8953,6 +8944,17 @@ function drawZamboni(sx){
   // stem
   ctx.fillRect(-0.8,5,1.6,5);
   ctx.strokeRect(-0.8,5,1.6,5);
+  ctx.restore();
+
+  // TIM HORTONS sponsor decal -- on the white upper hood, bumped up off the
+  // red band with real vertical margin (the hood was extended 3px to make
+  // room), one size bigger than the original. Nelson rides at the front of
+  // the hood, well clear of this text.
+  ctx.save();
+  ctx.font = 'bold 10px "Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#8a0a0a';
+  ctx.fillText('TIM HORTONS', 86, -75);
   ctx.restore();
 
   // (ZAMBONI text removed -- it sat directly through the maple leaf's silhouette,
@@ -9804,47 +9806,72 @@ function czarZamboniFinisher(t){
   // draw zamboni
   drawZamboni(zx);
 
-  // Dan in driver cab (LEFT REAR of zamboni = zx + 8..36)
-  // Driver sits at the back-left open platform with steering wheel
+  // Dan in driver cab (LEFT REAR of zamboni). Body sits within the vehicle's
+  // own footprint, legs centered under the torso. The cab wall itself is
+  // untouched (still its original x=0-12 size, both before and after Dan
+  // boards) -- it's simply redrawn after him so it sits in front, same shape
+  // the vehicle already had when it rolled out.
   if(boarded){
-    const dsx = zx + 20;   // center of driver cab
-    ctx.save(); ctx.translate(dsx, GROUND_Y - 32);
-    // body in seat (navy hoodie + tan overalls peeking)
-    ctx.fillStyle='#2e3d6b'; ctx.fillRect(-6,-20,14,20);
-    ctx.fillStyle='#b99a5f'; ctx.fillRect(-5,-4,12,8);
-    // head facing right
-    ctx.fillStyle='#e8b68a'; ctx.beginPath(); ctx.arc(2,-24,7,0,7); ctx.fill();
-    // SD cap
-    ctx.fillStyle='#7a5230';
-    ctx.beginPath(); ctx.arc(2,-26,7.5,Math.PI,0); ctx.fill();
-    ctx.fillRect(-5,-28,16,3);
-    // brim pointing right
-    ctx.fillRect(8,-27,6,2);
-    // mustache
-    ctx.fillStyle='#4a3018'; ctx.fillRect(-1,-19.5,8,2.5);
+    const dsx = zx + 13;
+    ctx.save(); ctx.translate(dsx - 13, GROUND_Y - 77);
+    // single leg -- the other one pokes out past the wall's edge (x=0-12) and shows, so it's dropped
+    ctx.fillStyle='#b99a5f'; ctx.fillRect(6, 28, 4, 12);
+    ctx.fillStyle='#6b4423'; ctx.fillRect(5, 38, 6, 4);
+    // torso: navy hoodie + tan overalls bib, identical to normal Dan
+    ctx.fillStyle='#2e3d6b'; ctx.fillRect(2, 14, 22, 16);
+    ctx.fillStyle='#b99a5f'; ctx.fillRect(6, 20, 14, 10);
+    ctx.fillRect(6, 15, 4, 7); ctx.fillRect(16, 15, 4, 7);
+    ctx.fillStyle='#8a6f3c'; ctx.fillRect(7, 16, 2, 2); ctx.fillRect(17, 16, 2, 2);
+    // arm reaching to the steering wheel -- angle/length recomputed and
+    // verified numerically for Dan's new position (wheel is now closer, since
+    // he shifted right off the back edge)
+    ctx.save(); ctx.translate(22, 18); ctx.rotate(-0.785);
+    ctx.fillStyle='#2e3d6b'; ctx.fillRect(-2, 0, 5, 8);   // forearm, reaching to the wheel
+    ctx.fillStyle='#e8b68a'; ctx.fillRect(-3, 6, 6, 5);   // hand on the wheel
     ctx.restore();
+    // real Dan head, unscaled, same coordinate space -- exactly how drawDan calls it
+    danHead(false);
+    ctx.restore();
+    // redraw of the cab wall, exactly matching the original in drawZamboni
+    // (x=0-12) -- the same shape simply re-layered in front of Dan, not a
+    // new or different-sized piece
+    ctx.fillStyle='#1e1e2c'; ctx.fillRect(zx, GROUND_Y-55, 12, 28);
   }
 
-  // Nelson riding on the hood, rear-of-nose half -- scaled down and drawn with
-  // arms at his sides (not raised) so his actual measured footprint fits the
-  // verified gap between the TIM HORTONS decal and the front nose/scraper.
-  // Placement checked against ctx.measureText + the rotated-arm bounding box,
-  // not eyeballed -- the raised-arms pose was measured to be ~26px wide and
-  // genuinely did not fit here at any placement, hence the pose change.
+  // Nelson riding on the front of the hood, facing right (toward the czar), arms raised triumphantly.
+  // Normal (pre-transformation) Nelson -- the Canadian reveal is the ending-scene beat only.
   if(boarded){
-    const nsx = zx + 121;
-    ctx.save(); ctx.translate(nsx, GROUND_Y - 78); ctx.scale(0.7, 0.7);
-    // tiny body
-    ctx.fillStyle='#2e3d6b';
-    ctx.beginPath(); ctx.ellipse(5,8,6,5,0,0,7); ctx.fill();
-    // arms down at his sides, close to the body -- no outward rotation
-    ctx.fillStyle='#1a1a2e';
-    ctx.fillRect(-1,4,4,10); ctx.fillRect(8,4,4,10);
+    const nsx = zx + 146;
+    ctx.save(); ctx.translate(nsx, GROUND_Y - 80);
+    // jeans
+    ctx.fillStyle='#3a63a8'; ctx.fillRect(1,10,5,7); ctx.fillRect(8,10,5,7);
+    // tricolor shirt
+    ctx.fillStyle='#f4d34a'; ctx.fillRect(0,0,14,4);
+    ctx.fillStyle='#2b4aa8'; ctx.fillRect(0,4,14,3.5);
+    ctx.fillStyle='#c0392b'; ctx.fillRect(0,7.5,14,3);
+    // little backpack
+    ctx.fillStyle='#6b4423'; ctx.fillRect(-2,1,4,8);
+    // arms raised triumphantly -- both up
+    ctx.fillStyle='#f4d34a';
+    ctx.save(); ctx.translate(-1,-2); ctx.rotate(-0.75);
+    ctx.fillRect(-2,-11,4,11); ctx.restore();
+    ctx.save(); ctx.translate(7,-2); ctx.rotate(0.75);
+    ctx.fillRect(-2,-11,4,11); ctx.restore();
     // hands
     ctx.fillStyle='#c9855a';
-    ctx.fillRect(-1,13,4,4); ctx.fillRect(8,13,4,4);
-    // SP head
-    drawSPHead(5, 0, false, '#c9855a', '#1c140e');
+    ctx.save(); ctx.translate(-1,-2); ctx.rotate(-0.75); ctx.fillRect(-2,-15,4,4); ctx.restore();
+    ctx.save(); ctx.translate(7,-2); ctx.rotate(0.75); ctx.fillRect(-2,-15,4,4); ctx.restore();
+    // round happy head (normal Nelson, not the Canadian SP head)
+    ctx.fillStyle='#c9855a';
+    ctx.beginPath(); ctx.arc(7,-6,6.5,0,7); ctx.fill();
+    ctx.fillStyle='#1c140e';
+    ctx.beginPath(); ctx.arc(7,-8.5,7,Math.PI,0); ctx.fill();
+    ctx.fillRect(0,-9,3,4);
+    // big happy eye + smile
+    ctx.fillStyle='#fff'; ctx.fillRect(8,-8,4,3);
+    ctx.fillStyle='#000'; ctx.fillRect(10,-7,1.8,1.8);
+    ctx.strokeStyle='#5a2a24'; ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.arc(9,-3,2.6,0.15,Math.PI-0.4); ctx.stroke();
     ctx.restore();
   }
 
@@ -9942,7 +9969,6 @@ function vonSpinFinisher(t){
 function vonVanish(){
   // he was standing there wobbling normally right up through the quip appearing --
   // this fires once, mid-quip, and he's simply not there when the panel closes
-  Audio8.S.bonk();
   L5S.king.flying = true;
 }
 
