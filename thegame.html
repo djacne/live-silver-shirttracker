@@ -6085,7 +6085,11 @@ function drScienceFinisher(t){
   const T_RISE=73, T_HOLD=216, T_LOWER=281, T_JAB=311, T_DOSE=381, T_BACK=483,
         T_SAFE=622, T_WRONG=748, T_GROW=942, T_RIP=1050, T_HEAD2=1158, T_HEAD3=1266,
         T_CHARGE=1386, T_LAUNCH=1494;
-  const ROCKET_HITSTOP = 195;   // ~3.25s at 60fps -- a real few-seconds wiggle before it bolts
+  const ROCKET_HITSTOP = 150;   // ~2.5s at 60fps -- the wiggle holds on a dead-still screen,
+                                 // so it doesn't need to be long to land. (hitStop is a
+                                 // step()-frame counter and step() can fire more than once per
+                                 // rendered frame to catch up after a stutter, so on a choppy
+                                 // device this burns down somewhat faster than wall-clock.)
   const jabY = dan.y + 12;
 
   dan.face = 1; b.vx = 0;
@@ -6221,11 +6225,12 @@ function drScienceFinisher(t){
   // ---------- thrust builds ----------
   if(t <= T_CHARGE){
     const f = (t - T_HEAD3) / (T_CHARGE - T_HEAD3);
-    FX.swell = 1.35 + f*0.25; FX.shakeAmp = 4 + f*2;
-    // kept light through here on purpose -- "SAY HELLO TO MY LITTLE FRIEND!"
-    // fires in this window and heavy shake was making it unreadable. Shake
-    // ramps up for real once the rocket is actually flying, not before.
-    shake = Math.max(shake, 1 + f*2);
+    FX.swell = 1.35 + f*0.25; FX.shakeAmp = 0;
+    // no shake at all through here, full stop -- "SAY HELLO TO MY LITTLE
+    // FRIEND!" fires in this window and the pop-out follows right after.
+    // The wiggle is the punchline and it's the ONLY thing that moves; shake
+    // only belongs to the flight, once it actually takes off and starts
+    // shooting around.
     if(t === T_HEAD3 + 8 && !b.saidRumble){ b.saidRumble = true; fatLine('SAY HELLO TO MY LITTLE FRIEND!', 143); }
     // no exhaust here -- this is all still pre-reveal (the pop-out itself
     // doesn't fire until T_CHARGE+1). Exhaust before anything's even out
@@ -6251,20 +6256,37 @@ function drScienceFinisher(t){
       b.launched = true;
       drScienceLaunchRocket(b);
       Audio8.S.whoosh(); Audio8.S.nutshot();
-      // just a light pop for the reveal, not a jolt -- this is the moment it
-      // wiggles into view, and heavy shake was fighting the reveal instead
-      // of selling it. Real shake is saved for once it's actually flying.
-      shake = 3;
+      // no shake at all on the pop -- the wiggle is the punchline and it's
+      // the only thing that moves. (Returning immediately matters: this used
+      // to fall through into the shake=8 line right below, silently
+      // overwriting whatever got set here.) FX.shakeAmp is the actual
+      // culprit for "violent shake" during the wiggle itself: it jitters his
+      // WHOLE BODY every frame via a continuous sine wave (see
+      // drawDrScience), and since t freezes for the entire wiggle, whatever
+      // value it's left at here just keeps jittering him non-stop for the
+      // full ~3s. Zeroed out so he holds still.
+      FX.swell = 1.6; FX.hole = 1; FX.shakeAmp = 0;
       hitStop = ROCKET_HITSTOP;          // a real beat to let the reveal (and the wiggle) land before it takes off
       // no line here -- "SAY HELLO TO MY LITTLE FRIEND!" already said it, and
       // the reveal is the punchline now: it just pops out, wiggles, and goes
+      return false;
     }
-    // this block keeps re-running every frame t is <= T_LAUNCH -- but t is
-    // frozen for the whole wiggle (hitStop owns the clock), so in practice it
-    // only starts actually mattering once hitStop hits 0 and the rocket takes
-    // off for real. That's exactly where the bigger shake should live.
-    FX.swell = 1.6; FX.shakeAmp = 9; FX.hole = 1;
-    shake = Math.max(shake, 8);
+    // THIS RUNS EVERY RENDER FRAME, not just once: the finisher is also called
+    // from the render path (see the F.phase==='anim' call in drawFatality --
+    // it has to be, because the finisher draws itself). During the wiggle the
+    // step clock is frozen, so t sits at exactly T_CHARGE+1 the whole time and
+    // b.launched is already true -- meaning the pop-out branch above is skipped
+    // and control falls through to right here on every single frame. That's
+    // what was re-applying launch-strength shake for the entire wiggle.
+    // hitStop > 0 IS the wiggle: hold everything perfectly still through it,
+    // and only shake once the rocket is genuinely flying.
+    FX.swell = 1.6; FX.hole = 1;
+    if(hitStop > 0){
+      FX.shakeAmp = 0;
+    } else {
+      FX.shakeAmp = 9;
+      shake = Math.max(shake, 8);
+    }
     return false;
   }
 
