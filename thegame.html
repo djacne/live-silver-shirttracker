@@ -14183,7 +14183,11 @@ function jumpToLevel(n){
   buildLevel(n); resetDan();
   ozAtLevelStart = oz;
   state = 'intro'; introT = 0; introGo = false; introStage = 0;
-  show('controls'); show('pauseBtn');
+  // controls stay hidden through the intro card, same as startGame() -- the
+  // normal intro-to-play transition shows them once Dan is actually
+  // controllable. This used to show them immediately, which is why the d-pad
+  // and attack button were visible on the level title card before you'd even
+  // tapped through it.
   runStartMs = Date.now();
 }
 function jumpToBoss(n){
@@ -14215,6 +14219,11 @@ function jumpToBoss(n){
   }
   jumpToLevel(n);
   state = 'play';
+  // this path skips the intro card entirely, so nothing else will show the
+  // pause button -- jumpToLevel() no longer shows it up front, and the d-pad/
+  // attack button resync on their own next frame since syncTouchControls()
+  // runs automatically once state is 'play'
+  show('pauseBtn'); _ctrlsShown = null;
   if(n === 1){ dan.x = 3890; }
   else if(n === 2){ dan.x = WATER_L - 100; }
   else if(n === 3){ L5S.phase = 'run'; dan.x = FLAG_X - 500; }
