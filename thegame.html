@@ -13574,14 +13574,10 @@ function stepLockdownWake(){
   lockdownWakeT++;
   if(lockdownWakeT === 1) Audio8.stop();
   if(lockdownWakeT === LW_CUT + 1) Audio8.S.bossHit();   // the jolt of waking up
-  // straight to the win screen, not levelClear()'s confetti-party interstitial --
-  // that screen renders "the frozen world behind him" via a plain render() call,
-  // which at this point still means the nightmare level's own background (spores,
-  // vignette, the whole dream atmosphere), i.e. it showed the nightmare again
-  // right after he'd just woken up from it. Level 8 is also the last level, so
-  // there's no "next level" for that interstitial to be transitioning toward
-  // anyway -- the eyes opening IS the completion beat.
-  if(lockdownWakeT >= LW_HOLD){ if(state==='lockdownwake') winGame(); }
+  // the celebration still plays (levelClear()) -- but renderLevelWin() knows
+  // to draw the bed scene behind it instead of the nightmare level itself
+  // (see the kind==='lockdown' check there)
+  if(lockdownWakeT >= LW_HOLD){ if(state==='lockdownwake') levelClear(); }
 }
 function renderLockdownWake(){
   const t = lockdownWakeT;
@@ -13933,7 +13929,14 @@ function drawDancingDan(cx, cy, s, t){
 
 function renderLevelWin(){
   const S = LWS;
-  render();                                   // the frozen world behind him
+  // the frozen world behind him -- for every other level that's just the
+  // level itself, frozen. Lockdown's ending is the one exception: level 8
+  // only ever reaches levelClear() via the wake-up sequence, so the "world"
+  // behind the celebration should be Dan back in bed, not the nightmare he
+  // just escaped (render() would still draw the nightmare level's own
+  // background here, since nothing else has changed kind/L8S.phase by now).
+  if(kind === 'lockdown') renderLockdownWake();
+  else render();
   ctx.fillStyle = 'rgba(15,15,35,.68)';
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
