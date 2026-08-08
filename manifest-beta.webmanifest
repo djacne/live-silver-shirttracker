@@ -1,0 +1,22 @@
+{
+  "id": "/thegamebeta.html",
+  "name": "Dan's Retirement (Beta)",
+  "short_name": "Dan Beta",
+  "start_url": "/thegamebeta.html",
+  "scope": "/thegamebeta.html",
+  "display": "standalone",
+  "background_color": "#0f0f23",
+  "theme_color": "#0f0f23",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ]
+}
