@@ -6353,12 +6353,15 @@ function drawDrScienceRocket(){
   if(hitStop > 0){
     R.wiggleT++;
     R.ang = R.baseAng + Math.sin(R.wiggleT*0.9)*0.35;
-    // exhaust now starts here, once it's actually out and wiggling, instead
-    // of before it ever popped out -- ramps up over its first two-thirds of a
-    // second so it reads as building toward the launch, not just switched on
-    const rx = px(R.x);
-    const f = Math.min(1, R.wiggleT/40);
-    if(f > 0){
+    // no exhaust for most of the wiggle -- it just pops out and sits there.
+    // Thrust only kicks in right at the very end, as the trigger for launch,
+    // keyed off hitStop counting DOWN to 0 (not wiggleT counting up from
+    // pop-out) so it's tied to how close it is to blasting off, not how long
+    // it's been out.
+    const RAMP = 22;
+    if(hitStop <= RAMP){
+      const rx = px(R.x);
+      const f = 1 - hitStop/RAMP;
       for(let i=0;i<2;i++){
         const rr = (2 + f*8) * (0.5 + Math.random()*0.8);
         ctx.fillStyle = 'rgba(255,' + (150+Math.random()*90|0) + ',60,' + (0.10 + f*0.32) + ')';
@@ -13571,7 +13574,14 @@ function stepLockdownWake(){
   lockdownWakeT++;
   if(lockdownWakeT === 1) Audio8.stop();
   if(lockdownWakeT === LW_CUT + 1) Audio8.S.bossHit();   // the jolt of waking up
-  if(lockdownWakeT >= LW_HOLD){ if(state==='lockdownwake') levelClear(); }
+  // straight to the win screen, not levelClear()'s confetti-party interstitial --
+  // that screen renders "the frozen world behind him" via a plain render() call,
+  // which at this point still means the nightmare level's own background (spores,
+  // vignette, the whole dream atmosphere), i.e. it showed the nightmare again
+  // right after he'd just woken up from it. Level 8 is also the last level, so
+  // there's no "next level" for that interstitial to be transitioning toward
+  // anyway -- the eyes opening IS the completion beat.
+  if(lockdownWakeT >= LW_HOLD){ if(state==='lockdownwake') winGame(); }
 }
 function renderLockdownWake(){
   const t = lockdownWakeT;
