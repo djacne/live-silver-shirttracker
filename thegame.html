@@ -6221,8 +6221,11 @@ function drScienceFinisher(t){
   // ---------- thrust builds ----------
   if(t <= T_CHARGE){
     const f = (t - T_HEAD3) / (T_CHARGE - T_HEAD3);
-    FX.swell = 1.35 + f*0.25; FX.shakeAmp = 7 + f*4;
-    shake = Math.max(shake, 4 + f*6);
+    FX.swell = 1.35 + f*0.25; FX.shakeAmp = 4 + f*2;
+    // kept light through here on purpose -- "SAY HELLO TO MY LITTLE FRIEND!"
+    // fires in this window and heavy shake was making it unreadable. Shake
+    // ramps up for real once the rocket is actually flying, not before.
+    shake = Math.max(shake, 1 + f*2);
     if(t === T_HEAD3 + 8 && !b.saidRumble){ b.saidRumble = true; fatLine('SAY HELLO TO MY LITTLE FRIEND!', 143); }
     // no exhaust here -- this is all still pre-reveal (the pop-out itself
     // doesn't fire until T_CHARGE+1). Exhaust before anything's even out
@@ -6247,13 +6250,21 @@ function drScienceFinisher(t){
     if(t === T_CHARGE + 1 && !b.launched){
       b.launched = true;
       drScienceLaunchRocket(b);
-      Audio8.S.whoosh(); Audio8.S.nutshot(); shake = 12;
+      Audio8.S.whoosh(); Audio8.S.nutshot();
+      // just a light pop for the reveal, not a jolt -- this is the moment it
+      // wiggles into view, and heavy shake was fighting the reveal instead
+      // of selling it. Real shake is saved for once it's actually flying.
+      shake = 3;
       hitStop = ROCKET_HITSTOP;          // a real beat to let the reveal (and the wiggle) land before it takes off
       // no line here -- "SAY HELLO TO MY LITTLE FRIEND!" already said it, and
       // the reveal is the punchline now: it just pops out, wiggles, and goes
     }
+    // this block keeps re-running every frame t is <= T_LAUNCH -- but t is
+    // frozen for the whole wiggle (hitStop owns the clock), so in practice it
+    // only starts actually mattering once hitStop hits 0 and the rocket takes
+    // off for real. That's exactly where the bigger shake should live.
     FX.swell = 1.6; FX.shakeAmp = 9; FX.hole = 1;
-    shake = Math.max(shake, 6);
+    shake = Math.max(shake, 8);
     return false;
   }
 
@@ -6262,7 +6273,7 @@ function drScienceFinisher(t){
   // it's sitting on him waiting for a clock to catch up ----------
   if(!b.exploded && !(DR_ROCKET && DR_ROCKET.hit)){
     FX.swell = 1.6; FX.shakeAmp = 9; FX.hole = 1;
-    if(t % 6 === 0) shake = Math.max(shake, 4);
+    if(t % 6 === 0) shake = Math.max(shake, 6);
     return false;
   }
   if(!b.exploded){
@@ -13935,6 +13946,9 @@ function renderLevelWin(){
   // behind the celebration should be Dan back in bed, not the nightmare he
   // just escaped (render() would still draw the nightmare level's own
   // background here, since nothing else has changed kind/L8S.phase by now).
+  // full scale, no shrinking -- the eyes-wide-open close-up is the punchline
+  // of the wake-up beat, and this needs to be the exact same shot continuing
+  // underneath the celebration, not a sudden zoom-out the instant it starts.
   if(kind === 'lockdown') renderLockdownWake();
   else render();
   ctx.fillStyle = 'rgba(15,15,35,.68)';
