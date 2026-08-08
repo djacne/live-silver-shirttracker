@@ -13449,16 +13449,27 @@ function playerHasControl(){
   if(kind==='city'   && L5S && L5S.phase!=='run') return false;
   return true;
 }
+// A fatality is "not controllable" for every phase except one: 'input', the QTE
+// where the player has to actually press the left/right sequence on screen to
+// land the kill. playerHasControl() blanket-hides everything the instant
+// FATALITY exists (correct for killreact/position/wobble/prompt/anim/lighten,
+// none of which read a single key) -- but that same blanket was also hiding the
+// left/right buttons during 'input', which left mobile players with the QTE
+// ring on screen demanding presses and no buttons anywhere to press. This is
+// the one carve-out: the d-pad cluster (left/right/jump share one container,
+// #controls) comes back for just that phase. The swing button stays hidden --
+// nothing in the QTE reads it -- and normal movement stays locked out via
+// stepFatality owning the frame, same as before.
+function fatalityQteActive(){ return !!(FATALITY && FATALITY.phase === 'input'); }
 function syncTouchControls(){
   const want = playerHasControl();
-  if(want === _ctrlsShown) return;    // no change, don't thrash the DOM
-  _ctrlsShown = want;
-  if(want){
-    if(matchMedia('(pointer:coarse)').matches) show('controls');
-    if(kind==='city' || kind==='march' || kind==='silver' || kind==='skunk' || kind==='border' || (kind==='lockdown' && L8S.phase==='partTwo')) show('swingBtn');
-  } else {
-    hide('controls'); hide('swingBtn');
-  }
+  const wantDpad = want || fatalityQteActive();
+  const wantSwing = want && (kind==='city' || kind==='march' || kind==='silver' || kind==='skunk' || kind==='border' || (kind==='lockdown' && L8S.phase==='partTwo'));
+  const key = (wantDpad?'d':'') + (wantSwing?'s':'');
+  if(key === _ctrlsShown) return;    // no change, don't thrash the DOM
+  _ctrlsShown = key;
+  if(wantDpad && matchMedia('(pointer:coarse)').matches) show('controls'); else hide('controls');
+  if(wantSwing) show('swingBtn'); else hide('swingBtn');
 }
 
 function startGame(){
