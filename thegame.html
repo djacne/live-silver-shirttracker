@@ -6085,7 +6085,7 @@ function drScienceFinisher(t){
   const T_RISE=73, T_HOLD=216, T_LOWER=281, T_JAB=311, T_DOSE=381, T_BACK=483,
         T_SAFE=622, T_WRONG=748, T_GROW=942, T_RIP=1050, T_HEAD2=1158, T_HEAD3=1266,
         T_CHARGE=1386, T_LAUNCH=1494;
-  const ROCKET_HITSTOP = 135;   // ~2.25s at 60fps -- a bit more wiggle time before it bolts
+  const ROCKET_HITSTOP = 195;   // ~3.25s at 60fps -- a real few-seconds wiggle before it bolts
   const jabY = dan.y + 12;
 
   dan.face = 1; b.vx = 0;
@@ -6224,17 +6224,11 @@ function drScienceFinisher(t){
     FX.swell = 1.35 + f*0.25; FX.shakeAmp = 7 + f*4;
     shake = Math.max(shake, 4 + f*6);
     if(t === T_HEAD3 + 8 && !b.saidRumble){ b.saidRumble = true; fatLine('SAY HELLO TO MY LITTLE FRIEND!', 143); }
-    // exhaust building right at the hole he's about to pop out of -- used to
-    // bloom from a fixed spot near his feet, disconnected from where the
-    // rocket actually emerges (which moves as he swells), so it read as an
-    // unexplained blast rather than pressure building in the right place
-    const hp2 = drScienceHolePos(b);
-    const gx2 = px(hp2.x), gy2 = hp2.y + 6;
-    for(let i=0;i<3;i++){
-      const rr = (2 + f*9) * (0.5 + Math.random()*0.8);
-      ctx.fillStyle = 'rgba(255,' + (150+Math.random()*90|0) + ',60,' + (0.10 + f*0.3) + ')';
-      ctx.beginPath(); ctx.arc(gx2 + (Math.random()-0.5)*16, gy2 + Math.random()*12, rr, 0, 7); ctx.fill();
-    }
+    // no exhaust here -- this is all still pre-reveal (the pop-out itself
+    // doesn't fire until T_CHARGE+1). Exhaust before anything's even out
+    // read as an unexplained blast; it now only shows up once the rocket is
+    // actually out and wiggling, right before it launches (see the wiggle
+    // block in drawDrScienceRocket).
     if(t % 2 === 0) drScienceSweat(b, 1);
     return false;
   }
@@ -6359,6 +6353,18 @@ function drawDrScienceRocket(){
   if(hitStop > 0){
     R.wiggleT++;
     R.ang = R.baseAng + Math.sin(R.wiggleT*0.9)*0.35;
+    // exhaust now starts here, once it's actually out and wiggling, instead
+    // of before it ever popped out -- ramps up over its first two-thirds of a
+    // second so it reads as building toward the launch, not just switched on
+    const rx = px(R.x);
+    const f = Math.min(1, R.wiggleT/40);
+    if(f > 0){
+      for(let i=0;i<2;i++){
+        const rr = (2 + f*8) * (0.5 + Math.random()*0.8);
+        ctx.fillStyle = 'rgba(255,' + (150+Math.random()*90|0) + ',60,' + (0.10 + f*0.32) + ')';
+        ctx.beginPath(); ctx.arc(rx + (Math.random()-0.5)*14, R.y + 6 + Math.random()*10, rr, 0, 7); ctx.fill();
+      }
+    }
   }
   if(hitStop <= 0){
   R.t++;
