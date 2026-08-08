@@ -6988,7 +6988,7 @@ function drawDrScience(){
   if(!(FX && FX.bug > 0)){
     // bare eyes, no outline ring -- an outlined white circle reads as a glasses lens
     ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(12, 6.5, 2.8, 0, 7); ctx.arc(20, 6.5, 2.8, 0, 7); ctx.fill();
-    ctx.fillStyle='#000'; ctx.fillRect(10.8, 5.3, 1.8, 1.8); ctx.fillRect(18.8, 5.3, 1.8, 1.8);
+    ctx.fillStyle='#000'; ctx.fillRect(10.8, 5.3, 1.8, 1.8); ctx.fillRect(, 5.3, 1.8, 1.8);
   }
   if(FX && FX.bug > 0){
     // eyes bugging out as the dose takes hold
@@ -13714,7 +13714,7 @@ onTap('closeLbBtn', ()=>{
 });
 
 // ================= BUILD / UPDATE / INSTALL / PAUSE =================
-const BUILD = '18.8';
+const BUILD = '18.3';
 $('buildStamp').textContent = 'build ' + BUILD;
 
 // ---- iOS install guide: shown only to iPhone/iPad users who haven't installed yet ----
