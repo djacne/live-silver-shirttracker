@@ -3,3 +3,9 @@
 
 /version.json
   Cache-Control: no-store
+
+/thegamebeta.html
+  Cache-Control: no-cache, must-revalidate
+
+/manifest-beta.webmanifest
+  Cache-Control: no-cache, must-revalidate
