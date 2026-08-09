@@ -728,7 +728,18 @@ const Audio8 = (() => {
     setTimeout(() => {
       if(songName !== target) return;
       stop();
-      try{ mus.gain.cancelScheduledValues(AC.currentTime); mus.gain.value = 0.4; }catch(e){}
+      // Deliberately does NOT restore the gain. stop() only clears `song`, which
+      // stops the scheduler queueing anything NEW -- but sched queues 140ms ahead
+      // (nextT < currentTime + 0.14), so at this instant there is usually a note
+      // already committed to the graph that hasn't STARTED yet. Snapping the
+      // music bus back to 0.4 underneath it meant that note then fired at its
+      // full attack volume, alone, after the song had faded to silence: one
+      // stray note in the gap between the nightmare and the maze. At the
+      // nightmare's 146bpm a step is ~206ms, so it landed maybe two runs in
+      // three -- which is why it read as intermittent.
+      // play() already cancels any in-flight fade and resets the gain before it
+      // starts anything, and play() is the only way music ever begins, so
+      // leaving the bus down here is safe.
     }, ms + 30);
   }
   function sched(){
@@ -2370,6 +2381,12 @@ function startFatality(opts){
   dan.flashT = 0; dan.inv = 0;   // time is frozen -- these would never count down otherwise
   dan.star = 0; dan.boost = 0;   // kill powerup colour effect immediately
   if(dan.small) setSize(false);   // restore full size -- universal for all bosses
+  // ...except the train level, which keeps its OWN Dan (position, facing, size,
+  // the lot) in L3S rather than the shared `dan` object -- L3S.small is what
+  // drives his draw scale there (see the `S.small ? 0.75 : 1` in the train
+  // render), so the line above doesn't reach it. Without this, Trainmaster Liar
+  // was the one boss whose fatality played out with a still-shrunk Dan.
+  if(L3S && L3S.small) L3S.small = false;
   // if the killing blow was a slap/club, Dan would otherwise still be posed
   // mid-swing when he squares up for the fatality -- reset him to a normal
   // resting stance before anything else happens
@@ -6014,6 +6031,7 @@ function stepDrScienceFatality(b){
       b.hiccup = false; b.saidEff = false; b.saidTrust = false; b.popped = false;
       b.exploded = false; b.fx = null; b.ripped = false; b.launched = false; b.saidRumble = false; b.boomT = 0;
       DR_SCIENCE_BITS = null; DR_SCIENCE_RINGS = null; DR_SCIENCE_BOOM = null; DR_ROCKET = null; FAT_LINE = null;
+      DR_SCIENCE_BOB_T = 0;              // heads always start their nod from the same phase
     },
     resumeSong: 'science',
     positioner: drSciencePositioner, finisher: drScienceFinisher, vanish: drScienceVanish,
@@ -6213,7 +6231,14 @@ function drScienceFinisher(t){
   // ---------- third head ----------
   if(t <= T_HEAD3){
     const f = (t - T_HEAD2) / (T_HEAD3 - T_HEAD2);
-    FX.swell = 1.15 + f*0.2; FX.shakeAmp = 6 + f*1.6;
+    FX.swell = 1.15 + f*0.2;
+    // Ease the tremble back to a true 0 over the last ~24 frames rather than
+    // handing 7.6 straight to the next beat, which zeroes it on a single frame.
+    // (Same class of problem as drScienceShake: a one-frame amplitude cliff is
+    // a one-frame position jump.) By the time "SAY HELLO TO MY LITTLE FRIEND!"
+    // fires just after the boundary he's already settled, which is the point --
+    // the wiggle is supposed to be the only thing moving from here on.
+    FX.shakeAmp = (6 + f*1.6) * Math.min(1, (1 - f) * 4.5);
     if(t === T_HEAD2 + 6 && FX.heads < 3){
       FX.heads = 3; Audio8.S.bossHit(); hitStop = 5; shake = 9;
       fatLine('THAT ONE IS NOT...', 118);
@@ -6232,11 +6257,24 @@ function drScienceFinisher(t){
     // only belongs to the flight, once it actually takes off and starts
     // shooting around.
     if(t === T_HEAD3 + 8 && !b.saidRumble){ b.saidRumble = true; fatLine('SAY HELLO TO MY LITTLE FRIEND!', 143); }
-    // no exhaust here -- this is all still pre-reveal (the pop-out itself
-    // doesn't fire until T_CHARGE+1). Exhaust before anything's even out
-    // read as an unexplained blast; it now only shows up once the rocket is
-    // actually out and wiggling, right before it launches (see the wiggle
-    // block in drawDrScienceRocket).
+    // sparks at the fly, right at the very end of the buildup -- not exhaust
+    // (that's a rocket-in-flight thing, see drawDrScienceRocket), just a
+    // brief short-circuit flicker right where it's about to tear open. Stops
+    // dead the instant it actually pops -- the burst is the payoff, not more
+    // effects layered on top of it.
+    if(t > T_CHARGE - 20){
+      const hp2 = drScienceHolePos(b);
+      const sxk = px(hp2.x);
+      for(let i=0;i<3;i++){
+        const ang = Math.random()*6.28, len = 3+Math.random()*6;
+        ctx.strokeStyle = Math.random()<0.5 ? 'rgba(255,241,150,0.9)' : 'rgba(255,255,255,0.95)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(sxk, hp2.y);
+        ctx.lineTo(sxk + Math.cos(ang)*len, hp2.y + Math.sin(ang)*len);
+        ctx.stroke();
+      }
+    }
     if(t % 2 === 0) drScienceSweat(b, 1);
     return false;
   }
@@ -6284,7 +6322,12 @@ function drScienceFinisher(t){
     if(hitStop > 0){
       FX.shakeAmp = 0;
     } else {
-      FX.shakeAmp = 9;
+      // Ramp in over ~6 frames rather than jumping 0 -> 9 on the frame the
+      // wiggle ends: at full amplitude the tremble's first sample can land
+      // several px off centre, so a cold start is a visible sideways snap.
+      // The punch still lands -- `shake` (screen shake) hits full immediately,
+      // it's only his body that eases in.
+      FX.shakeAmp = 9 * Math.min(1, (t - T_CHARGE - 1) / 6);
       shake = Math.max(shake, 8);
     }
     return false;
@@ -6337,6 +6380,41 @@ function drScienceShredClothes(b){
 // launch moment) it popped out a few pixels below where the hole actually
 // renders. Replaying the same chain here keeps them exactly together.
 const DR_SCIENCE_ART = 56, DR_SCIENCE_HOLE_ART_X = 16, DR_SCIENCE_HOLE_ART_Y = 40;
+// bumped from 0.175 -- at max swell (1.6) that only made him ~7'0", most of
+// the growth going into width ("he bloats more than he grows"). The reveal
+// needs him tall enough that the pop-out actually reads clearly against his
+// silhouette instead of getting lost low in a wide torso; this puts him at
+// roughly 9'4" at full swell, 2-3ft taller than before.
+const DR_SCIENCE_SWELL_Y = 0.42;
+// The tremble offset his body is drawn with during the fatality.
+//
+// This used to be `Math.sin(time*1.9)*FX.shakeAmp` inlined in two places -- and
+// it was never a shake at all. `time` is FROZEN for the entire fatality: step()
+// hits `if(FATALITY) return stepFatality();` before it ever reaches `time++`.
+// So sin(time*1.9) is one fixed constant for the whole sequence, and the "shake"
+// was really a static sideways displacement whose SIZE tracked FX.shakeAmp. As
+// shakeAmp ramped 0 -> 1.2 -> 4.4 -> 6.0 -> 7.6 across the grow/rip/head beats
+// he slid steadily off to one side, and the moment the next beat set it back to
+// 0 he snapped back in a single frame. That snap is the "he skips a frame and
+// moves to the side" -- and it's exactly why auditing b.x found nothing: the
+// offset lives in the ctx.translate, never in his coordinates.
+//
+// FATALITY.animT is the only clock that actually advances during the finisher,
+// and it freezes while hitStop is up -- so the post-pop wiggle hold still holds
+// dead still, same as before. Amplitudes are scaled down from the raw shakeAmp
+// because those numbers were authored against a value that never visibly moved.
+function drScienceShake(FX){
+  if(!FX || !(FX.shakeAmp > 0)) return { x: 0, y: 0 };
+  const tt = (FATALITY && FATALITY.animT) || 0;
+  return { x: Math.sin(tt*0.85)*FX.shakeAmp*0.55, y: Math.cos(tt*1.21)*FX.shakeAmp*0.35 };
+}
+// Clock for the spare heads' nod, and ONLY that. Deliberately not animT: animT
+// freezes while hitStop is up, which would stop the nodding dead for the whole
+// ~2.5s wiggle hold -- i.e. from the exact moment the rocket pops out. This is
+// bumped once per rendered frame in drawDrScience, so the heads keep bobbing at
+// the same pace right through the pop, the wiggle and the flight. The body
+// tremble still uses animT, because that one IS meant to hold still.
+let DR_SCIENCE_BOB_T = 0;
 function drScienceHolePos(b){
   const FX = b.fx || {swell:0, face:-1, shakeAmp:0};
   const AS = b.h / DR_SCIENCE_ART, face = FX.face || -1;
@@ -6344,10 +6422,11 @@ function drScienceHolePos(b){
   let y = DR_SCIENCE_HOLE_ART_Y * AS;
   if(FX.swell){
     y -= b.h;
-    x *= 1 + FX.swell*0.46; y *= 1 + FX.swell*0.175;
+    x *= 1 + FX.swell*0.46; y *= 1 + FX.swell*DR_SCIENCE_SWELL_Y;
     y += b.h;
   }
-  if(FX.shakeAmp > 0){ x += Math.sin(time*1.9)*FX.shakeAmp; y += Math.cos(time*2.7)*FX.shakeAmp*0.6; }
+  const so = drScienceShake(FX);       // MUST match drawDrScience's translate, or the rocket spawns off his body
+  x += so.x; y += so.y;
   return { x: b.x + b.w/2 + x, y: b.y + y };
 }
 // The silhouette the player actually sees during the fatality, which is nothing
@@ -6357,7 +6436,7 @@ function drScienceHolePos(b){
 function drScienceBodyEllipse(b){
   const swell = (b.fx && b.fx.swell) || 0;
   const halfW = 17 * (b.h / DR_SCIENCE_ART) * (1 + swell*0.46);
-  const halfH = b.h * (1 + swell*0.175) / 2;
+  const halfH = b.h * (1 + swell*DR_SCIENCE_SWELL_Y) / 2;
   return { cx: b.x + b.w/2, cy: b.y + b.h - halfH, rx: halfW, ry: halfH };
 }
 let DR_ROCKET = null;
@@ -6474,28 +6553,22 @@ function drawDrScienceRocket(){
     ctx.beginPath(); ctx.moveTo(-8, -3.6); ctx.lineTo(-8-fl*0.55, 0); ctx.lineTo(-8, 3.6); ctx.closePath(); ctx.fill();
   }
 
-  // the body itself, scaled well down -- genuinely below average for a 5'7"
-  // guy, not a monster, which is the entire joke
-  ctx.save(); ctx.scale(0.185, 0.185);
+  // the body itself, scaled well down -- nudged up slightly for visibility
+  // (0.185 -> 0.22) but still modest, not a monster, that's still the joke
+  ctx.save(); ctx.scale(0.22, 0.22);
   const OL = 'rgba(18,16,22,0.85)';
-  // what tore loose, rendered exactly as blunt as the premise -- twin "boosters"
-  // at the base, a shaft, a bulbous tip. Comedy through shape, not detail.
-  ctx.fillStyle = '#e0a882';
-  ctx.beginPath(); ctx.ellipse(-12, -6.5, 7.5, 6.5, 0, 0, 7); ctx.fill();
-  ctx.strokeStyle = OL; ctx.lineWidth = 1.6; ctx.stroke();
-  ctx.fillStyle = '#e0a882';
-  ctx.beginPath(); ctx.ellipse(-12, 6.5, 7.5, 6.5, 0, 0, 7); ctx.fill();
-  ctx.strokeStyle = OL; ctx.lineWidth = 1.6; ctx.stroke();
-  // shaft
+  // South Park style -- a plain shaft and a rounded tip, no balls. Comedy
+  // through shape, not detail (matches the reference: it's just the one
+  // clean silhouette, not an anatomy lesson).
   ctx.fillStyle = '#e6b28e';
   ctx.beginPath();
-  ctx.moveTo(-10, -6.5);
+  ctx.moveTo(-14, -6.5);
   ctx.lineTo(9, -6.5);
   ctx.lineTo(9, 6.5);
-  ctx.lineTo(-10, 6.5);
+  ctx.lineTo(-14, 6.5);
   ctx.closePath(); ctx.fill();
   ctx.strokeStyle = OL; ctx.lineWidth = 1.8; ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(-9, -5, 18, 2.2);
+  ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(-13, -5, 22, 2.2);
   // bulbous tip
   ctx.fillStyle = '#d98a72';
   ctx.beginPath();
@@ -7079,6 +7152,7 @@ function drawDrScience(){
   // FX is only ever populated during the fatality. When it's null every line
   // below runs exactly as it does in normal combat.
   const FX = b.fx || null;
+  if(FX) DR_SCIENCE_BOB_T++;   // per-rendered-frame, never freezes -- see the declaration
   const shuffle = FX ? 0 : Math.sin(time*0.14)*2;   // hunched, shuffling, not a confident stride
   const ART = 56, AS = b.h / ART;                  // art units -> his real 5'7" frame
   // full audit across every enemy/boss: karen, husband, bullhorn, tattle, dog,
@@ -7088,15 +7162,16 @@ function drawDrScience(){
   // were the actual outliers, fixed separately.)
   ctx.save(); ctx.translate(sx + b.w/2, b.y);
   if(FX){
-    if(FX.shakeAmp > 0) ctx.translate(Math.sin(time*1.9)*FX.shakeAmp, Math.cos(time*2.7)*FX.shakeAmp*0.6);
+    const so = drScienceShake(FX);     // see drScienceShake -- `time` is frozen all fatality, this needs a live clock
+    if(so.x || so.y) ctx.translate(so.x, so.y);
     // Swell from the feet up so he never sinks through the floor. At full swell
     // he reaches roughly 7'0" and gets much wider -- he bloats more than he grows.
-    ctx.translate(0, b.h); ctx.scale(1 + FX.swell*0.46, 1 + FX.swell*0.175); ctx.translate(0, -b.h);
+    ctx.translate(0, b.h); ctx.scale(1 + FX.swell*0.46, 1 + FX.swell*DR_SCIENCE_SWELL_Y); ctx.translate(0, -b.h);
   }
   // during the fatality he faces Dan, who is stood off his left shoulder
   ctx.scale((FX ? FX.face : (b.vx>=0?1:-1)) * AS, AS); ctx.translate(-17, 0);
-  // legs -- slacks
-  ctx.fillStyle='#3a3a44';
+  // legs -- black slacks
+  ctx.fillStyle='#17171d';
   ctx.fillRect(6, 40, 8, 14+stepDn(shuffle*0.3)); ctx.fillRect(18, 40, 8, 14+stepUp(shuffle*0.3));
   ctx.fillStyle='#101018';
   ctx.fillRect(5, 52+stepDn(shuffle*0.3), 10, 4); ctx.fillRect(17, 52+stepUp(shuffle*0.3), 10, 4);
@@ -7107,7 +7182,7 @@ function drawDrScience(){
     ctx.fillStyle='#e8e4d8'; ctx.fillRect(4, 12, 24, 20);
     ctx.fillStyle='rgba(150,190,150,.35)'; ctx.fillRect(4, 22, 24, 10);
     ctx.fillStyle=drScienceSkinTone(FX); ctx.fillRect(4, 30, 24, 8);          // exposed belly
-    ctx.fillStyle='#7d9ec4'; ctx.fillRect(3, 36, 26, 9);          // boxers
+    ctx.fillStyle='#1f1f26'; ctx.fillRect(3, 36, 26, 9);          // boxers -- black, matching the slacks
     ctx.strokeStyle='rgba(0,0,0,.25)'; ctx.lineWidth=1;
     for(let bp=6; bp<28; bp+=7){ ctx.beginPath(); ctx.moveTo(bp,36); ctx.lineTo(bp,45); ctx.stroke(); }
     ctx.strokeStyle='rgba(0,0,0,.3)'; ctx.lineWidth=1.2; ctx.strokeRect(4, 12, 24, 20);
@@ -7136,22 +7211,40 @@ function drawDrScience(){
     ctx.fillStyle='#000'; ctx.fillRect(10.8, 5.3, 1.8, 1.8); ctx.fillRect(18.8, 5.3, 1.8, 1.8);
   }
   if(FX && FX.bug > 0){
-    // eyes bugging out as the dose takes hold
-    const bw = 3.0 + FX.bug*3.4;
+    // eyes bugging out as the dose takes hold. Sized to still read as two eyes:
+    // at the old 3.0+bug*3.4 they hit r5.4 and, sat 8 apart on a head only 18
+    // wide, met at the bridge of his nose and merged into one white mass that
+    // reached down past y=11.9 -- which left the mouth nowhere to sit but
+    // straight on top of them. Nudged up a touch too, to open up the jaw.
+    const bw = 2.9 + FX.bug*2.6, eyeY = 6.2;
     ctx.fillStyle='#fff';
-    ctx.beginPath(); ctx.arc(12, 6.5, bw, 0, 7); ctx.arc(20, 6.5, bw, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(12, eyeY, bw, 0, 7); ctx.arc(20, eyeY, bw, 0, 7); ctx.fill();
     ctx.strokeStyle='rgba(180,60,60,0.75)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.arc(12, 6.5, bw, 0, 7); ctx.arc(20, 6.5, bw, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(12, eyeY, bw, 0, 7); ctx.arc(20, eyeY, bw, 0, 7); ctx.stroke();
     ctx.fillStyle='#000';
     const pw = 1.5 + FX.bug*0.8;
-    ctx.beginPath(); ctx.arc(12, 6.5, pw, 0, 7); ctx.arc(20, 6.5, pw, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(12, eyeY, pw, 0, 7); ctx.arc(20, eyeY, pw, 0, 7); ctx.fill();
   }
   ctx.strokeStyle='#8a5a4a'; ctx.lineWidth=1.2;
   if(FX && FX.mouth === 'smug'){                            // tight little smile
     ctx.beginPath(); ctx.arc(16, 9.5, 3.4, 0.25, Math.PI-0.25); ctx.stroke();
   } else if(FX && FX.mouth === 'o'){                        // the dawning realisation
+    // His whole body is already scaled by FX.swell (the ctx.scale above), so
+    // the mouth grows with his head for free. The old radii ALSO multiplied by
+    // FX.swell, compounding it: at full swell (1.6) that's a 12.7 x 16.5 unit
+    // oval on an 18-unit-wide head -- a black pit wider than his jaw, hanging
+    // off his chin and eating the whole face. Open it over the first stretch of
+    // the swell and then hold; it tops out inside the jawline (chin is y=15)
+    // and the head scale does the rest of the work.
+    // Sits low on the jaw (chin is y=15) and stays wider than it is tall, so it
+    // reads as a mouth hanging open under the eyes rather than a pit punched
+    // through the middle of his face.
+    const open = Math.min(1, FX.swell / 0.7);
+    const mrx = 2.2 + open*1.5, mry = 1.8 + open*0.7;
     ctx.fillStyle='#5a2a2a';
-    ctx.beginPath(); ctx.ellipse(16, 11, 2.2 + FX.swell*2.6, 2.8 + FX.swell*3.4, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(16, 12.2, mrx, mry, 0, 0, 7); ctx.fill();
+    // bottom lip: keeps a wide-open mouth reading as a mouth and not a hole
+    ctx.beginPath(); ctx.ellipse(16, 12.2, mrx, mry, 0, 0.3, Math.PI-0.3); ctx.stroke();
   } else {
     ctx.beginPath(); ctx.moveTo(12, 11.5); ctx.lineTo(20, 11); ctx.stroke();
   }
@@ -7160,7 +7253,8 @@ function drawDrScience(){
     const spare = [[3, -4, 0.78], [29, -2, 0.66]];
     for(let hI = 0; hI < FX.heads - 1; hI++){
       const [hx, hy, hs] = spare[hI];
-      const bobY = Math.sin(time*0.22 + hI*2.1) * 1.6;
+      // same frozen-`time` trap as drScienceShake -- these never actually bobbed
+      const bobY = Math.sin(DR_SCIENCE_BOB_T*0.22 + hI*2.1) * 1.6;
       ctx.save(); ctx.translate(hx, hy + bobY); ctx.scale(hs, hs);
       ctx.fillStyle=drScienceSkinTone(FX); ctx.beginPath(); ctx.arc(0, 8, 9, 0, 7); ctx.fill();
       ctx.strokeStyle='rgba(0,0,0,.4)'; ctx.lineWidth=1.4; ctx.stroke();
@@ -7177,10 +7271,18 @@ function drawDrScience(){
     }
   }
   if(FX && FX.hole > 0){
-    // the exit wound where the thing tore itself loose -- pants level, not the chest
-    ctx.fillStyle = 'rgba(20,10,14,0.85)';
-    ctx.beginPath(); ctx.ellipse(16, 40, 6, 7, 0, 0, 7); ctx.fill();
-    ctx.strokeStyle = 'rgba(180,70,70,0.9)'; ctx.lineWidth = 2; ctx.stroke();
+    // a torn-open fly, not a wound -- the old dark ellipse with a red ring
+    // read as an injury. A narrow dark slit with a couple of frayed-thread
+    // marks at the edges reads as ripped fabric instead.
+    ctx.fillStyle = 'rgba(10,8,10,0.92)';
+    ctx.beginPath();
+    ctx.moveTo(14, 34); ctx.lineTo(19, 34); ctx.lineTo(20, 46); ctx.lineTo(13, 46);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(130,120,100,0.55)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(13, 37); ctx.lineTo(10, 36); ctx.moveTo(20, 40); ctx.lineTo(23, 39.5);
+    ctx.moveTo(14, 45); ctx.lineTo(12, 48);
+    ctx.stroke();
   }
   if(FX){
     if(FX.thumb > 0){
@@ -11178,7 +11280,10 @@ function drawFatLine(){
   m.t++;
   if(m.t > m.life){ FAT_LINE = null; return; }
   const k = m.t;
-  const slide = k < 10 ? (10-k) * 30 : 0;
+  // softened from *30 (up to 300px) -- this banner sits mid-screen right where
+  // Dr. Science's now-taller silhouette is, and that big a slide reads as him
+  // shifting rather than a text banner sliding in over him
+  const slide = k < 10 ? (10-k) * 8 : 0;
   const a = k > m.life-20 ? 1 - (k-(m.life-20))/20 : 1;
   ctx.save();
   ctx.globalAlpha = Math.max(0, a);
